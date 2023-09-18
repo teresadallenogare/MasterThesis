@@ -75,11 +75,21 @@ def distance_matrix(G, pos):
     return D
 
 
-def create_node_list(G, popTot):
-    """ Create a list with attributes associated to each node of the lattice
+def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
+    """ Create a list with attributes associated to each node of the lattice.
+        Population values are extracted from a multinomial distribution:
+        0. with support equal to popTot, and probability 1/N equal for each of the N classes.
+        1. in which the number Nfix of selected nodes contains the percentage percentage_FixNodes of population
+
 
     :param G: [networkx.class] graph structure from networkx
-    :param popTot: [int] whole population in the network
+    :param popTot: [scalar] total population of the system
+    :param Nfix: [scalar] number of selected nodes to set the percentage 'percentage_FixNodes' of the population
+    :param percentage_FixNodes: [scalar] percentage of the population to set in Nfix selected nodes
+    :param choice_bool: [0 or 1] boolean-like variable -
+                        if 0 : populate nodes from a uniform probability distribution
+                        if 1 : populate Nfix of nodes with 80% of population and the remaining 20% is
+                               distributed among the remaining N-Nfix of nodes
 
     """
     # Number of nodes in the graph
@@ -94,20 +104,26 @@ def create_node_list(G, popTot):
             self.N_I = 0
             self.N_R = 0
             self.state = 'S'
-
+    # vector with population in each node. Multinomial distribution ensures that the sum of all elements is
+    # equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
+    # uniform distribution (size = N).
     lst_nodes = []
-    for i in G.nodes():
-        lst_nodes.append(Node(i))
-
-    # Populate nodes randomly (initialization of the network)
-    # Preliminary version : populate every node with a certain number of individuals
-    for i in range(N - 1):
-        if popTot > 0:
-            n = rnd.randint(1, math.floor(popTot / 4.))
-            lst_nodes[i].Npart = n
-            popTot -= n
-
-    lst_nodes[N - 1].Npart = popTot
+    if choice_bool == 0:
+        n = np.random.multinomial(popTot, [1 / N] * N)
+        for i in G.nodes():
+            lst_nodes.append(Node(i))
+            lst_nodes[i].Npart = n[i]
+    elif choice_bool == 1:
+        pop_FixNodes = math.floor(percentage_FixNodes / 100 * popTot)
+        pop_others = popTot - pop_FixNodes
+        n_FixNodes = np.random.multinomial(pop_FixNodes, [1 / Nfix] * Nfix)
+        n_others = np.random.multinomial(pop_others, [1 / (N-Nfix)] * (N-Nfix))
+        for i in range(Nfix):
+            lst_nodes.append(Node(i))
+            lst_nodes[i].Npart = n_FixNodes[i]
+        for i in range(Nfix, N):
+            lst_nodes.append(Node(i))
+            lst_nodes[i].Npart = n_others[i-Nfix]
 
     return lst_nodes
 
@@ -134,8 +150,8 @@ def transition_matrix(G, D, density):
         for j in range(N_col):
             if i != j:  # implements the random condition (?)
                 prob = density[j] / D[i, j]  # TO DO : 4 * pop_density /D
-                print(prob)
-                if np.random.choice([1, 0], p=[prob, 1 - prob]) == 1:
+                rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                if rnd_ch == 1:
                     T[i, j] = density[j] / D[i, j]
             # self loop
         T[i, i] = 1. - T[i, :].sum()

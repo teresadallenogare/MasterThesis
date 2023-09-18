@@ -28,9 +28,14 @@ DistanceMatrix = distance_matrix(G, pos)
 
 # Create node list with each node randomly populated
 populationTot = 1e3
-node_list = create_node_list(G, populationTot)
-print(node_list)
+Nfix = 3
+percentage_FixNodes = 80
+# choice_bool = 0 : uniform distribution
+# choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
+choice_bool = 0
+node_list = create_node_list(G, populationTot, Nfix, percentage_FixNodes, choice_bool)
 node_population = np.array([node_list[i].Npart for i in G.nodes])
+print(node_population)
 node_density = node_population / populationTot  # population density vector
 
 # Transition matrix
