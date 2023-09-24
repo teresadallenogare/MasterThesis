@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 07 September 2023
+Version : 18 September 2023
 
 --------------------------------------------------------------------
 
@@ -81,6 +81,9 @@ def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         0. with support equal to popTot, and probability 1/N equal for each of the N classes.
         1. in which the number Nfix of selected nodes contains the percentage percentage_FixNodes of population
 
+        Multinomial distribution ensures that the sum of all elements is
+        equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
+        uniform distribution (size = N).
 
     :param G: [networkx.class] graph structure from networkx
     :param popTot: [scalar] total population of the system
@@ -104,10 +107,10 @@ def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
             self.N_I = 0
             self.N_R = 0
             self.state = 'S'
-    # vector with population in each node. Multinomial distribution ensures that the sum of all elements is
-    # equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
-    # uniform distribution (size = N).
+
     lst_nodes = []
+
+    # Populate node list with individuals
     if choice_bool == 0:
         n = np.random.multinomial(popTot, [1 / N] * N)
         for i in G.nodes():
@@ -124,6 +127,8 @@ def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         for i in range(Nfix, N):
             lst_nodes.append(Node(i))
             lst_nodes[i].Npart = n_others[i-Nfix]
+
+    # Attribute state S, I, R to nodes (?)
 
     return lst_nodes
 
@@ -149,14 +154,15 @@ def transition_matrix(G, D, density):
     for i in range(N_row):
         for j in range(N_col):
             if i != j:  # implements the random condition (?)
-                prob = density[j] / D[i, j]  # TO DO : 4 * pop_density /D
+                prob =  3 * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
                 rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
                 if rnd_ch == 1:
-                    T[i, j] = density[j] / D[i, j]
+                    T[i, j] = prob
             # self loop
         T[i, i] = 1. - T[i, :].sum()
 
     return T
+
 
 
 

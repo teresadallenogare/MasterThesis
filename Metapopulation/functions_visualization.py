@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 
 
 def plot_network(G, pos, pop_nodes, lab_nodes, weight):
-    """ Plot directed network
+    """ Plot directed network. For the visualization, I distinguish between edges with weight equal to zero and non.
+        In this way, I can attribute to edges with 0-weight the wight color to hide the arrowhead.
 
     :param G: [networkx.class] graph structure from networkx
     :param pos: [list] position of nodes
@@ -23,12 +24,17 @@ def plot_network(G, pos, pop_nodes, lab_nodes, weight):
     :param lab_nodes: [dict] label of nodes
     :param T : [matrix] transition matrix
     """
+    # Size of nodes
     size_map = [pop_nodes[i] for i in G.nodes]
 
     plt.figure(figsize=(8, 8))
+    # Draw nodes
     nx.draw_networkx_nodes(G, pos=pos, node_size=size_map)
-    nx.draw_networkx_labels(G, pos=lab_nodes)
+    # Draw edges
     nx.draw_networkx_edges(G, pos=lab_nodes, width=weight, connectionstyle="arc3,rad=0.1")
+    # Nodes with labels
+    nx.draw_networkx_labels(G, pos=lab_nodes)
+
 
 
 

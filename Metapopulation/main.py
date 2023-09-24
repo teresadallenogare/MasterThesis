@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 07 September 2023
+Version : 23 September 2023
 
 --------------------------------------------------------------------
 
@@ -41,13 +41,20 @@ node_density = node_population / populationTot  # population density vector
 # Transition matrix
 TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density)
 weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
+weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0 ]
 
-# Add weights to the network
+# Add weighted edges to networks : only edges with weight != 0 are added
 for i in range(N):
     for j in range(N):
-        G.add_edge(i, j, weight=TransitionMatrix[i, j])
+        if TransitionMatrix[i,j] != 0:
+            G.add_edge(i, j, weight=TransitionMatrix[i, j])
 
 # Plot network
-plot_network(G, pos, node_population, labels, weight)
+plot_network(G, pos, node_population, labels, weightNonZero)
+
+# Control strongly connected graph
+strongConnection = nx.is_strongly_connected(G)
+print(strongConnection)
+
 
 rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
