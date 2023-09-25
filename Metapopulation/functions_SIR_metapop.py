@@ -44,10 +44,8 @@ def initialize_lattice(N_row, N_col):
 
     # Set nodes in the graph
     G.add_nodes_from(vals.keys())
-    # Assign to pos the position of nodes in the graph that were set in 'values'
-    pos = list(vals.values())
 
-    return G, pos, vals
+    return G, vals
 
 
 def distance_matrix(G, pos):
@@ -154,7 +152,7 @@ def transition_matrix(G, D, density):
     for i in range(N_row):
         for j in range(N_col):
             if i != j:  # implements the random condition (?)
-                prob =  3 * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
+                prob = 3. * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
                 rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
                 if rnd_ch == 1:
                     T[i, j] = prob
