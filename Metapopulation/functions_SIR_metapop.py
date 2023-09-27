@@ -72,16 +72,18 @@ def distance_matrix(G, pos):
 
     return D
 
-
-def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
-    """ Create a list with attributes associated to each node of the lattice.
-        Population values are extracted from a multinomial distribution:
-        0. with support equal to popTot, and probability 1/N equal for each of the N classes.
-        1. in which the number Nfix of selected nodes contains the percentage percentage_FixNodes of population
-
-        Multinomial distribution ensures that the sum of all elements is
-        equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
-        uniform distribution (size = N).
+def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
+    """ Assign nodes with attributes:
+        Npop : is the population assigned to each node. Values are extracted from a multinomial distribution:
+               0. with support equal to popTot, and probability 1/N equal for each of the N classes.
+               1. in which the number Nfix of selected nodes contains the percentage percentage_FixNodes of population
+               Multinomial distribution ensures that the sum of all elements is
+               equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
+               uniform distribution (size = N).
+        N_S : initial number of susceptible individuals
+        N_I : initial number of infected individuals
+        N_R : initial number of recovered individuals
+        state : initial state of individuals
 
     :param G: [networkx.class] graph structure from networkx
     :param popTot: [scalar] total population of the system
@@ -93,45 +95,79 @@ def create_node_list(G, popTot, Nfix, percentage_FixNodes, choice_bool):
                                distributed among the remaining N-Nfix of nodes
 
     """
-    # Number of nodes in the graph
     N = len(G.nodes)
-
-    # Initialize node list
-    class Node:
-        def __init__(self, index):
-            self.index = index
-            self.Npart = 0
-            self.N_S = 0
-            self.N_I = 0
-            self.N_R = 0
-            self.state = 'S'
-
-    lst_nodes = []
-
-    # Populate node list with individuals
+    # Populate nodes
     if choice_bool == 0:
+        # Extract population of nodes from a multinomial distribution. it is a ndarray
         n = np.random.multinomial(popTot, [1 / N] * N)
-        for i in G.nodes():
-            lst_nodes.append(Node(i))
-            lst_nodes[i].Npart = n[i]
+        nS = n
+        nI = 0
+        nR = 0
+        state = 'S'
+        print('node populations', n)
+        # Create dictionary with population values assigned to each node (necessary to assign nodes diverse populations)
+        dict_Npop = {i: n[i] for i in G.nodes}
+        dict_S = {i: nS[i] for i in G.nodes}
+        dict_I = {i: nI for i in G.nodes}
+        dict_R = {i: nR for i in G.nodes}
+        dict_state = {i: state for i in G.nodes}
+        print('dict Npop:',dict_Npop)
+
+        # Assign attributes to nodes
+        nx.set_node_attributes(G, dict_Npop, 'Npop')
+        nx.set_node_attributes(G, dict_S, 'N_S')
+        nx.set_node_attributes(G, dict_I, 'N_I')
+        nx.set_node_attributes(G, dict_R, 'N_R')
+        nx.set_node_attributes(G, dict_state, 'state')
+
     elif choice_bool == 1:
+        # Whole population in fixed nodes
         pop_FixNodes = math.floor(percentage_FixNodes / 100 * popTot)
+        # Whole population in all other nodes
         pop_others = popTot - pop_FixNodes
+        # Distributed population among individual fixed nodes
         n_FixNodes = np.random.multinomial(pop_FixNodes, [1 / Nfix] * Nfix)
-        n_others = np.random.multinomial(pop_others, [1 / (N-Nfix)] * (N-Nfix))
-        for i in range(Nfix):
-            lst_nodes.append(Node(i))
-            lst_nodes[i].Npart = n_FixNodes[i]
-        for i in range(Nfix, N):
-            lst_nodes.append(Node(i))
-            lst_nodes[i].Npart = n_others[i-Nfix]
+        # Distributed population among all other nodes
+        n_others = np.random.multinomial(pop_others, [1 / (N - Nfix)] * (N - Nfix))
+        n_FixNodes = list(n_FixNodes)
+        n_others = list(n_others)
+        n_AllNodes_final = n_FixNodes + n_others
 
-    # Attribute state S, I, R to nodes (?)
+        n_S = n_AllNodes_final
+        n_I = 0
+        n_R = 0
+        state = 'S'
 
-    return lst_nodes
+        # List with index of all nodes
+        idx_AllNodes = [i for i in range(0, N)]
+        idx_FixNodes = []
+        for i in range(Nfix + 1):
+            idxN = rnd.randint(0, N - 1)
+            if idxN not in idx_FixNodes:
+                idx_FixNodes.append(idxN)
+        idx_others = list(set(idx_AllNodes) - set(idx_FixNodes))
+        idx_AllNodes_final = idx_FixNodes + idx_others
+        print('idx:', idx_AllNodes_final)
+        # Dictionary in which at nodes with index in idx_FixNodes I attribute the population
+        dict_Npop = {idx_AllNodes_final[i]: n_AllNodes_final[i] for i in G.nodes}
+        dict_S = {idx_AllNodes_final[i]: n_S[i] for i in G.nodes}
+        dict_I = {idx_AllNodes_final[i]: n_I for i in G.nodes}
+        dict_R = {idx_AllNodes_final[i]: n_R for i in G.nodes}
+        dict_state = {idx_AllNodes_final[i]: state for i in G.nodes}
+        print(dict_Npop)
+
+        # Assign attributes to nodes
+        nx.set_node_attributes(G, dict_Npop, 'Npop')
+        nx.set_node_attributes(G, dict_S, 'N_S')
+        nx.set_node_attributes(G, dict_I, 'N_I')
+        nx.set_node_attributes(G, dict_R, 'N_R')
+        nx.set_node_attributes(G, dict_state, 'state')
+    else:
+        print('Wrong value for choice_bool')
 
 
-def transition_matrix(G, D, density):
+
+def transition_matrix(G, D, density, c, gr):
     """ Compute weights of edges that correspond to the transition probability of people
         among nodes. Probability is proportional to the population of the destination node
         and inversely proportional to the distance between nodes (following a gravity law)
@@ -139,6 +175,7 @@ def transition_matrix(G, D, density):
     :param G: [networkx.class] graph structure from networkx
     :param D: matrix of Euclidean distance
     :param density: [np.array] population density inside every node
+    :param gr: [scalar] stands for 'gravity-radiation'. If 0 I consider gravity law, if 1 I consider radiation model
     """
     N = len(G.nodes)
 
@@ -149,22 +186,30 @@ def transition_matrix(G, D, density):
     # To add proportionality term (and eventually population of the destination node)
     # NOTE : sum over i must be 1
 
-    for i in range(N_row):
-        for j in range(N_col):
-            if i != j:  # implements the random condition (?)
-                prob = 3. * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
-                rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
-                if rnd_ch == 1:
-                    T[i, j] = prob
-            # self loop
-        T[i, i] = 1. - T[i, :].sum()
+    if gr == 0:
+        for i in range(N_row):
+            for j in range(N_col):
+                if i != j:  # implements the random condition (?)
+                    prob = c * density[i] * density[j] / D[i, j]
+                    rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                    if rnd_ch == 1:
+                        T[i, j] = prob
+                # self loop
+            T[i, i] = 1. - T[i, :].sum()
+    elif gr == 1:
+        for i in range(N_row):
+            for j in range(N_col):
+                if i != j:  # implements the random condition (?)
+                    prob = 3. * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
+                    rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                    if rnd_ch == 1:
+                        T[i, j] = prob
+                # self loop
+            T[i, i] = 1. - T[i, :].sum()
+    else:
+        print('Wrong integer value in input')
 
     return T
-
-
-
-
-
 
 def perron_frobenius_theorem(TransMat):
     PFval, PFvec = sla.eigs(TransMat.T, k=1, which='LR')
