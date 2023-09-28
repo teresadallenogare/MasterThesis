@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 18 September 2023
+Version : 27 September 2023
 
 --------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
 
 
 
-def transition_matrix(G, D, density, c, gr):
+def transition_matrix(G, D, density, c):
     """ Compute weights of edges that correspond to the transition probability of people
         among nodes. Probability is proportional to the population of the destination node
         and inversely proportional to the distance between nodes (following a gravity law)
@@ -175,7 +175,6 @@ def transition_matrix(G, D, density, c, gr):
     :param G: [networkx.class] graph structure from networkx
     :param D: matrix of Euclidean distance
     :param density: [np.array] population density inside every node
-    :param gr: [scalar] stands for 'gravity-radiation'. If 0 I consider gravity law, if 1 I consider radiation model
     """
     N = len(G.nodes)
 
@@ -185,29 +184,15 @@ def transition_matrix(G, D, density, c, gr):
     # Calculate transition probabilities
     # To add proportionality term (and eventually population of the destination node)
     # NOTE : sum over i must be 1
-
-    if gr == 0:
-        for i in range(N_row):
-            for j in range(N_col):
-                if i != j:  # implements the random condition (?)
-                    prob = c * density[i] * density[j] / D[i, j]
-                    rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
-                    if rnd_ch == 1:
-                        T[i, j] = prob
-                # self loop
-            T[i, i] = 1. - T[i, :].sum()
-    elif gr == 1:
-        for i in range(N_row):
-            for j in range(N_col):
-                if i != j:  # implements the random condition (?)
-                    prob = 3. * density[j] / D[i, j]  # TO DO : 4 * pop_density /D
-                    rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
-                    if rnd_ch == 1:
-                        T[i, j] = prob
-                # self loop
-            T[i, i] = 1. - T[i, :].sum()
-    else:
-        print('Wrong integer value in input')
+    for i in range(N_row):
+        for j in range(N_col):
+            if i != j:  # implements the random condition (?)
+                prob = c * density[i] * density[j] / D[i, j]
+                rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                if rnd_ch == 1:
+                    T[i, j] = prob
+            # self loop
+        T[i, i] = 1. - T[i, :].sum()
 
     return T
 

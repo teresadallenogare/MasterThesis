@@ -19,19 +19,16 @@ import matplotlib.pyplot as plt
 # --------------------------------------------- Parameter initialization ----------------------------------------------
 
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 2
+N_col = 2
 # Total population
-populationTot = 1e5
+populationTot = 1e6
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
 percentage_FixNodes = 60
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 1
-# gr = 0 : gravity law to model human mobility
-# gr = 1 : radiation model to express human mobility
-gr = 0
+choice_bool = 0
 
 # ------------------------------------------------ Network definition -------------------------------------------------
 # Define node position in the lattice with a square topology
@@ -53,15 +50,16 @@ print('node density: ', node_density)
 
 # Add edges modeling human mobility through a gravity law
 # c is the parameter for the gravity law. I stop as soon as I find the first strongly connected graph
+c_min = 0
 c_max = 200
 # Cycle until the network is strongly connected
 strongConnection = False
-for c in range(0, c_max):
+for c in range(c_min, c_max):
     contFalse = 0
     while strongConnection == False and contFalse < 1000:
         contFalse = contFalse + 1
         # Transition matrix
-        TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density, c, gr)
+        TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density, c)
         weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
         weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0 ]
         # Add weighted edges to networks : only edges with weight != 0 are added
