@@ -16,6 +16,7 @@ import numpy as np
 import random as rnd
 import math
 import scipy.sparse.linalg as sla
+import statistics as stat
 
 
 def initialize_lattice(N_row, N_col):
@@ -72,6 +73,7 @@ def distance_matrix(G, pos):
 
     return D
 
+
 def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
     """ Assign nodes with attributes:
         Npop : is the population assigned to each node. Values are extracted from a multinomial distribution:
@@ -111,7 +113,7 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         dict_I = {i: nI for i in G.nodes}
         dict_R = {i: nR for i in G.nodes}
         dict_state = {i: state for i in G.nodes}
-        print('dict Npop:',dict_Npop)
+        print('dict Npop:', dict_Npop)
 
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
@@ -166,7 +168,6 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         print('Wrong value for choice_bool')
 
 
-
 def transition_matrix(G, D, density, c):
     """ Compute weights of edges that correspond to the transition probability of people
         among nodes. Probability is proportional to the population of the destination node
@@ -195,6 +196,56 @@ def transition_matrix(G, D, density, c):
         T[i, i] = 1. - T[i, :].sum()
 
     return T
+
+
+def characterisation_network_SC(G, DistanceMatrix, node_density, search_max_number, c_min, c_max, max_trialsSC_fixed_c):
+    """ Cycle over the c parameter of the gravity law to characterise which values guarantee the network
+     is strongly connected
+     :param G: [networkx.class] graph structure from networkx
+     :param DistanceMatrix: matrix of Euclidean distance
+     :param node_density: [scalar] density of the node
+     :param search_max_number: [scalar] maximum number of iterations for a certain network topology to search
+     for a strongly connected graph
+     :param c_min: [scalar] minimum value for c to start searching for strong connection
+     :param c_max: [scalar] maximum value for c to search for strong connection
+     :param max_trialsSC_fixed_c: [scalar] limit number of repetition for search of strong connection using the same c
+
+
+    """
+    c_list = []
+    N = len(G.nodes)
+    for repeat_search in range(0, search_max_number):
+        strongConnection = False
+        for c in np.arange(c_min, c_max, 1):
+            contFalse = 0
+            while strongConnection == False and contFalse < max_trialsSC_fixed_c:
+                contFalse = contFalse + 1
+                # Transition matrix
+                TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density, c)
+                # Add weighted edges to networks : only edges with weight != 0 are added
+                for i in range(N):
+                    for j in range(N):
+                        if TransitionMatrix[i, j] != 0:
+                            G.add_edge(i, j, weight=TransitionMatrix[i, j])
+                # Control strongly connected graph
+                strongConnection = nx.is_strongly_connected(G)
+                # After controlling, remove edges
+                for i in range(N):
+                    for j in range(N):
+                        if TransitionMatrix[i, j] != 0:
+                            G.remove_edge(i, j)
+            if strongConnection:
+                c_list.append(c)
+                print(f'{repeat_search} : Strong connection for c = {c} : ', strongConnection)
+                # print(f'False iterations for c = {c}:', contFalse)
+                break
+    c_list = np.array(c_list)
+    # Arithmetic mean of c_list reported as an integer value (use fmean() to return the float arithmetic mean)
+    # Use mean in analogy to resolution of instrument: can't go
+    avg_c = stat.fmean(c_list)
+    err_c = stat.stdev(c_list, avg_c)
+    return c_list, avg_c, err_c
+
 
 def perron_frobenius_theorem(TransMat):
     PFval, PFvec = sla.eigs(TransMat.T, k=1, which='LR')

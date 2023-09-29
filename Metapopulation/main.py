@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 N_row = 2
 N_col = 2
 # Total population
-populationTot = 1e6
+populationTot = 1e2
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
 percentage_FixNodes = 60
@@ -39,6 +39,7 @@ pos_nodes = list(dict_nodes.values())
 N = len(G.nodes)
 # Compute distance matrix of every node with all the others
 DistanceMatrix = distance_matrix(G, pos_nodes)
+
 # Populate nodes and set initial conditions for infection
 initialize_nodes(G, populationTot, Nfix, percentage_FixNodes, choice_bool)
 node_population = nx.get_node_attributes(G, name = 'Npop')
@@ -54,7 +55,7 @@ c_min = 0
 c_max = 200
 # Cycle until the network is strongly connected
 strongConnection = False
-for c in range(c_min, c_max):
+for c in np.arange(c_min, c_max, 0.1):
     contFalse = 0
     while strongConnection == False and contFalse < 1000:
         contFalse = contFalse + 1
@@ -71,12 +72,12 @@ for c in range(c_min, c_max):
         dict_edges = nx.get_edge_attributes(G, name = 'weight')
         # Control strongly connected graph
         strongConnection = nx.is_strongly_connected(G)
-        if strongConnection == False:
+        if not strongConnection:
             for i in range(N):
                 for j in range(N):
                     if TransitionMatrix[i, j] != 0:
                         G.remove_edge(i, j)
-    if strongConnection == True:
+    if strongConnection:
         print(f'Strong connection for c = {c} : ', strongConnection)
         print(f'False iterations for c = {c}:', contFalse)
         #print('weightNonZero: ', weightNonZero)
