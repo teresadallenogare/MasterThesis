@@ -78,11 +78,10 @@ print("is_periodic: {}".format(is_periodic))
 # Control strongly connected graph
 strongConnection = nx.is_strongly_connected(G)
 print('Strong connection : ', strongConnection)
-
-# ------------ From now one I work with a strongly connected graph ------------
 # Plot network
 plot_network(G, node_population, dict_nodes, dict_edges, weightNonZero)
 
 check_convergence(TransitionMatrix)
-
 #rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
+
+# ------------------------------------------------ Dynamics -------------------------------------------------

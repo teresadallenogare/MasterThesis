@@ -17,7 +17,7 @@ import math
 import scipy.sparse.linalg as sla
 import statistics as stat
 
-
+# --------------------------------------- Lattice definition ---------------------------------------
 def initialize_lattice(N_row, N_col):
     """ Define a lattice with square topology with N_row rows and N_col columns, that is a
         networkx structure with positioning of nodes only.
@@ -166,7 +166,7 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool, seed):
     else:
         print('Wrong value for choice_bool')
 
-
+# --------------------------------------- Transition matrix  ---------------------------------------
 def transition_matrix(G, D, density):
     """ Compute probability to create an edge and its reversed one.
         Compute weights of edges that correspond to the transition probability of people
@@ -215,22 +215,18 @@ def transition_matrix(G, D, density):
 
     return T
 
-
-
-
-
-
-def perron_frobenius_theorem(TransMat):
-    PFval, PFvec = sla.eigs(TransMat.T, k=1, which='LR')
-    rho0 = abs(PFvec.T)[0]
-    rho0 = rho0 / rho0.sum()
-    rho0check = rho0.dot(TransMat)
-    print('Check normalised PFvec is invarant under Transition matrix: \n', rho0 - rho0check)
-
-    return rho0, rho0check
-
+# --------------------------------------- Perron-Frobeinus theorem ---------------------------------------
 from numpy.linalg import eig
+
+
 def compute_perron_projection(M):
+    """ Compute eigenvalues and eigenvectors ( left and right ) of the transition matrix.
+        Finds the largest eigenvalue and calculates the Perron projection matrix.
+
+    :param M: [matrix] will be the transition matrix - that is the stochastic matrix on which applying the PF theorem
+    :return: P : Perron projection matrix
+             r : Maximum eigenvalue (that for a stochastic matrix is 1)
+    """
     # v : right eigenvector
     eigval, v = eig(M)
     # w : left eigenvector
@@ -256,7 +252,14 @@ def compute_perron_projection(M):
 
     return P, r
 
+
 def check_convergence(M):
+    """ Check convergence between the matrix (M/r)^n and the Perron projection matrix.
+        (what does it mean ?)
+
+    :param M:
+
+    """
     P, r = compute_perron_projection(M)
     print("Perron projection:")
     print(P)
@@ -273,3 +276,13 @@ def check_convergence(M):
         # Calculate the norm of the difference matrix
         diff_norm = np.linalg.norm(diff, 'fro')
         print(f"n = {n}, error = {diff_norm:.10f}")
+
+#def perron_frobenius_theorem(TransMat):
+#    PFval, PFvec = sla.eigs(TransMat.T, k=1, which='LR')
+#    rho0 = abs(PFvec.T)[0]
+#    rho0 = rho0 / rho0.sum()
+#    rho0check = rho0.dot(TransMat)
+#    print('Check normalised PFvec is invarant under Transition matrix: \n', rho0 - rho0check)
+
+#    return rho0, rho0check
+
