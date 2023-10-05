@@ -13,7 +13,6 @@ Functions useful to implement simulations using metapopulation approach
 
 import networkx as nx
 import numpy as np
-import random as rnd
 import math
 import scipy.sparse.linalg as sla
 import statistics as stat
@@ -74,7 +73,7 @@ def distance_matrix(G, pos):
     return D
 
 
-def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
+def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool, seed):
     """ Assign nodes with attributes:
         Npop : is the population assigned to each node. Values are extracted from a multinomial distribution:
                0. with support equal to popTot, and probability 1/N equal for each of the N classes.
@@ -97,6 +96,8 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
                                distributed among the remaining N-Nfix of nodes
 
     """
+    if seed is not None: np.random.seed(seed)
+
     N = len(G.nodes)
     # Populate nodes
     if choice_bool == 0:
@@ -106,14 +107,12 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         nI = 0
         nR = 0
         state = 'S'
-        print('node populations', n)
         # Create dictionary with population values assigned to each node (necessary to assign nodes diverse populations)
         dict_Npop = {i: n[i] for i in G.nodes}
         dict_S = {i: nS[i] for i in G.nodes}
         dict_I = {i: nI for i in G.nodes}
         dict_R = {i: nR for i in G.nodes}
         dict_state = {i: state for i in G.nodes}
-        print('dict Npop:', dict_Npop)
 
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
@@ -144,7 +143,7 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         idx_AllNodes = [i for i in range(0, N)]
         idx_FixNodes = []
         for i in range(Nfix + 1):
-            idxN = rnd.randint(0, N - 1)
+            idxN = np.random.randint(0, N - 1)
             if idxN not in idx_FixNodes:
                 idx_FixNodes.append(idxN)
         idx_others = list(set(idx_AllNodes) - set(idx_FixNodes))
@@ -168,83 +167,57 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool):
         print('Wrong value for choice_bool')
 
 
-def transition_matrix(G, D, density, c):
-    """ Compute weights of edges that correspond to the transition probability of people
-        among nodes. Probability is proportional to the population of the destination node
-        and inversely proportional to the distance between nodes (following a gravity law)
+def transition_matrix(G, D, density):
+    """ Compute probability to create an edge and its reversed one.
+        Compute weights of edges that correspond to the transition probability of people
+        among nodes.
 
     :param G: [networkx.class] graph structure from networkx
     :param D: matrix of Euclidean distance
     :param density: [np.array] population density inside every node
     """
     N = len(G.nodes)
-
     N_row = N
     N_col = N
+
+    max_density = max(density)
+    a = 0.2
+    b = 0.9
+    # Parameter that quantifies the number of connections between nodes
+    c = a / max(density)
     T = np.zeros(shape=(N_row, N_col))
-    # Calculate transition probabilities
-    # To add proportionality term (and eventually population of the destination node)
-    # NOTE : sum over i must be 1
+    # Normalization condition ensured by the self loop value
     for i in range(N_row):
-        for j in range(N_col):
-            if i != j:  # implements the random condition (?)
-                prob = c * density[i] * density[j] / D[i, j]
+        for j in range(i):
+            if i != j:
+                # Probability to establish both the direct and forward edge in a pair of nodes
+                prob = max(c * density[i]/D[i,j], c * density[j]/D[i,j])
+                #print('prob:', prob)
+                #prob = min(c * maxDensity/ minDi - c * density[i] / D[i, j], c * maxDensity/ minDi - c * density[j] / D[i, j], 1.)
+                #print('a- ', c * maxDensity/ minDi - c * density[i] / D[i, j],'b- ', c * maxDensity/ minDi - c * density[j] / D[i, j] )
                 rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
                 if rnd_ch == 1:
-                    T[i, j] = prob
-            # self loop
+                    T[i, j] = density[i] / D[i, j]
+                    T[j, i] = density[j] / D[i, j]
+                #else:
+                    #print('No edge!')
+    # sum over all the rows and take the maximum between these sums and call it Pmax.
+    # axis = 1 sums over rows
+    Pmax = T.sum(axis=1).max()
+
+    c1 = b / Pmax
+    T *= c1
+    for i in range(N_row):
+        # Self loop
         T[i, i] = 1. - T[i, :].sum()
+        if T[i, i] < 0:
+            print(f'ERROR : SELF LOOP WITH PROBABILITY < 0, i = {i}')
 
     return T
 
 
-def characterisation_network_SC(G, DistanceMatrix, node_density, search_max_number, c_min, c_max, max_trialsSC_fixed_c):
-    """ Cycle over the c parameter of the gravity law to characterise which values guarantee the network
-     is strongly connected
-     :param G: [networkx.class] graph structure from networkx
-     :param DistanceMatrix: matrix of Euclidean distance
-     :param node_density: [scalar] density of the node
-     :param search_max_number: [scalar] maximum number of iterations for a certain network topology to search
-     for a strongly connected graph
-     :param c_min: [scalar] minimum value for c to start searching for strong connection
-     :param c_max: [scalar] maximum value for c to search for strong connection
-     :param max_trialsSC_fixed_c: [scalar] limit number of repetition for search of strong connection using the same c
 
 
-    """
-    c_list = []
-    N = len(G.nodes)
-    for repeat_search in range(0, search_max_number):
-        strongConnection = False
-        for c in np.arange(c_min, c_max, 1):
-            contFalse = 0
-            while strongConnection == False and contFalse < max_trialsSC_fixed_c:
-                contFalse = contFalse + 1
-                # Transition matrix
-                TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density, c)
-                # Add weighted edges to networks : only edges with weight != 0 are added
-                for i in range(N):
-                    for j in range(N):
-                        if TransitionMatrix[i, j] != 0:
-                            G.add_edge(i, j, weight=TransitionMatrix[i, j])
-                # Control strongly connected graph
-                strongConnection = nx.is_strongly_connected(G)
-                # After controlling, remove edges
-                for i in range(N):
-                    for j in range(N):
-                        if TransitionMatrix[i, j] != 0:
-                            G.remove_edge(i, j)
-            if strongConnection:
-                c_list.append(c)
-                print(f'{repeat_search} : Strong connection for c = {c} : ', strongConnection)
-                # print(f'False iterations for c = {c}:', contFalse)
-                break
-    c_list = np.array(c_list)
-    # Arithmetic mean of c_list reported as an integer value (use fmean() to return the float arithmetic mean)
-    # Use mean in analogy to resolution of instrument: can't go
-    avg_c = stat.fmean(c_list)
-    err_c = stat.stdev(c_list, avg_c)
-    return c_list, avg_c, err_c
 
 
 def perron_frobenius_theorem(TransMat):
@@ -255,3 +228,48 @@ def perron_frobenius_theorem(TransMat):
     print('Check normalised PFvec is invarant under Transition matrix: \n', rho0 - rho0check)
 
     return rho0, rho0check
+
+from numpy.linalg import eig
+def compute_perron_projection(M):
+    # v : right eigenvector
+    eigval, v = eig(M)
+    # w : left eigenvector
+    eigval, w = eig(M.T)
+
+    # maximum eigenvalue (must be real)
+    r = np.max(eigval)
+
+    # Find the index of the dominant (Perron) eigenvalue
+    i = np.argmax(eigval)
+
+    # Get the Perron eigenvectors
+    v_P = v[:, i].reshape(-1, 1)
+    w_P = w[:, i].reshape(-1, 1)
+
+    # Normalize the left and right eigenvectors
+    norm_factor = w_P.T @ v_P
+    v_norm = v_P / norm_factor
+    w_norm = w_P / norm_factor
+
+    # Compute the Perron projection matrix
+    P = v_norm @ w_P.T
+
+    return P, r
+
+def check_convergence(M):
+    P, r = compute_perron_projection(M)
+    print("Perron projection:")
+    print(P)
+    # Define a list of values for n
+    n_list = [1, 10, 100, 1000, 10000]
+
+    for n in n_list:
+        # Compute (A/r)^n
+        M_n = np.linalg.matrix_power(M / r, n)
+
+        # Compute the difference between A^n / r^n and the Perron projection
+        diff = np.abs(M_n - P)
+
+        # Calculate the norm of the difference matrix
+        diff_norm = np.linalg.norm(diff, 'fro')
+        print(f"n = {n}, error = {diff_norm:.10f}")
