@@ -15,12 +15,23 @@ from functions_visualization import *
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from math import gcd
 from functools import reduce
 import pickle
 import time
 
 start = time.time()
+
+# --------------------------------------------------- Colors ----------------------------------------------------------
+
+new_cmap = ['#A6CEE3', '#1F78B4', '#B2DF8A', '#33A02C', '#FB9A99', '#E31A1C', '#FDBF6F', '#FF7F00', '#CAB2D6',
+            '#6A3D9A', '#ECEC28', '#B15928', '#A6CEE3', '#1F78B4', '#B2DF8A', '#33A02C', '#FB9A99', '#E31A1C', '#FDBF6F', '#FF7F00', '#CAB2D6',
+            '#6A3D9A', '#ECEC28', '#B15928', '#A6CEE3', '#1F78B4', '#B2DF8A', '#33A02C', '#FB9A99', '#E31A1C', '#FDBF6F', '#FF7F00', '#CAB2D6',
+            '#6A3D9A', '#ECEC28', '#B15928']
+#new_cmap = ["#ca0020", "#f4a582", "#f7f7f7", "#92c5de", "#0571b0"]
+rtg_r = LinearSegmentedColormap.from_list("rtg", new_cmap)
+colors = rtg_r(np.linspace(0, 1, 25))
 
 # --------------------------------------------- Parameter initialization ----------------------------------------------
 
@@ -105,25 +116,35 @@ print('Duration up to check convergence: ', duration3)
 
 
 # ------------------------------------------------ Dynamics -------------------------------------------------
-T = 50
-popNode_idx = []
+# total simulation length
+T = 100
+T_sim = np.linspace(0, T, T)
+
 idx_node = 0
-for t in range(T):
-    Nij = choice_particle_to_move(G, TransitionMatrix)
-    move_particle(G, Nij)
-    node_population = nx.get_node_attributes(G, name = 'Npop')
-    node_population = np.array(list(node_population.values()))
-    popNode_idx.append(node_population[idx_node])
-    #print('node_pop after:', node_population)
-    # Control that the total population is exactly the same as the initial one
-    print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
-    plt.clf()
-    plot_network(G, node_population, dict_nodes, weightNonZero)
-    plt.pause(0.2)  ###(10 figures per second) in second the time a figure lasts
-plt.close()
 
 fig2 = plt.figure()
-
-T_sim = np.linspace(0, T, T)
-plt.plot(T_sim, popNode_idx, color = 'red')
+for idx_node in range(N):
+    popNode_idx = []
+    popDensity_idx = []
+    for t in range(T):
+        Nij = choice_particle_to_move(G, TransitionMatrix)
+        move_particle(G, Nij)
+        node_population = nx.get_node_attributes(G, name = 'Npop')
+        node_population = np.array(list(node_population.values()))
+        node_density = node_population/populationTot
+        popNode_idx.append(node_population[idx_node])
+        popDensity_idx.append(node_density[idx_node])
+        #print('node_pop after:', node_population)
+        # Control that the total population is exactly the same as the initial one
+        print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
+        # Plot temporal evolution of network
+        #plt.clf()
+        #plot_network(G, node_population, dict_nodes, weightNonZero)
+        #plt.pause(0.2)  ###(10 figures per second) in second the time a figure lasts
+    #plt.close()
+    plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
+plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
+plt.legend()
+plt.xlabel('Timestep')
+plt.ylabel('Node density')
 plt.show()
