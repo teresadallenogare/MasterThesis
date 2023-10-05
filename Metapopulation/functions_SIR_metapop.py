@@ -261,8 +261,6 @@ def check_convergence(M):
 
     """
     P, r = compute_perron_projection(M)
-    print("Perron projection:")
-    print(P)
     # Define a list of values for n
     n_list = [1, 10, 100, 1000, 10000]
 
@@ -286,3 +284,46 @@ def check_convergence(M):
 
 #    return rho0, rho0check
 
+# -------------------------------------------- Dynamics --------------------------------------------
+
+def choice_particle_to_move(G, T):
+    """ Stochastic choice of the particle to move inside a certain node.
+
+    :param T: [matrix] transition matrix (for now it is time independent)
+    :return: Nij: [matrix] matrix of people going out of node i towards node j (row) and going into node i
+                  from node j (col)
+    """
+
+    N = len(G.nodes)
+    # Dictionary with total population in each node
+    dict_Npop = nx.get_node_attributes(G, 'Npop')
+    print(dict_Npop)
+    # Extract Npop value of nodes
+    Npop_nodes = list(dict_Npop.values())
+    Nij = np.zeros(shape = (N,N))
+    for i in range(N):
+        # Ti : ith row of the transition matrix
+        Ti = np.array(T[i, :])
+        Nij[i, :] = np.random.multinomial(Npop_nodes[i], Ti)
+
+    return Nij
+
+def move_particle(G, Nij):
+    N = len(G.nodes)
+    # Dictionary with total population in each node
+    dict_Npop = nx.get_node_attributes(G, 'Npop')
+    # Extract Npop value of nodes
+    lab_nodes = list(dict_Npop.keys())
+    Npop_nodes = list(dict_Npop.values())
+
+    for i in range(N):
+        for j in range(N):
+            if i!=j:
+                # Population going out from node i towards node j
+                Npop_nodes[i] -=Nij[i,j]
+                # Population coming into node i from node j
+                Npop_nodes[i] +=Nij[j,i]
+
+    dict_Npop = {lab_nodes[i]: Npop_nodes[i] for i in G.nodes}
+    # Assign attributes to nodes
+    nx.set_node_attributes(G, dict_Npop, 'Npop')

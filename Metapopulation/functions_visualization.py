@@ -14,9 +14,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-def plot_network(G, pop_nodes, dict_nodes, dict_edges, weight):
+def plot_network(G, pop_nodes, dict_nodes, weight):
     """ Plot directed network. For the visualization, I distinguish between edges with weight equal to zero and non.
         In this way, I can attribute to edges with 0-weight the wight color to hide the arrowhead.
+        It plots a single time step.
 
     :param G: [networkx.class] graph structure from networkx
     :param pos: [list] position of nodes
@@ -24,10 +25,10 @@ def plot_network(G, pop_nodes, dict_nodes, dict_edges, weight):
     :param dict_nodes: [dict] dictionary of nodes attributing each key a position
     :param T : [matrix] transition matrix
     """
+
     # Size of nodes
     size_map = [pop_nodes[i] for i in G.nodes]
 
-    plt.figure(figsize=(8, 8))
     # Draw nodes
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map)
     # Draw edges
@@ -36,4 +37,7 @@ def plot_network(G, pop_nodes, dict_nodes, dict_edges, weight):
     nx.draw_networkx_labels(G, pos=dict_nodes)
     # Edge with labels
    # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
-    plt.show()
+    #plt.show()
+
+
+

@@ -17,15 +17,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import gcd
 from functools import reduce
+import pickle
+import time
+
+start = time.time()
 
 # --------------------------------------------- Parameter initialization ----------------------------------------------
 
-seed = 15
+seed = 66
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 5
-N_col = 5
+N_row = 3
+N_col = 3
 
 # Average population per node (fixed)
 avg_popPerNode = 1e3
@@ -67,6 +71,13 @@ for i in range(N):
     for j in range(N):
         if TransitionMatrix[i,j] != 0:
             G.add_edge(i, j, weight=TransitionMatrix[i, j])
+
+
+# save graph object to file
+#pickle.dump(G, open('G55.pickle', 'wb'))
+# load graph object from file
+#G = pickle.load(open('G55.pickle', 'rb'))
+
 # Edge dictionary
 dict_edges = nx.get_edge_attributes(G, name = 'weight')
 # Control periodicity (the graph should be aperiodic)
@@ -78,10 +89,41 @@ print("is_periodic: {}".format(is_periodic))
 # Control strongly connected graph
 strongConnection = nx.is_strongly_connected(G)
 print('Strong connection : ', strongConnection)
+stop1 = time.time()
+duration1 = stop1 - start
+print('Duration up to computation Transition matrix: ', duration1)
 # Plot network
-plot_network(G, node_population, dict_nodes, dict_edges, weightNonZero)
-
+plot_network(G, node_population, dict_nodes, weightNonZero)
+stop2 = time.time()
+duration2 = stop2 - start
+print('Duration up to plot of network: ', duration2)
 check_convergence(TransitionMatrix)
+stop3 = time.time()
+duration3 = stop3 - start
+print('Duration up to check convergence: ', duration3)
 #rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
 
+
 # ------------------------------------------------ Dynamics -------------------------------------------------
+T = 50
+popNode_idx = []
+idx_node = 0
+for t in range(T):
+    Nij = choice_particle_to_move(G, TransitionMatrix)
+    move_particle(G, Nij)
+    node_population = nx.get_node_attributes(G, name = 'Npop')
+    node_population = np.array(list(node_population.values()))
+    popNode_idx.append(node_population[idx_node])
+    #print('node_pop after:', node_population)
+    # Control that the total population is exactly the same as the initial one
+    print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
+    plt.clf()
+    plot_network(G, node_population, dict_nodes, weightNonZero)
+    plt.pause(0.2)  ###(10 figures per second) in second the time a figure lasts
+plt.close()
+
+fig2 = plt.figure()
+
+T_sim = np.linspace(0, T, T)
+plt.plot(T_sim, popNode_idx, color = 'red')
+plt.show()
