@@ -30,7 +30,7 @@ def plot_network(G, pop_nodes, dict_nodes, weight):
     size_map = [pop_nodes[i] for i in G.nodes]
 
     # Draw nodes
-    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map)
+    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map, node_color = 'red')
     # Draw edges
     nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, connectionstyle="arc3,rad=0.1")
     # Nodes with labels

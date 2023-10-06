@@ -16,7 +16,7 @@ import numpy as np
 import math
 import scipy.sparse.linalg as sla
 import statistics as stat
-
+import time
 # --------------------------------------- Lattice definition ---------------------------------------
 def initialize_lattice(N_row, N_col):
     """ Define a lattice with square topology with N_row rows and N_col columns, that is a
@@ -104,13 +104,16 @@ def initialize_nodes(G, popTot, Nfix, percentage_FixNodes, choice_bool, seed):
         # Extract population of nodes from a multinomial distribution. it is a ndarray
         n = np.random.multinomial(popTot, [1 / N] * N)
         nS = n
-        nI = 0
+        nI = 10
         nR = 0
         state = 'S'
         # Create dictionary with population values assigned to each node (necessary to assign nodes diverse populations)
         dict_Npop = {i: n[i] for i in G.nodes}
-        dict_S = {i: nS[i] for i in G.nodes}
-        dict_I = {i: nI for i in G.nodes}
+        # in node 0 put nI infected, thus nS = n - nI
+        dict_S = {i: nS[i] if i != 0 else nS[0] - nI for i in G.nodes}
+        # in node 0 put nI infected
+        dict_I = {i: 0 if i != 0 else nI for i in G.nodes}
+        # recovered people are 0 at the initial state
         dict_R = {i: nR for i in G.nodes}
         dict_state = {i: state for i in G.nodes}
 
@@ -204,7 +207,6 @@ def transition_matrix(G, D, density):
     # sum over all the rows and take the maximum between these sums and call it Pmax.
     # axis = 1 sums over rows
     Pmax = T.sum(axis=1).max()
-
     c1 = b / Pmax
     T *= c1
     for i in range(N_row):
@@ -287,7 +289,9 @@ def check_convergence(M):
 # -------------------------------------------- Dynamics --------------------------------------------
 
 def choice_particle_to_move(G, T):
-    """ Stochastic choice of the particle to move inside a certain node.
+    """ Stochastic choice of the number of particles to move inside a certain node i.
+    Probabilities are given by the transition matrix array i (describes the interaction of node i with nodes j)
+    The number of individuals is given by N... .
 
     :param T: [matrix] transition matrix (for now it is time independent)
     :return: Nij: [matrix] matrix of people going out of node i towards node j (row) and going into node i
@@ -297,33 +301,65 @@ def choice_particle_to_move(G, T):
     N = len(G.nodes)
     # Dictionary with total population in each node
     dict_Npop = nx.get_node_attributes(G, 'Npop')
-    print(dict_Npop)
-    # Extract Npop value of nodes
-    Npop_nodes = list(dict_Npop.values())
+    dict_N_S = nx.get_node_attributes(G, 'N_S')
+    dict_N_I = nx.get_node_attributes(G, 'N_I')
+    dict_N_R = nx.get_node_attributes(G, 'N_R')
+    print(dict_N_I)
+    # Extract value of nodes
+    NS_nodes = list(dict_N_S.values())
+    NI_nodes = list(dict_N_I.values())
+    NR_nodes = list(dict_N_R.values())
+
     Nij = np.zeros(shape = (N,N))
+    Nij_S = np.zeros(shape = (N,N))
+    Nij_I = np.zeros(shape = (N,N))
+    Nij_R = np.zeros(shape = (N,N))
     for i in range(N):
         # Ti : ith row of the transition matrix
         Ti = np.array(T[i, :])
-        Nij[i, :] = np.random.multinomial(Npop_nodes[i], Ti)
+        Nij_S[i, :] = np.random.multinomial(NS_nodes[i], Ti)
+        Nij_I[i, :] = np.random.multinomial(NI_nodes[i], Ti)
+        Nij_R[i, :] = np.random.multinomial(NR_nodes[i], Ti)
+        # The number of individuals that move is given by the sum of people in the three possible compartments
+        Nij[i, :] = Nij_S[i, :] + Nij_I[i, :] + Nij_R[i, :]
+    return Nij, Nij_S, Nij_I, Nij_R
 
-    return Nij
-
-def move_particle(G, Nij):
+def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
     N = len(G.nodes)
     # Dictionary with total population in each node
     dict_Npop = nx.get_node_attributes(G, 'Npop')
+    dict_N_S = nx.get_node_attributes(G, 'N_S')
+    dict_N_I = nx.get_node_attributes(G, 'N_I')
+    dict_N_R = nx.get_node_attributes(G, 'N_R')
     # Extract Npop value of nodes
     lab_nodes = list(dict_Npop.keys())
     Npop_nodes = list(dict_Npop.values())
-
+    # dictionary with other labels ???
+    NS_nodes = list(dict_N_S.values())
+    NI_nodes = list(dict_N_I.values())
+    NR_nodes = list(dict_N_R.values())
     for i in range(N):
         for j in range(N):
             if i!=j:
                 # Population going out from node i towards node j
-                Npop_nodes[i] -=Nij[i,j]
+                NS_nodes[i] -= Nij_S[i,j]
+                NI_nodes[i] -= Nij_I[i,j]
+                NR_nodes[i] -= Nij_R[i,j]
+                Npop_nodes[i] -= Nij[i,j]
                 # Population coming into node i from node j
-                Npop_nodes[i] +=Nij[j,i]
+                NS_nodes[i] += Nij_S[j,i]
+                NI_nodes[i] += Nij_I[j,i]
+                NR_nodes[i] += Nij_R[j,i]
+                Npop_nodes[i] += Nij[j,i]
 
     dict_Npop = {lab_nodes[i]: Npop_nodes[i] for i in G.nodes}
+    dict_N_S = {lab_nodes[i]: NS_nodes[i] for i in G.nodes}
+    dict_N_I = {lab_nodes[i]: NI_nodes[i] for i in G.nodes}
+    dict_N_R = {lab_nodes[i]: NR_nodes[i] for i in G.nodes}
     # Assign attributes to nodes
     nx.set_node_attributes(G, dict_Npop, 'Npop')
+    nx.set_node_attributes(G, dict_N_S, 'N_S')
+    nx.set_node_attributes(G, dict_N_I, 'N_I')
+    nx.set_node_attributes(G, dict_N_R, 'N_R')
+
+
