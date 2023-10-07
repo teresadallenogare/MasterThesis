@@ -301,6 +301,7 @@ def choice_particle_to_move(G, T):
     Probabilities are given by the transition matrix array i (describes the interaction of node i with nodes j)
     The number of individuals is given by N... .
 
+    :param G: [networkx.class] graph structure from networkx
     :param T: [matrix] transition matrix (for now it is time independent)
     :return: Nij: [matrix] matrix of people going out of node i towards node j (row) and going into node i
                   from node j (col)
@@ -332,18 +333,23 @@ def choice_particle_to_move(G, T):
 
 def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
     N = len(G.nodes)
+    # Get attributes before the motion
     # Dictionary with total population in each node
     dict_Npop = nx.get_node_attributes(G, 'Npop')
     dict_N_S = nx.get_node_attributes(G, 'N_S')
     dict_N_I = nx.get_node_attributes(G, 'N_I')
     dict_N_R = nx.get_node_attributes(G, 'N_R')
+    dict_state = nx.get_node_attributes(G, 'state')
+
     # Extract Npop value of nodes
     lab_nodes = list(dict_Npop.keys())
     Npop_nodes = list(dict_Npop.values())
-    # dictionary with other labels ???
     NS_nodes = list(dict_N_S.values())
     NI_nodes = list(dict_N_I.values())
     NR_nodes = list(dict_N_R.values())
+    state_nodes = list(dict_state.values())
+
+    # Perform motion of particles and update number of particles
     for i in range(N):
         for j in range(N):
             if i!=j:
@@ -358,22 +364,141 @@ def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
                 NR_nodes[i] += Nij_R[j,i]
                 Npop_nodes[i] += Nij[j,i]
 
+    # Set new attributes after the motion
     dict_Npop = {lab_nodes[i]: Npop_nodes[i] for i in G.nodes}
     dict_N_S = {lab_nodes[i]: NS_nodes[i] for i in G.nodes}
     dict_N_I = {lab_nodes[i]: NI_nodes[i] for i in G.nodes}
     dict_N_R = {lab_nodes[i]: NR_nodes[i] for i in G.nodes}
+
+    # Update the state of each node AFTER the move
+
+    for i in range(N):
+        if NS_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'S'
+        elif NI_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'I'
+        elif NR_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'R'
+        elif NS_nodes[i] + NI_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'SI'
+        elif NS_nodes[i] + NR_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'SR'
+        elif NI_nodes[i] + NR_nodes[i] == Npop_nodes[i]:
+            state_nodes[i] = 'IR'
+        else:
+            state_nodes[i] = 'SIR'
+
+    dict_state = {i : state_nodes[i] for i in G.nodes}
+
     # Assign attributes to nodes
     nx.set_node_attributes(G, dict_Npop, 'Npop')
     nx.set_node_attributes(G, dict_N_S, 'N_S')
     nx.set_node_attributes(G, dict_N_I, 'N_I')
     nx.set_node_attributes(G, dict_N_R, 'N_R')
-
-    # Re-define state of the node
-
+    nx.set_node_attributes(G, dict_state, 'state')
 
 
 # ---------------------------------- Infection spreading simulation ----------------------------------------------
 
+def infection_step_node(G, beta, mu):
+    """ Infect people inside the node according to a binomial distribution because an individual has 2 possibilities:
+        or it changes its state or it remains in the same one.
+        The number of new infected individuals is counted by taking each susceptible and, with probability given by the
+        force of infection alpha, test it to and count the number of susceptible that turned into an infected person.
+        The same is done for the transition from infected to recovered but, this time, with probability mu.
+
+    :param G: [networkx.class] graph structure from networkx
+    :param beta: [scalar] rate of infection, kept constant
+    :param mu: [scalar] rate of recovery, kept constant
+    :return:
+    """
+
+    N = len(G.nodes)
+    # now I keep beta and mu fixed
+
+    # Dictionary with total population in each node
+    dict_Npop = nx.get_node_attributes(G, 'Npop')
+    dict_N_S = nx.get_node_attributes(G, 'N_S')
+    dict_N_I = nx.get_node_attributes(G, 'N_I')
+    dict_N_R = nx.get_node_attributes(G, 'N_R')
+    dict_state = nx.get_node_attributes(G, 'state')
+
+    # Extract Npop value of nodes
+    lab_nodes = list(dict_Npop.keys())
+    Npop_nodes = list(dict_Npop.values())
+    NS_nodes = list(dict_N_S.values())
+    NI_nodes = list(dict_N_I.values())
+    NR_nodes = list(dict_N_R.values())
+    state_nodes = list(dict_state.values())
+
+    alpha = np.zeros(N)
+    NI_nodes_new = np.zeros(N)
+    NR_nodes_new = np.zeros(N)
+
+    for i in range(N):
+        # force of infection : rate of infection * (infected population in node i / total population in node i)
+        alpha[i] = beta * NI_nodes[i]/Npop_nodes[i]
+
+        # if the node contains infected ('I', 'SI', 'RI', 'SIR')
+        if 'I' in state_nodes[i]:
+            # Generate from a binomial distribution new infected and recovered individuals
+            NI_nodes_new[i] = np.random.binomial(NS_nodes[i], alpha[i], 1)
+            NR_nodes_new[i] = np.random.binomial(NI_nodes[i], mu, 1)
+            NS_nodes[i] -= NI_nodes_new[i]
+            NI_nodes[i] += NI_nodes_new[i]
+            NI_nodes[i] -= NR_nodes_new[i]
+            NR_nodes[i] += NR_nodes_new[i]
+            # Change state after the infection has taken place in the node
+            if NS_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'S'
+            elif NI_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'I'
+            elif NR_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'R'
+            elif NS_nodes[i] + NI_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'SI'
+            elif NS_nodes[i] + NR_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'SR'
+            elif NI_nodes[i] + NR_nodes[i] == Npop_nodes[i]:
+                state_nodes[i] = 'IR'
+            else:
+                state_nodes[i] = 'SIR'
+
+    # Set new attributes after the motion
+    dict_N_S = {lab_nodes[i]: NS_nodes[i] for i in G.nodes}
+    dict_N_I = {lab_nodes[i]: NI_nodes[i] for i in G.nodes}
+    dict_N_R = {lab_nodes[i]: NR_nodes[i] for i in G.nodes}
+    dict_state = {i: state_nodes[i] for i in G.nodes}
+
+    # Assign attributes to nodes
+    nx.set_node_attributes(G, dict_N_S, 'N_S')
+    nx.set_node_attributes(G, dict_N_I, 'N_I')
+    nx.set_node_attributes(G, dict_N_R, 'N_R')
+    nx.set_node_attributes(G, dict_state, 'state')
 
 
 
+# ----------------------------- Print -----------------------------
+
+def print_state_network(G, t):
+    """ Print attributes of the network
+
+    :param G: [networkx.class] graph structure from networkx
+    :param t: [scalar] time step in the evolution
+
+    """
+    node_population = nx.get_node_attributes(G, name='Npop')
+    node_NS = nx.get_node_attributes(G, name='N_S')
+    node_NI = nx.get_node_attributes(G, name='N_I')
+    node_NR = nx.get_node_attributes(G, name='N_R')
+    node_state = nx.get_node_attributes(G, name='state')
+    node_population = np.array(list(node_population.values()))
+    node_NS = np.array(list(node_NS.values()))
+    node_NI = np.array(list(node_NI.values()))
+    node_NR = np.array(list(node_NR.values()))
+    node_state = np.array(list(node_state.values()))
+    print('t: ', t, 'Npop:', node_population)
+    print('t: ', t, 'NS: ', node_NS)
+    print('t: ', t, 'NI: ', node_NI)
+    print('t: ', t, 'NR: ', node_NR)
+    print('t: ', t, 'state: ', node_state)

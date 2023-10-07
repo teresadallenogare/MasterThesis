@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 03 October 2023
+Version : 07 October 2023
 
 --------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ avg_popPerNode = 1e3
 # number of infected individuals in one node
 popI_node = 1
 # list of index of nodes initially containing popI_node infected individuals
-idx_nodes_I_init = [0, 1]
+idx_nodes_I_init = [0]
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
@@ -57,6 +57,10 @@ percentage_FixNodes = 60
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
 choice_bool = 0
+
+# infection rate and recovery rate
+beta = 0.9
+mu = 0.2
 
 # ------------------------------------------------ Network definition -------------------------------------------------
 # Define node position in the lattice with a square topology
@@ -76,16 +80,15 @@ node_population = nx.get_node_attributes(G, name = 'Npop')
 node_NS = nx.get_node_attributes(G, name = 'N_S')
 node_NI = nx.get_node_attributes(G, name = 'N_I')
 node_NR = nx.get_node_attributes(G, name = 'N_R')
+node_state = nx.get_node_attributes(G, name = 'state')
 node_population = np.array(list(node_population.values()))
 node_NS = np.array(list(node_NS.values()))
 node_NI = np.array(list(node_NI.values()))
 node_NR = np.array(list(node_NR.values()))
-print('node population: ', node_population)
-print('node NS : ', node_NS)
-print('node NI : ', node_NI)
-print('node NR : ', node_NR)
+print('----- Initial setup -----')
+print_state_network(G, 0)
+print('-------------------------')
 node_density = node_population / populationTot  # population density vector
-print('node density: ', node_density)
 
 # Calculate transition matrix
 TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density)
@@ -135,7 +138,7 @@ plot_network(G, node_population, dict_nodes, weightNonZero)
 
 # ------------------------------------------------ Dynamics -------------------------------------------------
 # total simulation length
-T = 10
+T = 5
 T_sim = np.linspace(0, T, T)
 
 idx_node = 0
@@ -149,31 +152,26 @@ for idx_node in range(1):
         # Plot temporal evolution of network
         plt.clf()
         plot_network(G, node_NI, dict_nodes, weightNonZero)
-        plt.pause(1)  ###(10 figures per second) in second the time a figure lasts
+        plt.pause(1)
+        # Motion of particles chosen between nodes
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
         move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
-        node_population = nx.get_node_attributes(G, name = 'Npop')
-        node_NS = nx.get_node_attributes(G, name='N_S')
-        node_NI = nx.get_node_attributes(G, name='N_I')
-        node_NR = nx.get_node_attributes(G, name='N_R')
-        node_population = np.array(list(node_population.values()))
-        node_NS = np.array(list(node_NS.values()))
-        node_NI = np.array(list(node_NI.values()))
-        node_NR = np.array(list(node_NR.values()))
-        print('t: ', t, 'Npop:', node_population)
-        print('t: ', t, 'NS: ', node_NS)
-        print('t: ', t, 'NI: ', node_NI)
-        print('t: ', t, 'NR: ', node_NR)
+        print('----- Motion -----')
+        print_state_network(G, t)
         node_density = node_population/populationTot
         popNode_idx.append(node_population[idx_node])
         popDensity_idx.append(node_density[idx_node])
-        #print('node_pop after:', node_population)
         # Control that the total population is exactly the same as the initial one
         print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
+        # Infection step
+        infection_step_node(G, beta, mu)
+        print('----- Infection -----')
+        print_state_network(G, t)
     #plt.close()
     #plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
 #plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
 #plt.legend()
 #plt.xlabel('Timestep')
 #plt.ylabel('Node density')
-plt.show()
+#plt.show()
+
