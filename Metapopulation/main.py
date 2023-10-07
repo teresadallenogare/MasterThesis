@@ -39,8 +39,8 @@ seed = 66
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 5
+N_col = 5
 
 # Average population per node (fixed)
 avg_popPerNode = 1e3
@@ -60,7 +60,7 @@ choice_bool = 0
 
 # infection rate and recovery rate
 beta = 0.9
-mu = 0.2
+mu = 0.1
 
 # ------------------------------------------------ Network definition -------------------------------------------------
 # Define node position in the lattice with a square topology
@@ -85,8 +85,14 @@ node_population = np.array(list(node_population.values()))
 node_NS = np.array(list(node_NS.values()))
 node_NI = np.array(list(node_NI.values()))
 node_NR = np.array(list(node_NR.values()))
+node_state = np.array(list(node_state.values()))
 print('----- Initial setup -----')
-print_state_network(G, 0)
+t = 0
+print('t: ', t, 'Npop:', node_population)
+print('t: ', t, 'NS: ', node_NS)
+print('t: ', t, 'NI: ', node_NI)
+print('t: ', t, 'NR: ', node_NR)
+print('t: ', t, 'state: ', node_state)
 print('-------------------------')
 node_density = node_population / populationTot  # population density vector
 
@@ -120,25 +126,14 @@ print('duration T1:', durationT1)
 # Control strongly connected graph
 strongConnection = nx.is_strongly_connected(G)
 print('Strong connection : ', strongConnection)
-stop1 = time.time()
-duration1 = stop1 - start
-print('Duration up to computation Transition matrix: ', duration1)
-# Plot network
-plot_network(G, node_population, dict_nodes, weightNonZero)
-stop2 = time.time()
-duration2 = stop2 - start
-print('Duration up to plot of network: ', duration2)
+
 check_convergence(TransitionMatrix)
-stop3 = time.time()
-duration3 = stop3 - start
-print('Duration up to check convergence: ', duration3)
 #rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
 
-plot_network(G, node_population, dict_nodes, weightNonZero)
 
 # ------------------------------------------------ Dynamics -------------------------------------------------
 # total simulation length
-T = 5
+T = 100
 T_sim = np.linspace(0, T, T)
 
 idx_node = 0
@@ -149,15 +144,25 @@ for idx_node in range(1):
     popDensity_idx = []
     # t starts from 1 because t = 0 is the initial condition
     for t in range(1, T):
-        # Plot temporal evolution of network
-        plt.clf()
-        plot_network(G, node_NI, dict_nodes, weightNonZero)
-        plt.pause(1)
         # Motion of particles chosen between nodes
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
         move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
         print('----- Motion -----')
-        print_state_network(G, t)
+        node_population = nx.get_node_attributes(G, name='Npop')
+        node_NS = nx.get_node_attributes(G, name='N_S')
+        node_NI = nx.get_node_attributes(G, name='N_I')
+        node_NR = nx.get_node_attributes(G, name='N_R')
+        node_state = nx.get_node_attributes(G, name='state')
+        node_population = np.array(list(node_population.values()))
+        node_NS = np.array(list(node_NS.values()))
+        node_NI = np.array(list(node_NI.values()))
+        node_NR = np.array(list(node_NR.values()))
+        node_state = np.array(list(node_state.values()))
+        print('t: ', t, 'Npop:', node_population)
+        print('t: ', t, 'NS: ', node_NS)
+        print('t: ', t, 'NI: ', node_NI)
+        print('t: ', t, 'NR: ', node_NR)
+        print('t: ', t, 'state: ', node_state)
         node_density = node_population/populationTot
         popNode_idx.append(node_population[idx_node])
         popDensity_idx.append(node_density[idx_node])
@@ -166,7 +171,27 @@ for idx_node in range(1):
         # Infection step
         infection_step_node(G, beta, mu)
         print('----- Infection -----')
-        print_state_network(G, t)
+        node_population = nx.get_node_attributes(G, name='Npop')
+        node_NS = nx.get_node_attributes(G, name='N_S')
+        node_NI = nx.get_node_attributes(G, name='N_I')
+        node_NR = nx.get_node_attributes(G, name='N_R')
+        node_state = nx.get_node_attributes(G, name='state')
+        node_population = np.array(list(node_population.values()))
+        node_NS = np.array(list(node_NS.values()))
+        node_NI = np.array(list(node_NI.values()))
+        node_NR = np.array(list(node_NR.values()))
+        node_state = np.array(list(node_state.values()))
+        print('t: ', t, 'Npop:', node_population)
+        print('t: ', t, 'NS: ', node_NS)
+        print('t: ', t, 'NI: ', node_NI)
+        print('t: ', t, 'NR: ', node_NR)
+        print('t: ', t, 'state: ', node_state)
+        # Plot temporal evolution of network after infection step
+        plt.clf()
+        plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
+        plt.pause(1)
+
+
     #plt.close()
     #plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
 #plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
