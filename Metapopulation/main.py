@@ -45,9 +45,15 @@ N_col = 3
 # Average population per node (fixed)
 avg_popPerNode = 1e3
 
+# number of infected individuals in one node
+popI_node = 1
+# list of index of nodes initially containing popI_node infected individuals
+idx_nodes_I_init = [0, 1]
+
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
 percentage_FixNodes = 60
+
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
 choice_bool = 0
@@ -65,7 +71,7 @@ populationTot = N * avg_popPerNode
 # Compute distance matrix of every node with all the others
 DistanceMatrix = distance_matrix(G, pos_nodes)
 # Populate nodes and set initial conditions for infection
-initialize_nodes(G, populationTot, Nfix, percentage_FixNodes, choice_bool, seed)
+initialize_nodes(G, populationTot, popI_node, idx_nodes_I_init, Nfix, percentage_FixNodes, choice_bool, seed)
 node_population = nx.get_node_attributes(G, name = 'Npop')
 node_NS = nx.get_node_attributes(G, name = 'N_S')
 node_NI = nx.get_node_attributes(G, name = 'N_I')
@@ -126,6 +132,7 @@ print('Duration up to check convergence: ', duration3)
 #rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
 
 plot_network(G, node_population, dict_nodes, weightNonZero)
+
 # ------------------------------------------------ Dynamics -------------------------------------------------
 # total simulation length
 T = 10
@@ -133,11 +140,16 @@ T_sim = np.linspace(0, T, T)
 
 idx_node = 0
 
-fig2 = plt.figure(figsize=(10,10))
+#fig2 = plt.figure(figsize=(10,10))
 for idx_node in range(1):
     popNode_idx = []
     popDensity_idx = []
-    for t in range(T):
+    # t starts from 1 because t = 0 is the initial condition
+    for t in range(1, T):
+        # Plot temporal evolution of network
+        plt.clf()
+        plot_network(G, node_NI, dict_nodes, weightNonZero)
+        plt.pause(1)  ###(10 figures per second) in second the time a figure lasts
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
         move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
         node_population = nx.get_node_attributes(G, name = 'Npop')
@@ -148,21 +160,20 @@ for idx_node in range(1):
         node_NS = np.array(list(node_NS.values()))
         node_NI = np.array(list(node_NI.values()))
         node_NR = np.array(list(node_NR.values()))
-
+        print('t: ', t, 'Npop:', node_population)
+        print('t: ', t, 'NS: ', node_NS)
+        print('t: ', t, 'NI: ', node_NI)
+        print('t: ', t, 'NR: ', node_NR)
         node_density = node_population/populationTot
         popNode_idx.append(node_population[idx_node])
         popDensity_idx.append(node_density[idx_node])
         #print('node_pop after:', node_population)
         # Control that the total population is exactly the same as the initial one
         print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
-        # Plot temporal evolution of network
-        plt.clf()
-        plot_network(G, node_NI, dict_nodes, weightNonZero)
-        plt.pause(1)  ###(10 figures per second) in second the time a figure lasts
     #plt.close()
-    plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
-plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
-plt.legend()
-plt.xlabel('Timestep')
-plt.ylabel('Node density')
+    #plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
+#plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
+#plt.legend()
+#plt.xlabel('Timestep')
+#plt.ylabel('Node density')
 plt.show()

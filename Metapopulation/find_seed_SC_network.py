@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 03 October 2023
+Version : 07 October 2023
 
 --------------------------------------------------------------------
 
@@ -28,8 +28,8 @@ for seed_idx in range(0,max_seed_idx):
 
 
     # Number of rows and columns in the lattice
-    N_row = 6
-    N_col = 6
+    N_row = 10
+    N_col = 10
 
     # Number of fixed nodes containing the percentage percentage_FixNodes of population
     Nfix = 3
@@ -56,7 +56,6 @@ for seed_idx in range(0,max_seed_idx):
     initialize_nodes(G, populationTot, Nfix, percentage_FixNodes, choice_bool, seed)
     node_population = nx.get_node_attributes(G, name = 'Npop')
     node_population = np.array(list(node_population.values()))
-    print(type(node_population))
     node_density = node_population / populationTot  # population density vector
 
 
@@ -72,15 +71,15 @@ for seed_idx in range(0,max_seed_idx):
     dict_edges = nx.get_edge_attributes(G, name = 'weight')
     # Control strongly connected graph
     strongConnection = nx.is_strongly_connected(G)
-    print('Strong connection : ', strongConnection)
+    #print('Strong connection : ', strongConnection)
     # Control periodicity (the graph should be aperiodic)
-    cycles = list(nx.algorithms.cycles.simple_cycles(G))
-    cycles_sizes = [len(c) for c in cycles]
-    cycles_gcd = reduce(gcd, cycles_sizes)
-    is_periodic = cycles_gcd > 1
-    print("is_periodic: {}".format(is_periodic))
+    #cycles = list(nx.algorithms.cycles.simple_cycles(G))
+    #cycles_sizes = [len(c) for c in cycles]
+    #cycles_gcd = reduce(gcd, cycles_sizes)
+    #is_periodic = cycles_gcd > 1
+    #print("is_periodic: {}".format(is_periodic))
 
-    if strongConnection == True and is_periodic == False:
+    if strongConnection == True: # and is_periodic == False:
         tot_seed_strongConn.append(seed_idx)
 
 print(tot_seed_strongConn)
