@@ -430,16 +430,19 @@ node_population = nx.get_node_attributes(G, name = 'Npop')
 node_NS = nx.get_node_attributes(G, name = 'N_S')
 node_NI = nx.get_node_attributes(G, name = 'N_I')
 node_NR = nx.get_node_attributes(G, name = 'N_R')
+node_state = nx.get_node_attributes(G, name = 'state')
 node_population = np.array(list(node_population.values()))
 node_NS = np.array(list(node_NS.values()))
 node_NI = np.array(list(node_NI.values()))
 node_NR = np.array(list(node_NR.values()))
+print('----- Initial setup -----')
 print('node population: ', node_population)
+print('node state: ', node_state)
 print('node NS : ', node_NS)
 print('node NI : ', node_NI)
 print('node NR : ', node_NR)
+print('-------------------------')
 node_density = node_population / populationTot  # population density vector
-print('node density: ', node_density)
 
 # Calculate transition matrix
 TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density)
@@ -489,7 +492,7 @@ plot_network(G, node_population, dict_nodes, weightNonZero)
 
 # ------------------------------------------------ Dynamics -------------------------------------------------
 # total simulation length
-T = 10
+T = 5
 T_sim = np.linspace(0, T, T)
 
 idx_node = 0
@@ -503,21 +506,24 @@ for idx_node in range(1):
         # Plot temporal evolution of network
         plt.clf()
         plot_network(G, node_NI, dict_nodes, weightNonZero)
-        plt.pause(1)  ###(10 figures per second) in second the time a figure lasts
+        plt.pause(1)
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
         move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
         node_population = nx.get_node_attributes(G, name = 'Npop')
         node_NS = nx.get_node_attributes(G, name='N_S')
         node_NI = nx.get_node_attributes(G, name='N_I')
         node_NR = nx.get_node_attributes(G, name='N_R')
+        node_state = nx.get_node_attributes(G, name='state')
         node_population = np.array(list(node_population.values()))
         node_NS = np.array(list(node_NS.values()))
         node_NI = np.array(list(node_NI.values()))
         node_NR = np.array(list(node_NR.values()))
+        node_state = np.array(list(node_state.values()))
         print('t: ', t, 'Npop:', node_population)
         print('t: ', t, 'NS: ', node_NS)
         print('t: ', t, 'NI: ', node_NI)
         print('t: ', t, 'NR: ', node_NR)
+        print('t: ', t, 'state: ', node_state)
         node_density = node_population/populationTot
         popNode_idx.append(node_population[idx_node])
         popDensity_idx.append(node_density[idx_node])
