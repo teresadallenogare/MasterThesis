@@ -14,6 +14,7 @@ Functions useful to implement simulations using metapopulation approach
 import networkx as nx
 import numpy as np
 import math
+import matplotlib.colors
 import scipy.sparse.linalg as sla
 import statistics as stat
 import time
@@ -476,3 +477,9 @@ def infection_step_node(G, beta, mu):
     nx.set_node_attributes(G, dict_N_R, 'N_R')
     nx.set_node_attributes(G, dict_state, 'state')
 
+
+def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+    c1=np.array(matplotlib.colors.to_rgb(c1))
+    c2=np.array(matplotlib.colors.to_rgb(c2))
+    print(c2)
+    return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)
