@@ -476,29 +476,3 @@ def infection_step_node(G, beta, mu):
     nx.set_node_attributes(G, dict_N_R, 'N_R')
     nx.set_node_attributes(G, dict_state, 'state')
 
-
-
-# ----------------------------- Print -----------------------------
-
-def print_state_network(G, t):
-    """ Print attributes of the network
-
-    :param G: [networkx.class] graph structure from networkx
-    :param t: [scalar] time step in the evolution
-
-    """
-    node_population = nx.get_node_attributes(G, name='Npop')
-    node_NS = nx.get_node_attributes(G, name='N_S')
-    node_NI = nx.get_node_attributes(G, name='N_I')
-    node_NR = nx.get_node_attributes(G, name='N_R')
-    node_state = nx.get_node_attributes(G, name='state')
-    node_population = np.array(list(node_population.values()))
-    node_NS = np.array(list(node_NS.values()))
-    node_NI = np.array(list(node_NI.values()))
-    node_NR = np.array(list(node_NR.values()))
-    node_state = np.array(list(node_state.values()))
-    print('t: ', t, 'Npop:', node_population)
-    print('t: ', t, 'NS: ', node_NS)
-    print('t: ', t, 'NI: ', node_NI)
-    print('t: ', t, 'NR: ', node_NR)
-    print('t: ', t, 'state: ', node_state)

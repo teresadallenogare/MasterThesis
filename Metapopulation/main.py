@@ -39,8 +39,8 @@ seed = 66
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 5
-N_col = 5
+N_row = 10
+N_col = 10
 
 # Average population per node (fixed)
 avg_popPerNode = 1e3
@@ -60,7 +60,7 @@ choice_bool = 0
 
 # infection rate and recovery rate
 beta = 0.9
-mu = 0.1
+mu = 0.2
 
 # ------------------------------------------------ Network definition -------------------------------------------------
 # Define node position in the lattice with a square topology
@@ -134,69 +134,85 @@ check_convergence(TransitionMatrix)
 # ------------------------------------------------ Dynamics -------------------------------------------------
 # total simulation length
 T = 100
-T_sim = np.linspace(0, T, T)
+T_sim = np.linspace(1, T, T-1)
 
 idx_node = 0
 
 #fig2 = plt.figure(figsize=(10,10))
-for idx_node in range(1):
-    popNode_idx = []
-    popDensity_idx = []
-    # t starts from 1 because t = 0 is the initial condition
-    for t in range(1, T):
-        # Motion of particles chosen between nodes
-        Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
-        move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
-        print('----- Motion -----')
-        node_population = nx.get_node_attributes(G, name='Npop')
-        node_NS = nx.get_node_attributes(G, name='N_S')
-        node_NI = nx.get_node_attributes(G, name='N_I')
-        node_NR = nx.get_node_attributes(G, name='N_R')
-        node_state = nx.get_node_attributes(G, name='state')
-        node_population = np.array(list(node_population.values()))
-        node_NS = np.array(list(node_NS.values()))
-        node_NI = np.array(list(node_NI.values()))
-        node_NR = np.array(list(node_NR.values()))
-        node_state = np.array(list(node_state.values()))
-        print('t: ', t, 'Npop:', node_population)
-        print('t: ', t, 'NS: ', node_NS)
-        print('t: ', t, 'NI: ', node_NI)
-        print('t: ', t, 'NR: ', node_NR)
-        print('t: ', t, 'state: ', node_state)
-        node_density = node_population/populationTot
-        popNode_idx.append(node_population[idx_node])
-        popDensity_idx.append(node_density[idx_node])
-        # Control that the total population is exactly the same as the initial one
-        print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
-        # Infection step
-        infection_step_node(G, beta, mu)
-        print('----- Infection -----')
-        node_population = nx.get_node_attributes(G, name='Npop')
-        node_NS = nx.get_node_attributes(G, name='N_S')
-        node_NI = nx.get_node_attributes(G, name='N_I')
-        node_NR = nx.get_node_attributes(G, name='N_R')
-        node_state = nx.get_node_attributes(G, name='state')
-        node_population = np.array(list(node_population.values()))
-        node_NS = np.array(list(node_NS.values()))
-        node_NI = np.array(list(node_NI.values()))
-        node_NR = np.array(list(node_NR.values()))
-        node_state = np.array(list(node_state.values()))
-        print('t: ', t, 'Npop:', node_population)
-        print('t: ', t, 'NS: ', node_NS)
-        print('t: ', t, 'NI: ', node_NI)
-        print('t: ', t, 'NR: ', node_NR)
-        print('t: ', t, 'state: ', node_state)
-        # Plot temporal evolution of network after infection step
-        plt.clf()
-        plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
-        plt.pause(1)
+
+# Population inside the node with index idx at each time step
+popNode_idx = []
+popDensity_idx = []
+sDensity_idx = []
+iDensity_idx = []
+rDensity_idx = []
+# t starts from 1 because t = 0 is the initial condition
+for t in range(1, T):
+    # Motion of particles chosen between nodes
+    Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
+    move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
+    print('----- Motion -----')
+    node_population = nx.get_node_attributes(G, name='Npop')
+    node_NS = nx.get_node_attributes(G, name='N_S')
+    node_NI = nx.get_node_attributes(G, name='N_I')
+    node_NR = nx.get_node_attributes(G, name='N_R')
+    node_state = nx.get_node_attributes(G, name='state')
+    node_population = np.array(list(node_population.values()))
+    node_NS = np.array(list(node_NS.values()))
+    node_NI = np.array(list(node_NI.values()))
+    node_NR = np.array(list(node_NR.values()))
+    node_state = np.array(list(node_state.values()))
+    print('t: ', t, 'Npop:', node_population)
+    print('t: ', t, 'NS: ', node_NS)
+    print('t: ', t, 'NI: ', node_NI)
+    print('t: ', t, 'NR: ', node_NR)
+    print('t: ', t, 'state: ', node_state)
+    # Control that the total population is exactly the same as the initial one
+    print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
+    # Infection step
+    infection_step_node(G, beta, mu)
+    print('----- Infection -----')
+    node_population = nx.get_node_attributes(G, name='Npop')
+    node_NS = nx.get_node_attributes(G, name='N_S')
+    node_NI = nx.get_node_attributes(G, name='N_I')
+    node_NR = nx.get_node_attributes(G, name='N_R')
+    node_state = nx.get_node_attributes(G, name='state')
+    node_population = np.array(list(node_population.values()))
+    node_NS = np.array(list(node_NS.values()))
+    node_NI = np.array(list(node_NI.values()))
+    node_NR = np.array(list(node_NR.values()))
+    node_state = np.array(list(node_state.values()))
+    print('t: ', t, 'Npop:', node_population)
+    print('t: ', t, 'NS: ', node_NS)
+    print('t: ', t, 'NI: ', node_NI)
+    print('t: ', t, 'NR: ', node_NR)
+    print('t: ', t, 'state: ', node_state)
+    node_density = node_population / populationTot
+    nodeS_density = node_NS / populationTot
+    nodeI_density = node_NI / populationTot
+    nodeR_density = node_NR / populationTot
+    popNode_idx.append(node_population[idx_node])
+    popDensity_idx.append(node_density[idx_node])
+    sDensity_idx.append(nodeS_density[idx_node])
+
+    iDensity_idx.append(nodeI_density[idx_node])
+    rDensity_idx.append(nodeR_density[idx_node])
+
+    # Plot temporal evolution of network after infection step
+    # #plt.clf()
+    #plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
+    #plt.pause(0.4)
 
 
-    #plt.close()
-    #plt.plot(T_sim, popDensity_idx, color = colors[idx_node])
-#plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
+#plt.close()
+plt.plot(T_sim, popDensity_idx, color = 'grey', label = 'population density')
+plt.plot(T_sim, sDensity_idx, color = 'blue', label = 'S density')
+plt.plot(T_sim, iDensity_idx, color = 'red', label = 'I density')
+plt.plot(T_sim, rDensity_idx, color = 'green', label = 'R density')
+plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
 #plt.legend()
-#plt.xlabel('Timestep')
-#plt.ylabel('Node density')
-#plt.show()
+plt.xlabel('Timestep')
+plt.ylabel('Node density')
+plt.title(f'SIR density node {idx_node}')
+plt.show()
 
