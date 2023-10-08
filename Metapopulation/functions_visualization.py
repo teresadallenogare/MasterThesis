@@ -31,7 +31,7 @@ def plot_network(G, pop_nodes, dict_nodes, weight, state_nodes):
     """
     N = len(G.nodes)
     # Size of nodes
-    size_map = [pop_nodes[i] for i in G.nodes]
+    size_map = [pop_nodes[i] if pop_nodes[i] < 1e4 else 100 for i in G.nodes]
     #        blue=S     red=I      green=R    violet=SI  vaqua=SR   orange=IR
     cmap = ['#1C86EE', '#FF3030', '#00C957', '#BF3EFF', '#458B74', '#FF7D40', '#CDC8B1' ]
     color_map = [''] * N

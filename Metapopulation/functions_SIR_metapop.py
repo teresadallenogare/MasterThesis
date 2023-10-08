@@ -479,7 +479,14 @@ def infection_step_node(G, beta, mu):
 
 
 def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+    """ Color gradient between c1 - darker - and c2 - lighter.
+
+    :param c1: [scalar] dark value of color
+    :param c2: [scalar] light value of color
+    :param mix: 0
+    :return:
+    """
     c1=np.array(matplotlib.colors.to_rgb(c1))
     c2=np.array(matplotlib.colors.to_rgb(c2))
-    print(c2)
+
     return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)

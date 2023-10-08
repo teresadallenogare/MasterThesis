@@ -38,11 +38,11 @@ seed = 18
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 8
-N_col = 8
+N_row = 12
+N_col = 12
 
 # Average population per node (fixed)
-avg_popPerNode = 1e3
+avg_popPerNode = 1e5
 
 # number of infected individuals in one node
 popI_node = 1
@@ -138,29 +138,16 @@ for t in range(T):
         # rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
     else:
         # ------------------------------------------------ Dynamics -------------------------------------------------
-        # Motion of particles chosen between nodes
+
+        # 1- choice of particles
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
+
+        # 2- motion of particles
         move_particle(G, Nij, Nij_S, Nij_I, Nij_R)
-        #print('----- Motion -----')
-        #node_population = nx.get_node_attributes(G, name='Npop')
-        #node_NS = nx.get_node_attributes(G, name='N_S')
-        #node_NI = nx.get_node_attributes(G, name='N_I')
-        #node_NR = nx.get_node_attributes(G, name='N_R')
-        #node_state = nx.get_node_attributes(G, name='state')
-        #node_population = np.array(list(node_population.values()))
-        #node_NS = np.array(list(node_NS.values()))
-        #node_NI = np.array(list(node_NI.values()))
-        #node_NR = np.array(list(node_NR.values()))
-        #node_state = np.array(list(node_state.values()))
-        #print('t: ', t, 'Npop:', node_population)
-        #print('t: ', t, 'NS: ', node_NS)
-        #print('t: ', t, 'NI: ', node_NI)
-        #print('t: ', t, 'NR: ', node_NR)
-        #print('t: ', t, 'state: ', node_state)
-        # Control that the total population is exactly the same as the initial one
-        #print('total pop: before -> ', populationTot, 'after ->', node_population.sum())
-        # Infection step
+
+        # 3- infection step
         infection_step_node(G, beta, mu)
+
         print('----- Infection -----')
         node_population = nx.get_node_attributes(G, name='Npop')
         node_NS = nx.get_node_attributes(G, name='N_S')
@@ -201,12 +188,18 @@ for t in range(T):
 
 #plt.close()
 for idx_node in range(N):
-    plt.plot(T_sim, node_density_time[:, idx_node], color = grad_gray[idx_node], label = 'population density')
-    plt.plot(T_sim, nodeS_density_time[:, idx_node], color = grad_blue[idx_node], label = 'S density')
-    plt.plot(T_sim, nodeI_density_time[:, idx_node], color = grad_red[idx_node], label = 'I density')
-    plt.plot(T_sim, nodeR_density_time[:, idx_node], color = grad_green[idx_node], label = 'R density')
+    if idx_node == 0:
+        plt.plot(T_sim, node_density_time[:, idx_node], color = grad_gray[idx_node], label = 'population density')
+        plt.plot(T_sim, nodeS_density_time[:, idx_node], color = grad_blue[idx_node], label = 'S density')
+        plt.plot(T_sim, nodeI_density_time[:, idx_node], color = grad_red[idx_node], label = 'I density')
+        plt.plot(T_sim, nodeR_density_time[:, idx_node], color = grad_green[idx_node], label = 'R density')
+    else:
+        plt.plot(T_sim, node_density_time[:, idx_node], color=grad_gray[idx_node])
+        plt.plot(T_sim, nodeS_density_time[:, idx_node], color=grad_blue[idx_node])
+        plt.plot(T_sim, nodeI_density_time[:, idx_node], color=grad_red[idx_node])
+        plt.plot(T_sim, nodeR_density_time[:, idx_node], color=grad_green[idx_node])
 plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
-#plt.legend()
+plt.legend()
 plt.xlabel('Timestep')
 plt.ylabel('Node density')
 #plt.title(f'SIR density node {idx_node}')
