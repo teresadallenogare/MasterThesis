@@ -34,16 +34,15 @@ colors = rtg_r(np.linspace(0, 1, 100))
 
 # --------------------------------------------- Parameter initialization ----------------------------------------------
 
-seed = 18
+seed = 28
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 12
-N_col = 12
+N_row = 10
+N_col = 10
 
 # Average population per node (fixed)
-avg_popPerNode = 1e5
-
+avg_popPerNode = 1e4
 # number of infected individuals in one node
 popI_node = 1
 # list of index of nodes initially containing popI_node infected individuals
@@ -104,6 +103,7 @@ for t in range(T):
         node_NR = nx.get_node_attributes(G, name='N_R')
         node_state = nx.get_node_attributes(G, name='state')
         node_population = np.array(list(node_population.values()))
+        print(node_population.dtype)
         node_NS = np.array(list(node_NS.values()))
         node_NI = np.array(list(node_NI.values()))
         node_NR = np.array(list(node_NR.values()))
@@ -115,10 +115,11 @@ for t in range(T):
         print('t: ', t, 'NR: ', node_NR)
         print('t: ', t, 'state: ', node_state)
         print('-------------------------')
-        node_density0 = node_population / populationTot
-        nodeS_density0 = node_NS / populationTot
-        nodeI_density0 = node_NI / populationTot
-        nodeR_density0 = node_NR / populationTot
+        # / np.mean(node_population) : I divide by a constant number so I keep fluctuations
+        node_density0 = node_population / np.mean(node_population)
+        nodeS_density0 = node_NS / np.mean(node_population)
+        nodeI_density0 = node_NI / np.mean(node_population)
+        nodeR_density0 = node_NR / np.mean(node_population)
         # Calculate transition matrix
         TransitionMatrix = transition_matrix(G, DistanceMatrix, node_density0)
         weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
@@ -164,10 +165,10 @@ for t in range(T):
         print('t: ', t, 'NI: ', node_NI)
         print('t: ', t, 'NR: ', node_NR)
         print('t: ', t, 'state: ', node_state)
-        node_density = node_population / populationTot
-        nodeS_density = node_NS / populationTot
-        nodeI_density = node_NI / populationTot
-        nodeR_density = node_NR / populationTot
+        node_density = node_population / np.mean(node_population)
+        nodeS_density = node_NS / np.mean(node_population)
+        nodeI_density = node_NI / np.mean(node_population)
+        nodeR_density = node_NR / np.mean(node_population)
 
         if t == 1:
             node_density_time = np.vstack((node_density0, node_density))
@@ -198,7 +199,7 @@ for idx_node in range(N):
         plt.plot(T_sim, nodeS_density_time[:, idx_node], color=grad_blue[idx_node])
         plt.plot(T_sim, nodeI_density_time[:, idx_node], color=grad_red[idx_node])
         plt.plot(T_sim, nodeR_density_time[:, idx_node], color=grad_green[idx_node])
-plt.axhline(y = avg_popPerNode/populationTot, color = 'black', linestyle = '--', label = 'Fixed average density per node')
+plt.axhline(y = avg_popPerNode/avg_popPerNode, color = 'black', linestyle = '--', label = 'Fixed average density per node')
 plt.legend()
 plt.xlabel('Timestep')
 plt.ylabel('Node density')
