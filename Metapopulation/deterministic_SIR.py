@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
+
 def SIRDeterministic_equations(variables, t, params):
   """ Determinisitc ODE for the SIR model. I consider equaitons for densities:
   ds/dt = - beta * i * s = - alpha * s
