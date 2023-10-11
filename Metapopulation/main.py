@@ -9,6 +9,7 @@ Version : 10 October 2023
 
 Metapopulation approach to SIR model of epidemic spreading.
 File to generate data.
+Still have to implement repetitions
 
 """
 from functions_SIR_metapop import *
@@ -16,27 +17,26 @@ from functions_visualization import *
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-from math import gcd
 import os
 import time
 
 datadir = os.getcwd()
 start = time.time()
+plt.figure(figsize=(8, 8))
 
 # --------------------------------------------- Parameter initialization ----------------------------------------------
 
-seed = 28
+seed = 30
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 10
+N_col = 10
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
 # number of infected individuals in one node
-popI_node = 1
+popI_node = 1000
 # list of index of nodes initially containing popI_node infected individuals
 idx_nodes_I_init = [0]
 
@@ -49,8 +49,8 @@ percentage_FixNodes = 60
 choice_bool = 0
 
 # infection rate and recovery rate
-beta = 0.9
-mu = 0.2
+beta = 0.55
+mu = 0.52
 
 # total simulation length
 T = 100
@@ -114,19 +114,23 @@ for t in range(T):
                     G.add_edge(i, j, weight=TransitionMatrix[i, j])
         # Edge dictionary
         dict_edges = nx.get_edge_attributes(G, name='weight')
-        # Control srtongly connected graph
+        # Control strongly connected graph
         strongConnection = nx.is_strongly_connected(G)
         print('Strong connection : ', strongConnection)
+
         #Check PF convergence
         check_convergence(TransitionMatrix)
         # rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
 
+        # Check network
+        #plot_network(G, node_population0, dict_nodes, weightNonZero, node_state0)
         # -------------------------------------------- Write topology file  ---------------------------------------------
-        write_topology_file(N_row, N_col, N, seed, avg_popPerNode, choice_bool, Nfix, percentage_FixNodes, beta, mu, T,
-                            node_population0, node_NS0, node_NI0, node_NR0, node_state0)
+        write_topology_file(N_row, N_col, N, seed, avg_popPerNode, choice_bool, Nfix, percentage_FixNodes, c1, beta, mu, T,
+                        node_population0, node_NS0, node_NI0, node_NR0, node_state0)
         folder_data = f'/choice_bool-{choice_bool}/c1-{int(c1)}/beta-{beta}mu-{mu}'
-        np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/DistanceMatrix', DistanceMatrix)
-        np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/TransitionMatrix', TransitionMatrix)
+        folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology'
+        np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
+        np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
     else:
         # ------------------------------------------------ Dynamics -------------------------------------------------
 
@@ -168,28 +172,28 @@ for t in range(T):
             nodeR_density_time = np.vstack((nodeR_density0, nodeR_density))
         else:
             # populations
-            node_population_time = np.vstack((node_population, node_population))
-            node_NS_time = np.vstack((node_NS, node_NS))
-            node_NI_time = np.vstack((node_NI, node_NI))
-            node_NR_time = np.vstack((node_NR, node_NR))
+            node_population_time = np.vstack((node_population_time, node_population))
+            node_NS_time = np.vstack((node_NS_time, node_NS))
+            node_NI_time = np.vstack((node_NI_time, node_NI))
+            node_NR_time = np.vstack((node_NR_time, node_NR))
             # densities
             node_density_time = np.vstack((node_density_time, node_density))
             nodeS_density_time = np.vstack((nodeS_density_time, nodeS_density))
             nodeI_density_time = np.vstack((nodeI_density_time, nodeI_density))
             nodeR_density_time = np.vstack((nodeR_density_time, nodeR_density))
 
+            # Plot temporal evolution of network after infection step
+            #plt.clf()
+            #plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
+            #plt.pause(1)
 # ---------------------------------- Save data after time evolution ----------------------------------------------------
-np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/node_population_time', node_population_time)
-np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/node_NS_time', node_NS_time)
-np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/node_NI_time',node_NI_time)
-np.save(datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/node_NR_time', node_NR_time)
+folder_dynamics = datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Dynamics'
+np.save(folder_dynamics + '/node_population_time', node_population_time)
+np.save(folder_dynamics + '/node_NS_time', node_NS_time)
+np.save(folder_dynamics + '/node_NI_time',node_NI_time)
+np.save(folder_dynamics + '/node_NR_time', node_NR_time)
 
-#b = np.load(datadir+'/Data-simpleLattice/Dynamics/node_population_time.npy')
-#print(b)
-        # Plot temporal evolution of network after infection step
-        #plt.clf()
-        #plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
-        #plt.pause(0.4)
+
 
 #plt.close()
 for idx_node in range(N):
@@ -209,4 +213,3 @@ plt.xlabel('Timestep')
 plt.ylabel('Node density')
 #plt.title(f'SIR density node {idx_node}')
 plt.show()
-
