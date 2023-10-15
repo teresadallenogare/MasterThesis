@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 11 October 2023
+Version : 15 October 2023
 
 --------------------------------------------------------------------
 
@@ -33,28 +33,34 @@ N = N_row * N_col
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta = 0.9
+beta = 0.4
 mu = 0.2
 
-folder_data = f'/choice_bool-{choice_bool}/c1-{int(c1)}/beta-{beta}mu-{mu}'
-folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology'
-folder_dynamics = datadir+f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Dynamics'
+folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
+folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
 
-seed = np.load(folder_topology + '/seed.npy')
 avg_popPerNode = np.load(folder_topology + '/avg_popPerNode.npy')
 populationTot = N * avg_popPerNode # from this then I use multinomial
 if choice_bool == 1:
     Nfix = np.load(folder_topology + '/Nfix.npy')
     percentage_FixNodes = np.load(folder_topology + '/percentage_FixNodes.npy')
+else:
+    Nfix = 0
+    percentage_FixNodes = 0
 
-T = np.load(folder_topology + '/T.npy')
-node_population_time = np.load(folder_dynamics + '/node_population_time.npy')
-node_NS_time = np.load(folder_dynamics + '/node_NS_time.npy')
-node_NI_time = np.load(folder_dynamics + '/node_NI_time.npy')
-node_NI_time /= populationTot # normalisation (density of infected as a global property?)
-node_NR_time = np.load(folder_dynamics + '/node_NR_time.npy')
+T = np.load(folder_simulation + 'T.npy')
+node_population_time = np.load(folder_simulation + 'node_population_time.npy')
+node_NS_time = np.load(folder_simulation + 'node_NS_time.npy')
+node_NI_time = np.load(folder_simulation + 'node_NI_time.npy')
+density_node_NI_time = node_NI_time / populationTot # normalisation (density of infected as a global property?)
+node_NR_time = np.load(folder_simulation + 'node_NR_time.npy')
 
-pos_nodes = np.load(folder_topology + '/pos_nodes.npy')
+pos_nodes = np.load(folder_topology + 'pos_nodes.npy')
+
+# New infected per time step in the whole network
+new_I = np.array([np.sum(node_NI_time[i, :]) for i in range(T)])
+plt.plot(new_I)
+plt.show()
 # 1. Extract coordinates of nodes
 x_nodes = [pos_nodes[i][0] for i in range(N)]
 y_nodes = [pos_nodes[i][1] for i in range(N)]
@@ -62,9 +68,10 @@ print(x_nodes)
 print(y_nodes)
 
 # 2. Calculate the cumulative number of infected individuals per node over the whole period of time
-cumulat_I_perNode = np.zeros(shape =(T,N))
+cumulat_I_perNode = np.zeros(shape =(T+1, N))
+
 for i in range(N):
-   cumulat_I_perNode[:,i] = np.cumsum(node_NI_time[:,i])
+   cumulat_I_perNode[:, i] = np.cumsum(density_node_NI_time[:, i])
 
 
 # 3. Create 4-dimensional vectors (rows of a matrix)

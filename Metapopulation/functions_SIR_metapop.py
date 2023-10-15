@@ -75,7 +75,7 @@ def distance_matrix(G, pos):
     return D
 
 
-def initialize_nodes(G, popTot, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
+def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool, seed):
     """ Assign nodes with attributes:
         Npop : is the population assigned to each node. Values are extracted from a multinomial distribution:
                0. with support equal to popTot, and probability 1/N equal for each of the N classes.
@@ -83,18 +83,9 @@ def initialize_nodes(G, popTot, popI_init, idx_I_nodes ,Nfix, percentage_FixNode
                Multinomial distribution ensures that the sum of all elements is
                equal to the whole population. Being probabilities all equal to 1/N, random values are sampled from a
                uniform distribution (size = N).
-        N_S : initial number of susceptible individuals
-        N_I : initial number of infected individuals
-        N_R : initial number of recovered individuals
-        state : initial state of individuals
-
-        In the initial state, I have only 'S' or 'I' individuals inside nodes. I assume to have no recovered ones at
-        first stage.
 
     :param G: [networkx.class] graph structure from networkx
     :param popTot: [scalar] total population of the system
-    :param popI_init: [scalar] number of individuals initially infected in nodes with index idx_I_nodes
-    :param idx_I_nodes: [list] list of indices of nodes containing popI_init infected individuals
     :param Nfix: [scalar] number of selected nodes to set the percentage 'percentage_FixNodes' of the population
     :param percentage_FixNodes: [scalar] percentage of the population to set in Nfix selected nodes
     :param choice_bool: [0 or 1] boolean-like variable -
@@ -110,29 +101,11 @@ def initialize_nodes(G, popTot, popI_init, idx_I_nodes ,Nfix, percentage_FixNode
     if choice_bool == 0:
         # Extract population of nodes from a multinomial distribution. it is a ndarray
         n = np.random.multinomial(popTot, [1 / N] * N)
-        nI = popI_init
-        nR = 0
-        nS = n - nI - nR
 
         # Create dictionary with population values assigned to each node (necessary to assign nodes diverse populations)
         dict_Npop = {i: n[i] for i in G.nodes}
-        # If the node index is not in the list of nodes with infected individuals, I assign the population of
-        # susceptible to be the total one. Otherwise, I assign nS = n - nI - nR
-        dict_S = {i: n[i] if i not in idx_I_nodes else nS[i] for i in G.nodes}
-        # If node index is not in the list of nodes with infected individuals, I assign the population of
-        # infected to be 0. Otherwise, I assign nI (that is a constant value for now)
-        dict_I = {i: 0 if i not in idx_I_nodes else nI for i in G.nodes}
-        # Recovered people are 0 at the initial state
-        dict_R = {i: nR for i in G.nodes}
-        # Possible initial states of the node are 'S' if I have only susceptible individuals in it. Otherwise, is 'SI'
-        dict_state = {i: 'S' if i not in idx_I_nodes else 'SI' for i in G.nodes}
-
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
-        nx.set_node_attributes(G, dict_S, 'N_S')
-        nx.set_node_attributes(G, dict_I, 'N_I')
-        nx.set_node_attributes(G, dict_R, 'N_R')
-        nx.set_node_attributes(G, dict_state, 'state')
 
     elif choice_bool == 1:
         # Whole population in fixed nodes
@@ -147,11 +120,6 @@ def initialize_nodes(G, popTot, popI_init, idx_I_nodes ,Nfix, percentage_FixNode
         n_others = list(n_others)
         n_AllNodes_final = n_FixNodes + n_others
 
-        n_S = n_AllNodes_final
-        n_I = 0
-        n_R = 0
-        state = 'S'
-
         # List with index of all nodes
         idx_AllNodes = [i for i in range(0, N)]
         idx_FixNodes = []
@@ -161,21 +129,64 @@ def initialize_nodes(G, popTot, popI_init, idx_I_nodes ,Nfix, percentage_FixNode
                 idx_FixNodes.append(idxN)
         idx_others = list(set(idx_AllNodes) - set(idx_FixNodes))
         idx_AllNodes_final = idx_FixNodes + idx_others
-        print('idx:', idx_AllNodes_final)
         # Dictionary in which at nodes with index in idx_FixNodes I attribute the population
         dict_Npop = {idx_AllNodes_final[i]: n_AllNodes_final[i] for i in G.nodes}
-        dict_S = {idx_AllNodes_final[i]: n_S[i] for i in G.nodes}
-        dict_I = {idx_AllNodes_final[i]: n_I for i in G.nodes}
-        dict_R = {idx_AllNodes_final[i]: n_R for i in G.nodes}
-        dict_state = {idx_AllNodes_final[i]: state for i in G.nodes}
-        print(dict_Npop)
-
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
+    else:
+        print('Wrong value for choice_bool')
+
+
+def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
+    """ Assign nodes with attributes:
+
+            N_S : initial number of susceptible individuals
+            N_I : initial number of infected individuals
+            N_R : initial number of recovered individuals
+            state : initial state of individuals
+
+            In the initial state, I have only 'S' or 'I' individuals inside nodes. I assume to have no recovered ones at
+            first stage.
+
+        :param G: [networkx.class] graph structure from networkx
+        :param node_pop0: [ndarray] initial population in every node
+        :param popI_init: [scalar] number of individuals initially infected in nodes with index idx_I_nodes
+        :param idx_I_nodes: [list] list of indices of nodes containing popI_init infected individuals
+        :param Nfix: [scalar] number of selected nodes to set the percentage 'percentage_FixNodes' of the population
+        :param percentage_FixNodes: [scalar] percentage of the population to set in Nfix selected nodes
+        :param choice_bool: [0 or 1] boolean-like variable -
+                            if 0 : populate nodes from a uniform probability distribution
+                            if 1 : populate Nfix of nodes with 80% of population and the remaining 20% is
+                                   distributed among the remaining N-Nfix of nodes
+
+        """
+    if seed is not None: np.random.seed(seed)
+
+    # Populate nodes
+    if choice_bool == 0:
+        nI = popI_init
+        nR = 0
+        nS = node_pop0 - nI - nR
+        print('nS:', nS)
+        # If the node index is not in the list of nodes with infected individuals, I assign the population of
+        # susceptible to be the total one. Otherwise, I assign nS = n - nI - nR
+        dict_S = {i: node_pop0[i] if i not in idx_I_nodes else nS[i] for i in G.nodes}
+        # If node index is not in the list of nodes with infected individuals, I assign the population of
+        # infected to be 0. Otherwise, I assign nI (that is a constant value for now)
+        dict_I = {i: 0 if i not in idx_I_nodes else nI for i in G.nodes}
+        # Recovered people are 0 at the initial state
+        dict_R = {i: nR for i in G.nodes}
+        # Possible initial states of the node are 'S' if I have only susceptible individuals in it. Otherwise, is 'SI'
+        dict_state = {i: 'S' if i not in idx_I_nodes else 'SI' for i in G.nodes}
+
+        # Assign attributes to nodes
         nx.set_node_attributes(G, dict_S, 'N_S')
         nx.set_node_attributes(G, dict_I, 'N_I')
         nx.set_node_attributes(G, dict_R, 'N_R')
         nx.set_node_attributes(G, dict_state, 'state')
+
+    elif choice_bool == 1:
+        print('To implement')
     else:
         print('Wrong value for choice_bool')
 
@@ -478,6 +489,7 @@ def infection_step_node(G, beta, mu):
     nx.set_node_attributes(G, dict_N_R, 'N_R')
     nx.set_node_attributes(G, dict_state, 'state')
 
+    return NI_nodes_new
 
 def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
     """ Color gradient between c1 - darker - and c2 - lighter.
@@ -493,19 +505,16 @@ def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0)
     return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)
 
 
-def write_topology_file(N_row, N_col, N, seed, avg_pop_node, choice_bool, Nfix, percentPopNfix, c1, beta, mu, T, node_pop0,
-                        node_S0, node_I0, node_R0, node_state0):
+def write_topology_file(N_row, N_col, N, avg_pop_node, choice_bool, Nfix, percentPopNfix, c1, node_pop0):
 
     datadir = os.getcwd()
-    folder_data = f'/choice_bool-{choice_bool}/c1-{int(c1)}/beta-{beta}mu-{mu}'
-    f = open(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/topologyFile_{N_row}x{N_col}.txt', 'w')
+    folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
+    f = open(folder_topology + f'topologyFile_{N_row}x{N_col}.txt', 'w')
     f.write('TOPOLOGY FILE GENERATED BY TERESA DALLE NOGARE  \n\n')
     f.write('[Description of lattice] \n')
     f.write('Simple network with square lattice topology \n\n')
     f.write('[Number of nodes] \n')
     f.write(f'N_row = {N_row}, N_col = {N_col}, N = N_row x N_col = {N} \n\n')
-    f.write(f'[Seed] \n')
-    f.write(f'Random seed = {seed}\n\n')
     f.write(f'[Population data] \n')
     f.write(f'Average population per node = {avg_pop_node} \n\n')
     if choice_bool == 0:
@@ -516,27 +525,31 @@ def write_topology_file(N_row, N_col, N, seed, avg_pop_node, choice_bool, Nfix, 
         f.write(f'percentage of population in fixed nodes = {percentPopNfix}\n\n')
     else:
         f.write(f'Wrong choice bool value \n\n')
-    f.write(f'[Infection parameters] \n')
-    f.write(f'beta = {beta}, mu = {mu}\n\n')
-    f.write(f'[Total simulation length] \n')
-    f.write(f'T = {T}\n\n')
+    f.write(f'[Initial configuration]\n')
+    f.write(f'Node population 0: {node_pop0}\n')
+
+    f.close()
+
+    # Save data
+    np.save(folder_topology + '/avg_popPerNode', avg_pop_node)
+    np.save(folder_topology + '/choice_bool', choice_bool)
+    np.save(folder_topology + '/c1', c1)
+    if choice_bool == 1:
+        np.save(folder_topology + '/Nfix', Nfix)
+        np.save(folder_topology + '/percentage_FixNodes', percentPopNfix)
+
+def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta, mu, nbr_repetitions ):
+    datadir = os.getcwd()
+    folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
+    f = open(folder_simulation + f'simulationFile_{N_row}x{N_col}.txt', 'w')
+    f.write(f'[Simulation parameters]\n')
+    f.write(f'Length of simulation, T : {T}\n')
+    f.write(f'Infection rate, beta: {beta}\n')
+    f.write(f'Recovery rate, mu: {mu}\n')
+    f.write(f'Nuber of repetitions: {nbr_repetitions}\n\n')
     f.write(f'[Initial configuration]\n')
     f.write(f'Node population 0: {node_pop0}\n')
     f.write(f'Node S0: {node_S0}\n')
     f.write(f'Node I0: {node_I0}\n')
     f.write(f'Node R0: {node_R0}\n')
-    f.write(f'Node state0: {node_state0}\n')
-    f.close()
-
-    # Save data
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/seed', seed)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/avg_popPerNode', avg_pop_node)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/choice_bool', choice_bool)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/c1', c1)
-    if choice_bool == 1:
-        np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/Nfix', Nfix)
-        np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/percentage_FixNodes', percentPopNfix)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/beta', beta)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/mu', mu)
-    np.save(datadir + f'/Data-simpleLattice/{N_row}x{N_col}'+folder_data+'/Topology/T', T)
-
+    f.write(f'Node state0: {node_state0}\n\n')
