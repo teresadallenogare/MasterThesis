@@ -19,7 +19,7 @@ import scipy.sparse.linalg as sla
 import statistics as stat
 import time
 import os
-# --------------------------------------- Lattice definition ---------------------------------------
+# ---------------------------------------------- Lattice  ----------------------------------------------
 def initialize_lattice(N_row, N_col):
     """ Define a lattice with square topology with N_row rows and N_col columns, that is a
         networkx structure with positioning of nodes only.
@@ -137,58 +137,7 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
         print('Wrong value for choice_bool')
 
 
-def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
-    """ Assign nodes with attributes:
 
-            N_S : initial number of susceptible individuals
-            N_I : initial number of infected individuals
-            N_R : initial number of recovered individuals
-            state : initial state of individuals
-
-            In the initial state, I have only 'S' or 'I' individuals inside nodes. I assume to have no recovered ones at
-            first stage.
-
-        :param G: [networkx.class] graph structure from networkx
-        :param node_pop0: [ndarray] initial population in every node
-        :param popI_init: [scalar] number of individuals initially infected in nodes with index idx_I_nodes
-        :param idx_I_nodes: [list] list of indices of nodes containing popI_init infected individuals
-        :param Nfix: [scalar] number of selected nodes to set the percentage 'percentage_FixNodes' of the population
-        :param percentage_FixNodes: [scalar] percentage of the population to set in Nfix selected nodes
-        :param choice_bool: [0 or 1] boolean-like variable -
-                            if 0 : populate nodes from a uniform probability distribution
-                            if 1 : populate Nfix of nodes with 80% of population and the remaining 20% is
-                                   distributed among the remaining N-Nfix of nodes
-
-        """
-    if seed is not None: np.random.seed(seed)
-
-    # Populate nodes
-    if choice_bool == 0:
-        nI = popI_init
-        nR = 0
-        nS = node_pop0 - nI - nR
-        print('nS:', nS)
-        # If the node index is not in the list of nodes with infected individuals, I assign the population of
-        # susceptible to be the total one. Otherwise, I assign nS = n - nI - nR
-        dict_S = {i: node_pop0[i] if i not in idx_I_nodes else nS[i] for i in G.nodes}
-        # If node index is not in the list of nodes with infected individuals, I assign the population of
-        # infected to be 0. Otherwise, I assign nI (that is a constant value for now)
-        dict_I = {i: 0 if i not in idx_I_nodes else nI for i in G.nodes}
-        # Recovered people are 0 at the initial state
-        dict_R = {i: nR for i in G.nodes}
-        # Possible initial states of the node are 'S' if I have only susceptible individuals in it. Otherwise, is 'SI'
-        dict_state = {i: 'S' if i not in idx_I_nodes else 'SI' for i in G.nodes}
-
-        # Assign attributes to nodes
-        nx.set_node_attributes(G, dict_S, 'N_S')
-        nx.set_node_attributes(G, dict_I, 'N_I')
-        nx.set_node_attributes(G, dict_R, 'N_R')
-        nx.set_node_attributes(G, dict_state, 'state')
-
-    elif choice_bool == 1:
-        print('To implement')
-    else:
-        print('Wrong value for choice_bool')
 
 # -------------------------------------------- Transition matrix  -----------------------------------------------------
 def transition_matrix(G, D, density):
@@ -205,8 +154,8 @@ def transition_matrix(G, D, density):
     N_col = N
 
     max_density = max(density)
-    a = 0.2
-    b = 0.9
+    a = 0.2 # establish connectivity
+    b = 0.9 # establish self loop
     # Parameter that quantifies the number of connections between nodes
     c = a / max(density)
     T = np.zeros(shape=(N_row, N_col))
@@ -228,6 +177,7 @@ def transition_matrix(G, D, density):
     # sum over all the rows and take the maximum between these sums and call it Pmax.
     # axis = 1 sums over rows
     Pmax = T.sum(axis=1).max()
+    print('Pmax:', Pmax)
     c1 = b / Pmax
     T *= c1
     for i in range(N_row):
@@ -238,6 +188,13 @@ def transition_matrix(G, D, density):
 
     return T, c1
 
+def compute_centralities (G):
+    degree_cent = nx.degree_centrality(G)
+    betweenness_cent = nx.betweenness_centrality(G)
+    closeness_cent = nx.closeness_centrality(G)
+    eigenvalue_cent = nx.eigenvector_centrality(G)
+
+    return degree_cent, betweenness_cent, closeness_cent, eigenvalue_cent
 # ---------------------------------------------- Perron-Frobeinus theorem ---------------------------------------------
 from numpy.linalg import eig
 
@@ -307,7 +264,59 @@ def check_convergence(M):
 
 #    return rho0, rho0check
 
-# --------------------------------------------------- Dynamics --------------------------------------------------------
+# --------------------------------------------------- Simulation --------------------------------------------------------
+def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
+    """ Assign nodes with attributes:
+
+            N_S : initial number of susceptible individuals
+            N_I : initial number of infected individuals
+            N_R : initial number of recovered individuals
+            state : initial state of individuals
+
+            In the initial state, I have only 'S' or 'I' individuals inside nodes. I assume to have no recovered ones at
+            first stage.
+
+        :param G: [networkx.class] graph structure from networkx
+        :param node_pop0: [ndarray] initial population in every node
+        :param popI_init: [scalar] number of individuals initially infected in nodes with index idx_I_nodes
+        :param idx_I_nodes: [list] list of indices of nodes containing popI_init infected individuals
+        :param Nfix: [scalar] number of selected nodes to set the percentage 'percentage_FixNodes' of the population
+        :param percentage_FixNodes: [scalar] percentage of the population to set in Nfix selected nodes
+        :param choice_bool: [0 or 1] boolean-like variable -
+                            if 0 : populate nodes from a uniform probability distribution
+                            if 1 : populate Nfix of nodes with 80% of population and the remaining 20% is
+                                   distributed among the remaining N-Nfix of nodes
+
+        """
+    if seed is not None: np.random.seed(seed)
+
+    # Populate nodes
+    if choice_bool == 0:
+        nI = popI_init
+        nR = 0
+        nS = node_pop0 - nI - nR
+        print('nS:', nS)
+        # If the node index is not in the list of nodes with infected individuals, I assign the population of
+        # susceptible to be the total one. Otherwise, I assign nS = n - nI - nR
+        dict_S = {i: node_pop0[i] if i not in idx_I_nodes else nS[i] for i in G.nodes}
+        # If node index is not in the list of nodes with infected individuals, I assign the population of
+        # infected to be 0. Otherwise, I assign nI (that is a constant value for now)
+        dict_I = {i: 0 if i not in idx_I_nodes else nI for i in G.nodes}
+        # Recovered people are 0 at the initial state
+        dict_R = {i: nR for i in G.nodes}
+        # Possible initial states of the node are 'S' if I have only susceptible individuals in it. Otherwise, is 'SI'
+        dict_state = {i: 'S' if i not in idx_I_nodes else 'SI' for i in G.nodes}
+
+        # Assign attributes to nodes
+        nx.set_node_attributes(G, dict_S, 'N_S')
+        nx.set_node_attributes(G, dict_I, 'N_I')
+        nx.set_node_attributes(G, dict_R, 'N_R')
+        nx.set_node_attributes(G, dict_state, 'state')
+
+    elif choice_bool == 1:
+        print('To implement')
+    else:
+        print('Wrong value for choice_bool')
 
 def choice_particle_to_move(G, T):
     """ Stochastic choice of the number of particles to move inside a certain node i.
@@ -508,6 +517,7 @@ def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0)
 def write_topology_file(N_row, N_col, N, avg_pop_node, choice_bool, Nfix, percentPopNfix, c1, node_pop0):
 
     datadir = os.getcwd()
+
     folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
     f = open(folder_topology + f'topologyFile_{N_row}x{N_col}.txt', 'w')
     f.write('TOPOLOGY FILE GENERATED BY TERESA DALLE NOGARE  \n\n')

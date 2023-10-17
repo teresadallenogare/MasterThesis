@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import os
 import time
 import pickle
+import seaborn as sns
 
 datadir = os.getcwd()
 start = time.time()
@@ -30,11 +31,11 @@ seed = None
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 10
+N_col = 10
 
 # Average population per node (fixed)
-avg_popPerNode = 1e3
+avg_popPerNode = 1e4
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
@@ -44,9 +45,6 @@ percentage_FixNodes = 60
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
 choice_bool = 0
 
-# Total simulation length
-T = 100
-T_sim = np.linspace(0, T, T)
 
 # ------------------------------------------------ Lattice initialization  -------------------------------------------------
 
@@ -93,13 +91,24 @@ while strongConnection == False and contFalse < 1000:
                 if TransitionMatrix[i, j] != 0:
                     G.remove_edge(i, j)
 #Check PF convergence
-check_convergence(TransitionMatrix)
+#check_convergence(TransitionMatrix)
 # rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
 
 # Check network
 #plot_network(G, node_population0, dict_nodes, weightNonZero, node_state0)
 
+# Look at transition matrix
+sns.heatmap(TransitionMatrix)
 
+# Look at properties of the graph
+plot_centralities(G)
+
+in_degrees = [G.in_degree(n) for n in G.nodes()]
+plt.bar(*np.unique(in_degrees, return_counts=True))
+plt.title("Degree centrality input edges")  # out degrees = in_degrees by construction
+plt.xlabel(" Input degree")
+plt.ylabel("Frequency")
+c1 = 0
 # -------------------------------------------- Write topology file  ---------------------------------------------
 write_topology_file(N_row, N_col, N, avg_popPerNode, choice_bool, Nfix, percentage_FixNodes, c1, node_population0)
 
@@ -110,5 +119,5 @@ pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
 pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))
 np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
 np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
-
+plt.figure()
 plot_static_network(G, node_population0, dict_nodes, weightNonZero)
