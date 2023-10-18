@@ -15,8 +15,9 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
+# ------------------------------------ Characterize network ------------------------------------
 def plot_centralities(G):
-    """ Plot of the degree distribution of incoming nodes of the network built.
+    """ Plot centrality measures to characterize the network I will work on.
     Note that the number of incoming nodes is equal to the number of outgoing ones by construction.
 
     :param G:
@@ -54,6 +55,9 @@ def plot_centralities(G):
     axs[1, 1].set_xlabel("Eigenvalue")
     axs[1, 1].set_ylabel("Frequency")
     plt.show()
+
+
+
 def plot_static_network(G, pop_nodes, dict_nodes, weight):
     """ Plot a static version of the network, in which the size of nodes is proportional to the node population
 
@@ -120,5 +124,41 @@ def plot_network(G, pop_nodes, dict_nodes, weight, state_nodes):
    # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
     #plt.show()
 
+# ------------------------------------ Simulation characterization ------------------------------------
+
+def plot_mean_std_singleNode(T_sim, meanS, meanI, meanR, stdDevS, stdDevI, stdDevR, detS, detI, detR, idx_node):
+    """ Plot mean and standard deviation of repetitions for only 1 node, together with the deterministic model
+
+    """
+    plt.plot(T_sim, meanS[:, idx_node],  label = 'S')
+    plt.plot(T_sim, meanI[:, idx_node],  label = 'I')
+    plt.plot(T_sim, meanR[:, idx_node],  label = 'R')
+    plt.fill_between(T_sim, meanS[:, idx_node] - stdDevS[:, idx_node], meanS[:, idx_node] + stdDevS[:, idx_node], facecolor='blue', alpha=0.25)
+    plt.fill_between(T_sim, meanI[:, idx_node] - stdDevI[:, idx_node], meanI[:, idx_node] + stdDevI[:, idx_node], facecolor='red', alpha=0.25)
+    plt.fill_between(T_sim, meanR[:, idx_node] - stdDevR[:, idx_node], meanR[:, idx_node] + stdDevR[:, idx_node], facecolor='green', alpha=0.25)
+    plt.plot(T_sim, detS, 'b--')
+    plt.plot(T_sim, detI, 'r--')
+    plt.plot(T_sim, detR, 'g--')
 
 
+    plt.title(f'Mean and standard deviation of density per node: {idx_node}')
+    plt.xlabel('Timestep')
+    plt.ylabel('Density')
+
+    plt.show()
+
+
+def plot_mean_allNodes(T_sim, meanS, meanI, meanR, detS, detI, detR, N):
+    for idx_node in range(N):
+        plt.plot(T_sim, meanS[:, idx_node])
+        plt.plot(T_sim, meanI[:, idx_node])
+        plt.plot(T_sim, meanR[:, idx_node])
+    plt.plot(T_sim, detS, 'b--')
+    plt.plot(T_sim, detI, 'r--')
+    plt.plot(T_sim, detR, 'g--')
+    plt.legend()
+    plt.title(f'Mean of density for all nodes')
+    plt.xlabel('Timestep')
+    plt.ylabel('Density')
+
+    plt.show()

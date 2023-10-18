@@ -45,7 +45,7 @@ def SIRDeterministic_equations(variables, t, params):
 Tsim = 100
 time = np.linspace(0, Tsim, Tsim* 10)
 
-popTot = 1e5
+popTot = 1e4
 popI_init = 1
 popR_init = 0
 popS_init = popTot - popR_init - popI_init

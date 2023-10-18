@@ -9,16 +9,17 @@ Version : 16 October 2023
 
 
 """
-
+from functions_SIR_metapop import *
+from functions_visualization import *
 import numpy as np
+from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import os
 import sklearn
 import kmapper as km
 import networkx as nx
 import pandas as pd
-import plotly.graph_objs as go
-import plotly.express as px
+
 
 # Consider the case of an epidemic outbreak on a 3x3 network
 N_row = 3
@@ -51,85 +52,82 @@ T_sim = np.linspace(0, T, T+1)
 nbr_repetitions = np.load(folder_simulation + '/nbr_repetitions.npy')
 
 # 3D matrix that stores repetitions along axis = 2
+node_population_time_repeat = np.zeros(shape = (T+1,N, nbr_repetitions))
+node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NI_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-
+node_NR_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
+density_node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
+density_node_NI_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
+density_node_NR_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 # To see repetition k : node_NI_time_repeat[:,:,k]
 for sim in range(nbr_repetitions):
+    # Load data
     new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
     node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
     node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
     node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-    density_node_NI_time = node_NI_time / populationTot # normalisation (density of infected as a global property?)
     node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+    #  Store data in 3D matrix
+    node_population_time_repeat[:, :, sim] = node_population_time
+    node_NS_time_repeat[:, :, sim] = node_NS_time
     node_NI_time_repeat[:, :, sim] = node_NI_time
-node_NI_time_repeat = np.array(node_NI_time_repeat)
+    node_NR_time_repeat[:, :, sim] = node_NR_time
 
-# Mean value over repetitions
+# Compute densities
+density_node_NS_time_repeat = node_NS_time_repeat / node_population_time_repeat
+density_node_NI_time_repeat = node_NI_time_repeat / node_population_time_repeat
+density_node_NR_time_repeat = node_NR_time_repeat / node_population_time_repeat
+
+# Mean value of number of individuals over repetitions
+mean_NS_time = np.mean(node_NS_time_repeat, axis = 2)
 mean_NI_time = np.mean(node_NI_time_repeat, axis = 2)
+mean_NR_time = np.mean(node_NR_time_repeat, axis = 2)
+stdDev_NS_time = np.std(node_NS_time_repeat, axis = 2, ddof = 1)
 stdDev_NI_time = np.std(node_NI_time_repeat, axis = 2, ddof = 1)
+stdDev_NR_time = np.std(node_NR_time_repeat, axis = 2, ddof = 1)
 
-# For plot : convert matrices in dataframe
-df_mean_NI_time = pd.DataFrame(mean_NI_time, columns=[f'node {i}' for i in range(N)])
-df_stdDev_NI_time = pd.DataFrame(stdDev_NI_time, columns=[f'node {i}' for i in range(N)], index=[f'time {i}' for i in range(T+1)])
+# Mean value of densities over repetitions
+mean_density_NS_time = np.mean(density_node_NS_time_repeat, axis = 2)
+mean_density_NI_time = np.mean(density_node_NI_time_repeat, axis = 2)
+mean_density_NR_time = np.mean(density_node_NR_time_repeat, axis = 2)
+stdDev_density_NS_time = np.std(density_node_NS_time_repeat, axis = 2, ddof = 1)
+stdDev_density_NI_time = np.std(density_node_NI_time_repeat, axis = 2, ddof = 1)
+stdDev_density_NR_time = np.std(density_node_NR_time_repeat, axis = 2, ddof = 1)
 
-# convert plotly hex colors to rgba to enable transparency adjustments
-def hex_rgba(hex, transparency):
-    col_hex = hex.lstrip('#')
-    col_rgb = list(int(col_hex[i:i+2], 16) for i in (0, 2, 4))
-    col_rgb.extend([transparency])
-    areacol = tuple(col_rgb)
-    return areacol
+# Deterministic SIR
+# Initial conditions : densities (is the same at every repetition!)
+y_init = [density_node_NS_time_repeat[0, 0, 0], density_node_NI_time_repeat[0, 0, 0], density_node_NR_time_repeat[0, 0, 0]]
+print('y_init: ', y_init)
+params = [beta, mu]
+# Sole equation for densities
+y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,))
 
-# define colors as a list
-colors = px.colors.qualitative.Plotly
-rgba = [hex_rgba(c, transparency=0.2) for c in colors]
-colCycle = ['rgba'+str(elem) for elem in rgba]
-# Make sure the colors run in cycles if there are more lines than colors
-def next_col(cols):
-    while True:
-        for col in cols:
-            yield col
-line_color=next_col(cols=colCycle)
-
-
-# plotly  figure
-fig = go.Figure()
-
-# Add line and 1 std_deviation above and 1 below
-for i, col in enumerate(df_mean_NI_time):
-    new_col = next(line_color)
-    x = list(df_mean_NI_time.index.values + 1)
-    # Select column
-    y1 = df_mean_NI_time[col]
-    y1_upper = [(y + stdDev_NI_time[col]) for y in df_mean_NI_time[col]]
-    y1_lower = [(y - stdDev_NI_time[col]) for y in df_mean_NI_time[col]]
-    y1_lower = y1_lower[::-1] # subtracts -1 (?)
-
-    # trace adds multiple plots in 1 figure
-
-    # std deviation
-    fig.add_traces(go.Scatter(x=x+x[::-1],
-                    y=y1_upper+y1_lower,
-                    fill='tozerox',
-                    fillcolor=new_col,
-                    line=dict(color='rgba(255,255,255,0)'),
-                    showlegend=False,
-                    name=col))
-    # line trace
-    fig.add_traces(go.Scatter(x=x,
-                              y=y1,
-                              line=dict(color=new_col, width=2.5),
-                              mode='lines',
-                              name=col)
-                   )
-# set x-axis
-fig.update_layout(xaxis=dict(range=[1, len(df_mean_NI_time)]))
+# Deterministic densities in time: solutions of SIR deterministic ODEs
+det_s = y[:, 0]
+det_i = y[:, 1]
+det_r = y[:, 2]
 
 
-#fig = px.line(df_mean_NI_time.iloc[:, 1])
-fig.show()
+idx_node = 0
 
-print('Hello')
+plot_mean_std_singleNode(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time, stdDev_density_NS_time,
+                         stdDev_density_NI_time, stdDev_density_NR_time, det_s, det_i, det_r, idx_node)
+
+plot_mean_allNodes(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time,det_s, det_i, det_r, N)
+#df_mean_NI_time = pd.DataFrame(mean_NI_time, columns=[f'node {i}' for i in range(N)])
+#df_stdDev_NI_time = pd.DataFrame(stdDev_NI_time, columns=[f'node {i}' for i in range(N)], index=[f'time {i}' for i in range(T+1)])
+
+
+# Quantify the distance of the mean simulated to the deterministic curve for the infection population inside a node.
+
+# Pointwise difference of the mean simulated curve to the deterministic one for the node with index idx_node
+diff_meanI_detI_node0 = mean_density_NI_time[:, idx_node] - det_i
+mean_diff_meanI_detI_node0 = np.mean(diff_meanI_detI_node0)
+mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_density_NI_time[:, idx_node])
+
+plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o' )
+plt.show()
+print('hello')
 
 
 

@@ -49,30 +49,32 @@ else:
     percentage_FixNodes = 0
 
 T = np.load(folder_simulation + 'T.npy')
-node_population_time = np.load(folder_simulation + 'node_population_time.npy')
-node_NS_time = np.load(folder_simulation + 'node_NS_time.npy')
-node_NI_time = np.load(folder_simulation + 'node_NI_time.npy')
+T_sim = np.linspace(0, T, T+1)
+sim = 0
+
+new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
+node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
 density_node_NI_time = node_NI_time / populationTot # normalisation (density of infected as a global property?)
-node_NR_time = np.load(folder_simulation + 'node_NR_time.npy')
+node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
 
 pos_nodes = np.load(folder_topology + 'pos_nodes.npy')
 
-# New infected per time step in the whole network
-new_I = np.array([np.sum(node_NI_time[i, :]) for i in range(T)])
-plt.plot(new_I)
-plt.show()
 # 1. Extract coordinates of nodes
 x_nodes = [pos_nodes[i][0] for i in range(N)]
 y_nodes = [pos_nodes[i][1] for i in range(N)]
 print(x_nodes)
 print(y_nodes)
 
-# 2. Calculate the cumulative number of infected individuals per node over the whole period of time
-cumulat_I_perNode = np.zeros(shape =(T+1, N))
+# 2. Calculate the cumulative number of NEW infected individuals per node over the whole period of time
+cumulat_newI_perNode = np.zeros(shape =(T+1, N))
 
 for i in range(N):
-   cumulat_I_perNode[:, i] = np.cumsum(density_node_NI_time[:, i])
-
+   cumulat_newI_perNode[:, i] = np.cumsum(new_I_time[:, i])
+   plt.plot(T_sim, cumulat_newI_perNode[:,i], label = f'node {i}')
+plt.legend()
+plt.show()
 
 # 3. Create 4-dimensional vectors (rows of a matrix)
 # dict_4d_vectors is a dictionary that at every <key> = label node assign a matrix that is of dimension [T x 4] :
@@ -83,13 +85,13 @@ for i in range(N):
     # I have T rows because I have values of infections for every time step
     for t in range(T):
         if t == 0:
-            array_node_0 = np.array([x_nodes[i], y_nodes[i], cumulat_I_perNode[t, i], t])
+            array_node_0 = np.array([x_nodes[i], y_nodes[i], cumulat_newI_perNode[t, i]/populationTot, t])
         elif t == 1:
-            array_node_1 = np.array([x_nodes[i], y_nodes[i], cumulat_I_perNode[t, i], t])
+            array_node_1 = np.array([x_nodes[i], y_nodes[i], cumulat_newI_perNode[t, i]/populationTot, t])
             mtrx_node = np.vstack((array_node_0, array_node_1))
         else:
             # I have 4 columns because I have 4 elements in the vectors
-            array_node_t = np.array([x_nodes[i], y_nodes[i], cumulat_I_perNode[t, i], t])
+            array_node_t = np.array([x_nodes[i], y_nodes[i], cumulat_newI_perNode[t, i]/populationTot, t])
             mtrx_node = np.vstack((mtrx_node, array_node_t))
     dict_4d_vectors[i] = mtrx_node
 
@@ -114,7 +116,7 @@ mtrx_tot_proj = mapper.project(mtrx_tot, projection=[0,1,2,3])
 graph = mapper.map(mtrx_tot_proj, clusterer = sklearn.cluster.DBSCAN(metric='euclidean'), cover=km.Cover(n_cubes=3, perc_overlap=0.1) )
 # convert graph of mapper into a nx graph
 nx_graph = km.adapter.to_nx(graph)
-nx.draw(nx_graph)
+#nx.draw(nx_graph)
 # plot on html
 html = mapper.visualize(graph, path_html="kepler-mapper-output2.html")
 

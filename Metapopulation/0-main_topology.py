@@ -31,8 +31,8 @@ seed = None
 np.random.seed(seed)
 
 # Number of rows and columns in the lattice
-N_row = 10
-N_col = 10
+N_row = 3
+N_col = 3
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
@@ -101,9 +101,10 @@ while strongConnection == False and contFalse < 1000:
 sns.heatmap(TransitionMatrix)
 
 # Look at properties of the graph
-plot_centralities(G)
+#plot_centralities(G)
 
 in_degrees = [G.in_degree(n) for n in G.nodes()]
+plt.figure()
 plt.bar(*np.unique(in_degrees, return_counts=True))
 plt.title("Degree centrality input edges")  # out degrees = in_degrees by construction
 plt.xlabel(" Input degree")

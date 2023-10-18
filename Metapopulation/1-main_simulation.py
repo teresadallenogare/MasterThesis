@@ -36,15 +36,15 @@ datadir = os.getcwd()
 
 c1 = 0  # for now
 
-beta = 0.4
-mu = 0.2
+beta = 0.35
+mu = 0.3
 
 # total simulation length
-T = 200
+T = 250
 T_sim = np.linspace(0, T, T+1)
 
 # Number of infected individuals in one node
-popI_node = 1
+popI_node = 5
 # List of index of nodes initially containing popI_node infected individuals
 idx_nodes_I_init = [0]
 
@@ -68,6 +68,8 @@ for x in range(N_row*N_col):
 
 folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology'
 folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
+
+nbr_sim_not_start = 0
 
 # Need to reload the initial condition at every repetition!!
 for sim in range(nbr_repetitions):
@@ -111,6 +113,9 @@ for sim in range(nbr_repetitions):
 
     #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
+    idx_node = 0
+
+    delta_NS_time = []
     for t in range(T):
         # 1- choice of particles
         Nij, Nij_S, Nij_I, Nij_R = choice_particle_to_move(G, TransitionMatrix)
@@ -166,15 +171,34 @@ for sim in range(nbr_repetitions):
 
             new_I_time = np.vstack((new_I_time, NI_new))
 
+            delta_NS = np.abs(node_NS_time[t, idx_node] - node_NS_time[t-1, idx_node])
+            delta_NS_time.append(delta_NS)
+
         node_NI_prev = node_NI
+    max_deltaNS = np.max(delta_NS_time)
+    max_delta_densityNS = max_deltaNS / np.mean(node_population)
+
+
+    if nodeS_density_time[int(T - 5), idx_node] < (avg_popPerNode / avg_popPerNode + 1.5 * max_delta_densityNS) and nodeS_density_time[int(T - 5), idx_node] > (avg_popPerNode / avg_popPerNode - 1.5 * max_delta_densityNS):
+        print('Simulation did not start')
+        nbr_sim_not_start += 1
+
+
+        # When end the simulation, control if it started or not
+        # Find the maximum fluctuation of S for each of the nodes in the simulation. If, at the end of the simulation,
+        # the number of S is inside 2 times the maximum fluctuation, then the simulation did not start
+        # For now I only control for node 0 because I see that nodes have all the same trend.
+
+
+
         # Plot temporal evolution of network after infection step
         # plt.clf()
         # plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
         # plt.pause(1)
         # ---------------------------------- Save data after time evolution ----------------------------------------------------
-    if sim== 0:
+    if sim == 0:
         write_simulation_file(N_row, N_col, choice_bool, c1, node_population0, node_NS0, node_NI0, node_NR0, node_state0, T,
-                              beta, mu, nbr_repetitions)
+                              beta, mu, nbr_repetitions, nbr_sim_not_start)
         np.save(folder_simulation + f'beta-{beta}mu-{mu}/T', T)
         np.save(folder_simulation + f'beta-{beta}mu-{mu}/nbr_repetitions', nbr_repetitions)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_new_I_time', new_I_time)
@@ -209,4 +233,4 @@ for sim in range(nbr_repetitions):
     plt.show()
 
 
-
+print(nbr_sim_not_start)

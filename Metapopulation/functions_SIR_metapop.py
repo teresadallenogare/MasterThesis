@@ -19,6 +19,7 @@ import scipy.sparse.linalg as sla
 import statistics as stat
 import time
 import os
+
 # ---------------------------------------------- Lattice  ----------------------------------------------
 def initialize_lattice(N_row, N_col):
     """ Define a lattice with square topology with N_row rows and N_col columns, that is a
@@ -155,7 +156,7 @@ def transition_matrix(G, D, density):
 
     max_density = max(density)
     a = 0.2 # establish connectivity
-    b = 0.9 # establish self loop
+    b = 0.9 # establish self loop (low b means very high self loops)
     # Parameter that quantifies the number of connections between nodes
     c = a / max(density)
     T = np.zeros(shape=(N_row, N_col))
@@ -195,6 +196,8 @@ def compute_centralities (G):
     eigenvalue_cent = nx.eigenvector_centrality(G)
 
     return degree_cent, betweenness_cent, closeness_cent, eigenvalue_cent
+
+
 # ---------------------------------------------- Perron-Frobeinus theorem ---------------------------------------------
 from numpy.linalg import eig
 
@@ -500,7 +503,36 @@ def infection_step_node(G, beta, mu):
 
     return NI_nodes_new
 
-def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+# ---------------------------------- Deterministic SIR  ----------------------------------------------
+
+def SIRDeterministic_equations(variables, t, params):
+  """ Determinisitc ODE for the SIR model. I consider equaitons for densities:
+  ds/dt = - beta * i * s = - alpha * s
+  di/dt = beta * i * s - mu * i = alpha * s - mu * i
+  dr/dt = mu * i
+
+  :param variables: [s, i, r] : densities
+  :param t:
+  :param params: [beta, mu] : infection rate and recovery rate
+  :return:
+  """
+  s = variables[0]
+  i = variables[1]
+
+  beta = params[0]
+  mu = params[1]
+
+  alpha = beta * i
+
+  dsdt = - alpha * s
+  didt = alpha * s - mu * i
+  drdt = mu * i
+
+  return [dsdt, didt, drdt]
+
+
+# ---------------------------------- Write and color functions ----------------------------------------------
+def colorFader(c1 ,c2, mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
     """ Color gradient between c1 - darker - and c2 - lighter.
 
     :param c1: [scalar] dark value of color
@@ -512,7 +544,6 @@ def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0)
     c2=np.array(matplotlib.colors.to_rgb(c2))
 
     return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)
-
 
 def write_topology_file(N_row, N_col, N, avg_pop_node, choice_bool, Nfix, percentPopNfix, c1, node_pop0):
 
@@ -548,7 +579,8 @@ def write_topology_file(N_row, N_col, N, avg_pop_node, choice_bool, Nfix, percen
         np.save(folder_topology + '/Nfix', Nfix)
         np.save(folder_topology + '/percentage_FixNodes', percentPopNfix)
 
-def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta, mu, nbr_repetitions ):
+def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta, mu, nbr_repetitions,
+                          nbr_sim_not_start):
     datadir = os.getcwd()
     folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
     f = open(folder_simulation + f'simulationFile_{N_row}x{N_col}.txt', 'w')
@@ -556,10 +588,12 @@ def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, nod
     f.write(f'Length of simulation, T : {T}\n')
     f.write(f'Infection rate, beta: {beta}\n')
     f.write(f'Recovery rate, mu: {mu}\n')
-    f.write(f'Nuber of repetitions: {nbr_repetitions}\n\n')
+    f.write(f'Nuber of repetitions: {nbr_repetitions}\n')
+    f.write(f'Number of simulations that did not start: {nbr_sim_not_start}\n')
     f.write(f'[Initial configuration]\n')
     f.write(f'Node population 0: {node_pop0}\n')
     f.write(f'Node S0: {node_S0}\n')
     f.write(f'Node I0: {node_I0}\n')
     f.write(f'Node R0: {node_R0}\n')
     f.write(f'Node state0: {node_state0}\n\n')
+
