@@ -70,7 +70,7 @@ folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{cho
 folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
 
 nbr_sim_not_start = 0
-
+idx_sim_not_start = []
 # Need to reload the initial condition at every repetition!!
 for sim in range(nbr_repetitions):
     # load graph object from file
@@ -182,6 +182,7 @@ for sim in range(nbr_repetitions):
     if nodeS_density_time[int(T - 5), idx_node] < (avg_popPerNode / avg_popPerNode + 1.5 * max_delta_densityNS) and nodeS_density_time[int(T - 5), idx_node] > (avg_popPerNode / avg_popPerNode - 1.5 * max_delta_densityNS):
         print('Simulation did not start')
         nbr_sim_not_start += 1
+        idx_sim_not_start.append(sim)
 
 
         # When end the simulation, control if it started or not
@@ -207,8 +208,6 @@ for sim in range(nbr_repetitions):
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NI_time', node_NI_time)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NR_time', node_NR_time)
 
-
-
 #plt.plot(new_I_time)
 #plt.show()
 
@@ -232,5 +231,7 @@ for sim in range(nbr_repetitions):
     # plt.title(f'SIR density node {idx_node}')
     plt.show()
 
-
+np.save(folder_simulation + f'beta-{beta}mu-{mu}/nbr_sim_not_start', nbr_sim_not_start)
+np.save(folder_simulation + f'beta-{beta}mu-{mu}/idx_sim_not_start', idx_sim_not_start)
 print(nbr_sim_not_start)
+print(idx_sim_not_start)
