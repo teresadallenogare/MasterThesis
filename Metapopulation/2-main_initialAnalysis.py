@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 18 October 2023
+Version : 20 October 2023
 
 --------------------------------------------------------------------
 Preliminary analysis on the topology of the network and the simulation.
@@ -89,7 +89,7 @@ plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
 # ########################################  Simulation analysis  ########################################
 
-# Density of S, I, R as a function of time
+# 1. Density of S, I, R as a function of time
 nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
 
 for idx_node in range(N):
@@ -110,7 +110,7 @@ plt.ylabel('Node density')
 # plt.title(f'SIR density node {idx_node}')
 plt.show()
 
-
+# 2. Mean and average over different simulations having the same topology
 # 3D matrix that stores repetitions along axis = 2
 node_population_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
@@ -155,7 +155,7 @@ stdDev_density_NS_time = np.std(density_node_NS_time_repeat, axis = 2, ddof = 1)
 stdDev_density_NI_time = np.std(density_node_NI_time_repeat, axis = 2, ddof = 1)
 stdDev_density_NR_time = np.std(density_node_NR_time_repeat, axis = 2, ddof = 1)
 
-# Deterministic SIR
+# 3. Plot deterministic SIR
 # Initial conditions : densities (is the same at every repetition!)
 y_init = [density_node_NS_time_repeat[0, 0, 0], density_node_NI_time_repeat[0, 0, 0], density_node_NR_time_repeat[0, 0, 0]]
 print('y_init: ', y_init)
@@ -174,11 +174,8 @@ plot_mean_std_singleNode(T_sim, mean_density_NS_time, mean_density_NI_time, mean
                          stdDev_density_NI_time, stdDev_density_NR_time, det_s, det_i, det_r, idx_node)
 
 plot_mean_allNodes(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time,det_s, det_i, det_r, N)
-#df_mean_NI_time = pd.DataFrame(mean_NI_time, columns=[f'node {i}' for i in range(N)])
-#df_stdDev_NI_time = pd.DataFrame(stdDev_NI_time, columns=[f'node {i}' for i in range(N)], index=[f'time {i}' for i in range(T+1)])
 
-
-# Quantify the distance of the mean simulated to the deterministic curve for the infection population inside a node.
+# 4. Quantify the distance of the mean simulated to the deterministic curve for the infection population inside a node.
 
 # Pointwise difference of the mean simulated curve to the deterministic one for the node with index idx_node
 diff_meanI_detI_node0 = mean_density_NI_time[:, idx_node] - det_i
@@ -188,6 +185,24 @@ mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_density_NI_time[:, idx_node]
 plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o')
 plt.show()
 print('hello')
+
+# 5. Heatmap of temporal evoulution of epidemics
+fig, ax = plt.subplots(3, 1)
+pos0 = ax[0].imshow(node_NS_time.T, cmap = 'coolwarm')
+ax[0].set_xlabel('Time')
+ax[0].set_ylabel('node idx')
+ax[0].set_title('Number susceptible - infected - recovered over time')
+pos1 = ax[1].imshow(node_NI_time.T, cmap = 'coolwarm')
+ax[1].set_xlabel('Time')
+ax[1].set_ylabel('node idx')
+pos2 = ax[2].imshow(node_NR_time.T, cmap = 'coolwarm')
+ax[2].set_xlabel('Time')
+ax[2].set_ylabel('node idx')
+fig.colorbar(pos0, ax=ax[0])
+fig.colorbar(pos1, ax=ax[1])
+fig.colorbar(pos2, ax=ax[2])
+
+plt.show()
 
 # ADD PLOT OF TEMPORAL EVOLUTION OF EPIDEMICS
 #sim = 0

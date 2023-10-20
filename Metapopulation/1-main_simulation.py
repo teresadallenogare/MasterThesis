@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 16 October 2023
+Version : 20 October 2023
 
 --------------------------------------------------------------------
 
@@ -205,7 +205,7 @@ for sim in range(nbr_repetitions):
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NI_time', node_NI_time)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NR_time', node_NR_time)
 
-    #ADD HERE PLOT
+
 
 
 np.save(folder_simulation + f'beta-{beta}mu-{mu}/nbr_sim_not_start', nbr_sim_not_start)
