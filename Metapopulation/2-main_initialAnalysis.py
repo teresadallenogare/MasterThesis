@@ -212,6 +212,24 @@ plt.show()
 #    plot_network(G, node_population_time[t, :], dict_nodes, weightNonZero, node_state)
 # plt.pause(1)
 
+# 5. See data in phase space
+ax = plt.axes(projection='3d')
+
+# Data for a three-dimensional line
+color_map = plt.get_cmap('spring')
+for idx_node in range(N):
+    x = node_NS_time[:, idx_node]
+    y = node_NI_time[:, idx_node]
+    z = node_NR_time[:, idx_node]
+    sc = ax.scatter3D(x, y, z)
+
+ax.set_xlabel('S')
+ax.set_ylabel('I')
+ax.set_zlabel('R')
+ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
+
+plt.show()
+
 
 
 
