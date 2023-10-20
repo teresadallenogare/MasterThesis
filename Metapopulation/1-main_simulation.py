@@ -34,22 +34,23 @@ N_col = 3
 choice_bool = 0
 datadir = os.getcwd()
 
-c1 = 0  # for now
+c1 = 1  # for now
 
-beta = 0.35
-mu = 0.3
+beta = 0.9
+mu = 0.1
 
 # total simulation length
-T = 250
+T = 150
 T_sim = np.linspace(0, T, T+1)
 
 # Number of infected individuals in one node
-popI_node = 5
+popI_node = 8
 # List of index of nodes initially containing popI_node infected individuals
 idx_nodes_I_init = [0]
 
 # Number of repetitions of a simulation with fixed parameters
 nbr_repetitions = 10
+
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -66,7 +67,7 @@ for x in range(N_row*N_col):
 
 
 
-folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology'
+folder_topology = datadir+f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
 folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
 
 nbr_sim_not_start = 0
@@ -75,19 +76,19 @@ idx_sim_not_start = []
 for sim in range(nbr_repetitions):
     # load graph object from file
     # -------------------------------------- Load data --------------------------------------
-    G = pickle.load(open(folder_topology + '/G.pickle', 'rb'))
-    dict_nodes = pickle.load(open(folder_topology + '/dict_nodes.pickle', 'rb'))
+    G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+    dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
     N = len(G.nodes)
 
-    DistanceMatrix = np.load(folder_topology + '/DistanceMatrix.npy')
-    TransitionMatrix = np.load(folder_topology + '/TransitionMatrix.npy')
+    DistanceMatrix = np.load(folder_topology + 'DistanceMatrix.npy')
+    TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
     weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
     weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
 
-    avg_popPerNode = np.load(folder_topology + '/avg_popPerNode.npy')
+    avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
     if choice_bool == 1:
-        Nfix = np.load(folder_topology + '/Nfix.npy')
-        percentage_FixNodes = np.load(folder_topology + '/percentage_FixNodes.npy')
+        Nfix = np.load(folder_topology + 'Nfix.npy')
+        percentage_FixNodes = np.load(folder_topology + 'percentage_FixNodes.npy')
     else:
         Nfix = 0
         percentage_FixNodes = 0
@@ -150,6 +151,7 @@ for sim in range(nbr_repetitions):
             node_NS_time = np.vstack((node_NS0, node_NS))
             node_NI_time = np.vstack((node_NI0, node_NI))
             node_NR_time = np.vstack((node_NR0, node_NR))
+            # ADD NODE STATE TIME!!
             # Densities  (matrix - row : node #, column : time)
             node_density_time = np.vstack((node_density0, node_density))
             nodeS_density_time = np.vstack((nodeS_density0, nodeS_density))
@@ -184,7 +186,6 @@ for sim in range(nbr_repetitions):
         nbr_sim_not_start += 1
         idx_sim_not_start.append(sim)
 
-
         # When end the simulation, control if it started or not
         # Find the maximum fluctuation of S for each of the nodes in the simulation. If, at the end of the simulation,
         # the number of S is inside 2 times the maximum fluctuation, then the simulation did not start
@@ -192,10 +193,6 @@ for sim in range(nbr_repetitions):
 
 
 
-        # Plot temporal evolution of network after infection step
-        # plt.clf()
-        # plot_network(G, node_population, dict_nodes, weightNonZero, node_state)
-        # plt.pause(1)
         # ---------------------------------- Save data after time evolution ----------------------------------------------------
     if sim == 0:
         write_simulation_file(N_row, N_col, choice_bool, c1, node_population0, node_NS0, node_NI0, node_NR0, node_state0, T,
@@ -208,28 +205,8 @@ for sim in range(nbr_repetitions):
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NI_time', node_NI_time)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NR_time', node_NR_time)
 
-#plt.plot(new_I_time)
-#plt.show()
+    #ADD HERE PLOT
 
-
-# plt.close()
-    for idx_node in range(N):
-        if idx_node == 0:
-            plt.plot(T_sim, node_density_time[:, idx_node], color=grad_gray[idx_node], label='population density')
-            plt.plot(T_sim, nodeS_density_time[:, idx_node], color=grad_blue[idx_node], label='S density')
-            plt.plot(T_sim, nodeI_density_time[:, idx_node], color=grad_red[idx_node], label='I density')
-            plt.plot(T_sim, nodeR_density_time[:, idx_node], color=grad_green[idx_node], label='R density')
-        else:
-            plt.plot(T_sim, node_density_time[:, idx_node], color=grad_gray[idx_node])
-            plt.plot(T_sim, nodeS_density_time[:, idx_node], color=grad_blue[idx_node])
-            plt.plot(T_sim, nodeI_density_time[:, idx_node], color=grad_red[idx_node])
-            plt.plot(T_sim, nodeR_density_time[:, idx_node], color=grad_green[idx_node])
-    plt.axhline(y=avg_popPerNode / avg_popPerNode, color='black', linestyle='--', label='Fixed average density per node')
-    plt.legend()
-    plt.xlabel('Timestep')
-    plt.ylabel('Node density')
-    # plt.title(f'SIR density node {idx_node}')
-    plt.show()
 
 np.save(folder_simulation + f'beta-{beta}mu-{mu}/nbr_sim_not_start', nbr_sim_not_start)
 np.save(folder_simulation + f'beta-{beta}mu-{mu}/idx_sim_not_start', idx_sim_not_start)

@@ -3,10 +3,10 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 16 October 2023
+Version : 18 October 2023
 
 --------------------------------------------------------------------
-
+Preliminary analysis on the topology of the network and the simulation.
 
 """
 from functions_SIR_metapop import *
@@ -15,33 +15,51 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import os
-import sklearn
-import kmapper as km
-import networkx as nx
-import pandas as pd
+import pickle
 
-
-# Consider the case of an epidemic outbreak on a 3x3 network
 N_row = 3
 N_col = 3
 N = N_row * N_col
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta = 0.4
-mu = 0.2
+beta = 0.9
+mu = 0.1
+
+# ------------------------------------------------ Colors  -------------------------------------------------
+grad_gray = []
+grad_red = []
+grad_blue = []
+grad_green = []
+
+for x in range(N_row*N_col):
+    #                                dark           light
+    grad_gray.append(colorFader('#505050', '#EAE9E9', x/(N_row * N_col)))
+    grad_red.append(colorFader('#E51C00', '#FCE0DC', x/(N_row * N_col)))
+    grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x/(N_row * N_col)))
+    grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x/(N_row * N_col)))
+
+
 
 # --------------------------------------------- Load data ---------------------------------------------
 folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
 folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
 
+G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
+pesi = G.adj
 pos_nodes = np.load(folder_topology + 'pos_nodes.npy')
 
-avg_popPerNode = np.load(folder_topology + '/avg_popPerNode.npy')
+DistanceMatrix = np.load(folder_topology + 'DistanceMatrix.npy')
+TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
+weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
+
+avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
 populationTot = N * avg_popPerNode # from this then I use multinomial
 if choice_bool == 1:
-    Nfix = np.load(folder_topology + '/Nfix.npy')
-    percentage_FixNodes = np.load(folder_topology + '/percentage_FixNodes.npy')
+    Nfix = np.load(folder_topology + 'Nfix.npy')
+    percentage_FixNodes = np.load(folder_topology + 'percentage_FixNodes.npy')
 else:
     Nfix = 0
     percentage_FixNodes = 0
@@ -49,10 +67,52 @@ else:
 T = np.load(folder_simulation + 'T.npy')
 T_sim = np.linspace(0, T, T+1)
 
-nbr_repetitions = np.load(folder_simulation + '/nbr_repetitions.npy')
+node_population0 = nx.get_node_attributes(G, name='Npop')
+node_population0 = np.array(list(node_population0.values()))
+
+sim = 0
+node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+# ########################################  Network analysis  ########################################
+
+#plot_centralities(G)
+in_degrees = [G.in_degree(n) for n in G.nodes()]
+plt.bar(*np.unique(in_degrees, return_counts=True))
+plt.xlabel('Degree of in-edges')
+plt.ylabel('Frequency')
+plt.show()
+plt.figure()
+plot_static_network(G, node_population0, dict_nodes, weightNonZero)
+
+# ########################################  Simulation analysis  ########################################
+
+# Density of S, I, R as a function of time
+nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
+
+for idx_node in range(N):
+    if idx_node == 0:
+        plt.plot(T_sim, node_population_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_gray[idx_node], label='population density')
+        plt.plot(T_sim, node_NS_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_blue[idx_node], label='S density')
+        plt.plot(T_sim, node_NI_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_red[idx_node], label='I density')
+        plt.plot(T_sim, node_NR_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_green[idx_node], label='R density')
+    else:
+        plt.plot(T_sim, node_population_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_gray[idx_node])
+        plt.plot(T_sim, node_NS_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_blue[idx_node])
+        plt.plot(T_sim, node_NI_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_red[idx_node])
+        plt.plot(T_sim, node_NR_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_green[idx_node])
+plt.axhline(y=avg_popPerNode / avg_popPerNode, color='black', linestyle='--', label='Fixed average density per node')
+plt.legend()
+plt.xlabel('Timestep')
+plt.ylabel('Node density')
+# plt.title(f'SIR density node {idx_node}')
+plt.show()
+
 
 # 3D matrix that stores repetitions along axis = 2
-node_population_time_repeat = np.zeros(shape = (T+1,N, nbr_repetitions))
+node_population_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NI_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NR_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
@@ -67,6 +127,7 @@ for sim in range(nbr_repetitions):
     node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
     node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
     node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+    #ADD NODE STATE
     #  Store data in 3D matrix
     node_population_time_repeat[:, :, sim] = node_population_time
     node_NS_time_repeat[:, :, sim] = node_NS_time
@@ -107,7 +168,6 @@ det_s = y[:, 0]
 det_i = y[:, 1]
 det_r = y[:, 2]
 
-
 idx_node = 0
 
 plot_mean_std_singleNode(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time, stdDev_density_NS_time,
@@ -125,10 +185,17 @@ diff_meanI_detI_node0 = mean_density_NI_time[:, idx_node] - det_i
 mean_diff_meanI_detI_node0 = np.mean(diff_meanI_detI_node0)
 mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_density_NI_time[:, idx_node])
 
-plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o' )
+plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o')
 plt.show()
 print('hello')
 
+# ADD PLOT OF TEMPORAL EVOLUTION OF EPIDEMICS
+#sim = 0
+#for t in range(T):
+    # Plot temporal evolution of network after infection step
+#    plt.clf()
+#    plot_network(G, node_population_time[t, :], dict_nodes, weightNonZero, node_state)
+# plt.pause(1)
 
 
 

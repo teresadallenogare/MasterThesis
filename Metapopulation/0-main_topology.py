@@ -45,6 +45,9 @@ percentage_FixNodes = 60
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
 choice_bool = 0
 
+# Parameters to establish the connectivity and the self loops
+a = 0.2  # establish connectivity
+b = 0.5  # establish self loop (low b means very high self loops)
 
 # ------------------------------------------------ Lattice initialization  -------------------------------------------------
 
@@ -71,7 +74,7 @@ strongConnection = False
 contFalse = 0
 while strongConnection == False and contFalse < 1000:
     contFalse = contFalse + 1
-    TransitionMatrix, c1 = transition_matrix(G, DistanceMatrix, node_density0)
+    TransitionMatrix, c1 = transition_matrix(G, DistanceMatrix, node_density0, a, b)
     print('c1: ', c1)
     weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
     weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
@@ -109,7 +112,7 @@ plt.bar(*np.unique(in_degrees, return_counts=True))
 plt.title("Degree centrality input edges")  # out degrees = in_degrees by construction
 plt.xlabel(" Input degree")
 plt.ylabel("Frequency")
-c1 = 0
+c1 = 1
 # -------------------------------------------- Write topology file  ---------------------------------------------
 write_topology_file(N_row, N_col, N, avg_popPerNode, choice_bool, Nfix, percentage_FixNodes, c1, node_population0)
 
