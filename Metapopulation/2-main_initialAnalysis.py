@@ -3,12 +3,13 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 20 October 2023
+Version : 22 October 2023
 
 --------------------------------------------------------------------
-Preliminary analysis on the topology of the network and the simulation.
+Analysis on the topology of the network and the simulation od SIR
 
 """
+
 from functions_SIR_metapop import *
 from functions_visualization import *
 import numpy as np
@@ -17,14 +18,16 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
-N_row = 3
-N_col = 3
+# ------------------------------------------------ Parameters  -------------------------------------------------
+
+N_row = 30
+N_col = 30
 N = N_row * N_col
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta = 0.9
-mu = 0.1
+beta = 0.35
+mu = 0.3
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -47,10 +50,8 @@ folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-
 
 G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
 dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
-pesi = G.adj
 pos_nodes = np.load(folder_topology + 'pos_nodes.npy')
 
-DistanceMatrix = np.load(folder_topology + 'DistanceMatrix.npy')
 TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
 weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
 weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
@@ -79,20 +80,23 @@ node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
 # ########################################  Network analysis  ########################################
 
 #plot_centralities(G)
+
 in_degrees = [G.in_degree(n) for n in G.nodes()]
 plt.bar(*np.unique(in_degrees, return_counts=True))
 plt.xlabel('Degree of in-edges')
 plt.ylabel('Frequency')
 plt.show()
 plt.figure()
-plot_static_network(G, node_population0, dict_nodes, weightNonZero)
+
+#plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
 # ########################################  Simulation analysis  ########################################
 
-# 1. Density of S, I, R as a function of time
+# 1. Density of S, I, R as a function of time.
+# / np.mean(node_population) : I divide by a constant number so I keep fluctuations
 nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
 
-for idx_node in range(N):
+for idx_node in range(1):
     if idx_node == 0:
         plt.plot(T_sim, node_population_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_gray[idx_node], label='population density')
         plt.plot(T_sim, node_NS_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_blue[idx_node], label='S density')
@@ -128,6 +132,7 @@ for sim in range(nbr_repetitions):
     node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
     node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
     #ADD NODE STATE
+
     #  Store data in 3D matrix
     node_population_time_repeat[:, :, sim] = node_population_time
     node_NS_time_repeat[:, :, sim] = node_NS_time
@@ -186,7 +191,7 @@ plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_dif
 plt.show()
 print('hello')
 
-# 5. Heatmap of temporal evoulution of epidemics
+# 5. Heatmap of temporal evolution of epidemics
 fig, ax = plt.subplots(3, 1)
 pos0 = ax[0].imshow(node_NS_time.T, cmap = 'coolwarm')
 ax[0].set_xlabel('Time')
@@ -204,9 +209,9 @@ fig.colorbar(pos2, ax=ax[2])
 
 plt.show()
 
-# ADD PLOT OF TEMPORAL EVOLUTION OF EPIDEMICS
-#sim = 0
-#for t in range(T):
+# ADD PLOT OF TEMPORAL EVOLUTION OF EPIDEMICS ON NETWORK
+# sim = 0
+# for t in range(T):
     # Plot temporal evolution of network after infection step
 #    plt.clf()
 #    plot_network(G, node_population_time[t, :], dict_nodes, weightNonZero, node_state)

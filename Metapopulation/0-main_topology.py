@@ -29,7 +29,7 @@ plt.figure(figsize=(8, 8))
 
 seed = None
 np.random.seed(seed)
-
+# ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
 N_row = 3
 N_col = 3
@@ -93,6 +93,7 @@ while strongConnection == False and contFalse < 1000:
             for j in range(N):
                 if TransitionMatrix[i, j] != 0:
                     G.remove_edge(i, j)
+
 #Check PF convergence
 #check_convergence(TransitionMatrix)
 # rho0, rho0check = perron_frobenius_theorem(TransitionMatrix)
