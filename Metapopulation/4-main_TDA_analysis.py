@@ -22,8 +22,8 @@ from persim.persistent_entropy import *
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
-N_row = [10]
-N_col = [10]
+N_row = [10, 30]
+N_col = [10, 30]
 
 choice_bool = 0
 datadir = os.getcwd()
