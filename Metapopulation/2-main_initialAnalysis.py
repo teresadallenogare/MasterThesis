@@ -26,8 +26,8 @@ N = N_row * N_col
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta = 0.35
-mu = 0.3
+beta = 0.3
+mu = 0.1
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -71,6 +71,8 @@ T_sim = np.linspace(0, T, T+1)
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 
+nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
+
 sim = 0
 node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
 node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
@@ -94,7 +96,7 @@ plt.figure()
 
 # 1. Density of S, I, R as a function of time.
 # / np.mean(node_population) : I divide by a constant number so I keep fluctuations
-nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
+
 
 for idx_node in range(1):
     if idx_node == 0:
@@ -132,6 +134,7 @@ for sim in range(nbr_repetitions):
     node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
     node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
     #ADD NODE STATE
+
 
     #  Store data in 3D matrix
     node_population_time_repeat[:, :, sim] = node_population_time
@@ -191,32 +194,6 @@ plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_dif
 plt.show()
 print('hello')
 
-# 5. Heatmap of temporal evolution of epidemics
-fig, ax = plt.subplots(3, 1)
-pos0 = ax[0].imshow(node_NS_time.T, cmap = 'coolwarm')
-ax[0].set_xlabel('Time')
-ax[0].set_ylabel('node idx')
-ax[0].set_title('Number susceptible - infected - recovered over time')
-pos1 = ax[1].imshow(node_NI_time.T, cmap = 'coolwarm')
-ax[1].set_xlabel('Time')
-ax[1].set_ylabel('node idx')
-pos2 = ax[2].imshow(node_NR_time.T, cmap = 'coolwarm')
-ax[2].set_xlabel('Time')
-ax[2].set_ylabel('node idx')
-fig.colorbar(pos0, ax=ax[0])
-fig.colorbar(pos1, ax=ax[1])
-fig.colorbar(pos2, ax=ax[2])
-
-plt.show()
-
-# ADD PLOT OF TEMPORAL EVOLUTION OF EPIDEMICS ON NETWORK
-# sim = 0
-# for t in range(T):
-    # Plot temporal evolution of network after infection step
-#    plt.clf()
-#    plot_network(G, node_population_time[t, :], dict_nodes, weightNonZero, node_state)
-# plt.pause(1)
-
 # 5. See data in phase space
 ax = plt.axes(projection='3d')
 
@@ -234,9 +211,6 @@ ax.set_zlabel('R')
 ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
 
 plt.show()
-
-
-
 
 
 

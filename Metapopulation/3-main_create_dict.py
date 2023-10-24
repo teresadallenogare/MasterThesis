@@ -28,8 +28,8 @@ N = N_row * N_col
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta = 0.3
-mu = 0.1
+beta = 0.4
+mu = 0.2
 
 # --------------------------------------------- Load data ---------------------------------------------
 folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
