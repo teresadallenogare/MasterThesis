@@ -71,14 +71,6 @@ T_sim = np.linspace(0, T, T+1)
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 
-nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
-
-sim = 0
-node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
-
 # ########################################  Network analysis  ########################################
 
 #plot_centralities(G)
@@ -93,6 +85,14 @@ plt.figure()
 #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
 # ########################################  Simulation analysis  ########################################
+
+nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
+
+sim = 0
+node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
 
 # 1. Density of S, I, R as a function of time.
 # / np.mean(node_population) : I divide by a constant number so I keep fluctuations
