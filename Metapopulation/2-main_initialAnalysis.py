@@ -12,6 +12,7 @@ Analysis on the topology of the network and the simulation od SIR
 
 from functions_SIR_metapop import *
 from functions_visualization import *
+from functions_analysis import *
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
@@ -23,13 +24,17 @@ import pickle
 N_row = 30
 N_col = 30
 N = N_row * N_col
+
 choice_bool = 0
 datadir = os.getcwd()
+
 c1 = 0  # for now
+
 beta = 0.9
 mu = 0.1
 
 # ------------------------------------------------ Colors  -------------------------------------------------
+
 grad_gray = []
 grad_red = []
 grad_blue = []
@@ -42,9 +47,8 @@ for x in range(N_row*N_col):
     grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x/(N_row * N_col)))
     grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x/(N_row * N_col)))
 
-
-
 # --------------------------------------------- Load data ---------------------------------------------
+
 folder_topology = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Topology/'
 folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
 
@@ -71,7 +75,7 @@ T_sim = np.linspace(0, T, T+1)
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 
-# ########################################  Network analysis  ########################################
+# ----------------------------------------------  Network analysis  ----------------------------------------------
 
 #plot_centralities(G)
 
@@ -84,39 +88,17 @@ plt.figure()
 
 #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
-# ########################################  Simulation analysis  ########################################
+# ----------------------------------------------  Simulation analysis  ----------------------------------------------
+bool_density = 1
 
-nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
+idx_sims = [0]
+idx_nodes = [item for item in range(0, N)]
 
-sim = 0
-node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
-
-# 1. Density of S, I, R as a function of time.
-# / np.mean(node_population) : I divide by a constant number so I keep fluctuations
-
-
-for idx_node in range(1):
-    if idx_node == 0:
-        plt.plot(T_sim, node_population_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_gray[idx_node], label='population density')
-        plt.plot(T_sim, node_NS_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_blue[idx_node], label='S density')
-        plt.plot(T_sim, node_NI_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_red[idx_node], label='I density')
-        plt.plot(T_sim, node_NR_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_green[idx_node], label='R density')
-    else:
-        plt.plot(T_sim, node_population_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_gray[idx_node])
-        plt.plot(T_sim, node_NS_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_blue[idx_node])
-        plt.plot(T_sim, node_NI_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_red[idx_node])
-        plt.plot(T_sim, node_NR_time[:, idx_node] / np.mean(node_population_time[:, idx_node]), color=grad_green[idx_node])
-plt.axhline(y=avg_popPerNode / avg_popPerNode, color='black', linestyle='--', label='Fixed average density per node')
-plt.legend()
-plt.xlabel('Timestep')
-plt.ylabel('Node density')
-# plt.title(f'SIR density node {idx_node}')
-plt.show()
+# 1. Plot number of individuals of densities in SIR for a certain simulation and for certain nodes
+plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_popPerNode)
 
 # 2. Mean and average over different simulations having the same topology
+nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
 # 3D matrix that stores repetitions along axis = 2
 node_population_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
 node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
