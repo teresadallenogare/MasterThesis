@@ -3,11 +3,12 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 22 October 2023
+Version : 25 October 2023
 
 --------------------------------------------------------------------
 
-Perform simulations on a network already defined. Do repeated simulations
+Perform simulations on a network already defined. Do repeated simulations.
+Added node state time
 
 """
 
@@ -141,7 +142,8 @@ for sim in range(nbr_repetitions):
         node_NR = np.array(list(node_NR.values()))
         node_state = np.array(list(node_state.values()))
 
-        # Density per node
+        # Density per node : ok np.mean because it is for fixed time and averages over the population in all nodes.
+        # This is just used as a control to ensure whether the simulation started or not.
         nodeS_density = node_NS / np.mean(node_population)
 
         if t == 0:
@@ -150,7 +152,7 @@ for sim in range(nbr_repetitions):
             node_NS_time = np.vstack((node_NS0, node_NS))
             node_NI_time = np.vstack((node_NI0, node_NI))
             node_NR_time = np.vstack((node_NR0, node_NR))
-            # ADD NODE STATE TIME!!
+            node_state_time = np.vstack((node_state0, node_state))
 
             # Densities  (matrix - row : node #, column : time)
             nodeS_density_time = np.vstack((nodeS_density0, nodeS_density))
@@ -163,7 +165,7 @@ for sim in range(nbr_repetitions):
             node_NS_time = np.vstack((node_NS_time, node_NS))
             node_NI_time = np.vstack((node_NI_time, node_NI))
             node_NR_time = np.vstack((node_NR_time, node_NR))
-            # ADD NODE STATE TIME!!
+            node_state_time = np.vstack((node_state_time, node_state))
 
             # Densities  (matrix - row : node #, column : time)
             nodeS_density_time = np.vstack((nodeS_density_time, nodeS_density))
@@ -203,7 +205,7 @@ for sim in range(nbr_repetitions):
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NS_time', node_NS_time)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NI_time', node_NI_time)
     np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_NR_time', node_NR_time)
-
+    np.save(folder_simulation + f'beta-{beta}mu-{mu}/sim_{sim}_node_state_time', node_state_time)
 
 
 np.save(folder_simulation + f'beta-{beta}mu-{mu}/nbr_sim_not_start', nbr_sim_not_start)
