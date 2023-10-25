@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 22 October 2023
+Version : 25 October 2023
 
 --------------------------------------------------------------------
 Analysis on the topology of the network and the simulation od SIR
@@ -21,8 +21,8 @@ import pickle
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
-N_row = 30
-N_col = 30
+N_row = 10
+N_col = 10
 N = N_row * N_col
 
 choice_bool = 0
@@ -33,19 +33,6 @@ c1 = 0  # for now
 beta = 0.9
 mu = 0.1
 
-# ------------------------------------------------ Colors  -------------------------------------------------
-
-grad_gray = []
-grad_red = []
-grad_blue = []
-grad_green = []
-
-for x in range(N_row*N_col):
-    #                                dark           light
-    grad_gray.append(colorFader('#505050', '#EAE9E9', x/(N_row * N_col)))
-    grad_red.append(colorFader('#E51C00', '#FCE0DC', x/(N_row * N_col)))
-    grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x/(N_row * N_col)))
-    grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x/(N_row * N_col)))
 
 # --------------------------------------------- Load data ---------------------------------------------
 
@@ -89,7 +76,7 @@ plt.figure()
 #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
 # ----------------------------------------------  Simulation analysis  ----------------------------------------------
-bool_density = 1
+bool_density = 0
 
 idx_sims = [0]
 idx_nodes = [item for item in range(0, N)]
@@ -99,101 +86,58 @@ plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_s
 
 # 2. Mean and average over different simulations having the same topology
 nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
-# 3D matrix that stores repetitions along axis = 2
-node_population_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-node_NI_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-node_NR_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-density_node_NS_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-density_node_NI_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-density_node_NR_time_repeat = np.zeros(shape = (T+1, N, nbr_repetitions))
-# To see repetition k : node_NI_time_repeat[:,:,k]
-for sim in range(nbr_repetitions):
-    # Load data
-    new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
-    node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-    node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-    node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-    node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
-    #ADD NODE STATE
 
+y_mean_std = mean_stdDev_repetitions(N_row, N_col, choice_bool, c1, T, beta, mu, bool_density, nbr_repetitions)
+mean_S_time = y_mean_std[0]
+mean_I_time = y_mean_std[1]
+mean_R_time = y_mean_std[2]
+stdDev_S_time = y_mean_std[3]
+stdDev_I_time = y_mean_std[4]
+stdDev_R_time = y_mean_std[5]
 
-    #  Store data in 3D matrix
-    node_population_time_repeat[:, :, sim] = node_population_time
-    node_NS_time_repeat[:, :, sim] = node_NS_time
-    node_NI_time_repeat[:, :, sim] = node_NI_time
-    node_NR_time_repeat[:, :, sim] = node_NR_time
-
-# Compute densities
-density_node_NS_time_repeat = node_NS_time_repeat / node_population_time_repeat
-density_node_NI_time_repeat = node_NI_time_repeat / node_population_time_repeat
-density_node_NR_time_repeat = node_NR_time_repeat / node_population_time_repeat
-
-# Mean value of number of individuals over repetitions
-mean_NS_time = np.mean(node_NS_time_repeat, axis = 2)
-mean_NI_time = np.mean(node_NI_time_repeat, axis = 2)
-mean_NR_time = np.mean(node_NR_time_repeat, axis = 2)
-stdDev_NS_time = np.std(node_NS_time_repeat, axis = 2, ddof = 1)
-stdDev_NI_time = np.std(node_NI_time_repeat, axis = 2, ddof = 1)
-stdDev_NR_time = np.std(node_NR_time_repeat, axis = 2, ddof = 1)
-
-# Mean value of densities over repetitions
-mean_density_NS_time = np.mean(density_node_NS_time_repeat, axis = 2)
-mean_density_NI_time = np.mean(density_node_NI_time_repeat, axis = 2)
-mean_density_NR_time = np.mean(density_node_NR_time_repeat, axis = 2)
-stdDev_density_NS_time = np.std(density_node_NS_time_repeat, axis = 2, ddof = 1)
-stdDev_density_NI_time = np.std(density_node_NI_time_repeat, axis = 2, ddof = 1)
-stdDev_density_NR_time = np.std(density_node_NR_time_repeat, axis = 2, ddof = 1)
+print('Hello')
 
 # 3. Plot deterministic SIR
-# Initial conditions : densities (is the same at every repetition!)
-y_init = [density_node_NS_time_repeat[0, 0, 0], density_node_NI_time_repeat[0, 0, 0], density_node_NR_time_repeat[0, 0, 0]]
-print('y_init: ', y_init)
-params = [beta, mu]
-# Sole equation for densities
-y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,))
+if bool_density == 1:
+    density_node_NS_time_repeat = y_mean_std[6]
+    density_node_NI_time_repeat = y_mean_std[7]
+    density_node_NR_time_repeat = y_mean_std[8]
+    # Initial conditions : densities (is the same at every repetition!)
+    y_init = [density_node_NS_time_repeat, density_node_NI_time_repeat, density_node_NR_time_repeat]
+    print('y_init: ', y_init)
+    params = [beta, mu]
+    # Sole equation for densities
+    y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,))
 
-# Deterministic densities in time: solutions of SIR deterministic ODEs
-det_s = y[:, 0]
-det_i = y[:, 1]
-det_r = y[:, 2]
+    # Deterministic densities in time: solutions of SIR deterministic ODEs
+    det_s = y[:, 0]
+    det_i = y[:, 1]
+    det_r = y[:, 2]
+elif bool_density == 0:
+    det_s = [0 for i in range(0, T+1)]
+    det_i = [0 for i in range(0, T+1)]
+    det_r = [0 for i in range(0, T+1)]
 
 idx_node = 0
 
-plot_mean_std_singleNode(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time, stdDev_density_NS_time,
-                         stdDev_density_NI_time, stdDev_density_NR_time, det_s, det_i, det_r, idx_node)
+plot_mean_std_singleNode(T_sim, mean_S_time, mean_I_time, mean_R_time, stdDev_S_time,
+                         stdDev_I_time, stdDev_R_time, det_s, det_i, det_r, idx_node)
 
-plot_mean_allNodes(T_sim, mean_density_NS_time, mean_density_NI_time, mean_density_NR_time,det_s, det_i, det_r, N)
+plot_mean_allNodes(T_sim, mean_S_time, mean_I_time, mean_R_time,det_s, det_i, det_r, N)
 
 # 4. Quantify the distance of the mean simulated to the deterministic curve for the infection population inside a node.
 
 # Pointwise difference of the mean simulated curve to the deterministic one for the node with index idx_node
-diff_meanI_detI_node0 = mean_density_NI_time[:, idx_node] - det_i
+diff_meanI_detI_node0 = mean_I_time[:, idx_node] - det_i
 mean_diff_meanI_detI_node0 = np.mean(diff_meanI_detI_node0)
-mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_density_NI_time[:, idx_node])
+mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_I_time[:, idx_node])
 
 plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o')
 plt.show()
 print('hello')
 
 # 5. See data in phase space
-ax = plt.axes(projection='3d')
-
-# Data for a three-dimensional line
-color_map = plt.get_cmap('spring')
-for idx_node in range(N):
-    x = node_NS_time[:, idx_node]
-    y = node_NI_time[:, idx_node]
-    z = node_NR_time[:, idx_node]
-    sc = ax.scatter3D(x, y, z)
-
-ax.set_xlabel('S')
-ax.set_ylabel('I')
-ax.set_zlabel('R')
-ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
-
-plt.show()
-
-
+sim = 0
+plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim)
 
 
