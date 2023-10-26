@@ -18,7 +18,8 @@ from functions_SIR_metapop import colorFader
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
+import matplotlib.animation as animation
+import pickle
 # ---------------------------------------- Simulation SIR analysis ----------------------------------------
 def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_pop_node):
     """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
@@ -58,6 +59,7 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, i
 
     for sim in idx_sims:
         # Load data
+
         node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
         node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
         node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
@@ -88,11 +90,11 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, i
                 plt.plot(T_sim, vals_NS_time[:, node], color=grad_blue[node])
                 plt.plot(T_sim, vals_NI_time[:, node], color=grad_red[node])
                 plt.plot(T_sim, vals_NR_time[:, node], color=grad_green[node])
-    plt.xlabel('Timestep')
-    plt.axhline(y = avg_pop_node if bool_density == 0 else 1, color='black', linestyle='--', label = 'Average population ' if bool_density == 0 else 'Average density')
-    plt.ylabel('Node population' if bool_density == 0 else 'Node density')
-    plt.legend()
-    plt.show()
+        plt.xlabel('Timestep')
+        plt.axhline(y = avg_pop_node if bool_density == 0 else 1, color='black', linestyle='--', label = 'Average population ' if bool_density == 0 else 'Average density')
+        plt.ylabel('Node population' if bool_density == 0 else 'Node density')
+        plt.legend()
+        plt.show()
 
 def mean_stdDev_repetitions(N_row, N_col, choice_bool, c1, T, beta, mu, bool_density, nbr_repetitions):
     """ Compute the mean and std deviation over repeated simulations with the same topology and parameters
@@ -116,17 +118,16 @@ def mean_stdDev_repetitions(N_row, N_col, choice_bool, c1, T, beta, mu, bool_den
 
     folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
 
-
     node_population_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
     node_NS_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
     node_NI_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
     node_NR_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
 
+
     # 3D matrix that stores repetitions along axis = 2
     # To see repetition k : node_NI_time_repeat[:,:,k]
     for sim in range(nbr_repetitions):
         # Load data
-        new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
         node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
         node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
         node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
@@ -146,9 +147,17 @@ def mean_stdDev_repetitions(N_row, N_col, choice_bool, c1, T, beta, mu, bool_den
         vals_NR_time_repeat = node_NR_time_repeat
 
     elif bool_density == 1:
-        vals_NS_time_repeat = node_NS_time_repeat / node_population_time_repeat
-        vals_NI_time_repeat = node_NI_time_repeat / node_population_time_repeat
-        vals_NR_time_repeat = node_NR_time_repeat / node_population_time_repeat
+        mean_ex = np.zeros(shape = (nbr_repetitions, N))
+        vals_population_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
+        vals_NS_time_repeat =  np.zeros(shape=(T + 1, N, nbr_repetitions))
+        vals_NI_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
+        vals_NR_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
+        for sim in range(nbr_repetitions):
+            mean_ex[sim, :] = np.mean(node_population_time_repeat[:,:,sim], axis = 0)
+            vals_NS_time_repeat[:, :, sim] = node_NS_time_repeat[:, :, sim] / np.mean(node_population_time_repeat[:,:,sim], axis = 0)
+            vals_NI_time_repeat[:, :, sim] = node_NI_time_repeat[:, :, sim]/ np.mean(node_population_time_repeat[:,:,sim], axis = 0)
+            vals_NR_time_repeat[:, :, sim] = node_NR_time_repeat[:, :, sim] / np.mean(node_population_time_repeat[:,:,sim], axis = 0)
+
 
     else:
         print('Wrong value of bool density')
@@ -208,3 +217,65 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
     ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
 
     plt.show()
+
+def animate(t, img, grid, dict_vals, dict_norm_vals):
+    mtrx_t = dict_vals[t]
+    mtrx_norm_t = dict_norm_vals[t]
+    # Extract node positions from the non-normalized dictionary
+    x_nodes = mtrx_t[:, 0]
+    y_nodes = mtrx_t[:, 1]
+    # Extract the density of infected from the normalized dictionary
+    density_I_nodes = mtrx_norm_t[:, 3]
+    idx_row = 0
+    for i, j in zip(x_nodes, y_nodes):
+        # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
+        grid[int(i), int(j)] = density_I_nodes[idx_row]
+        idx_row += 1
+    img.set_data(grid)
+    return img,
+
+
+def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
+    """ Plot data in space of variables
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T: [scalar] length of the simulation
+    :param beta: [scalar] infection rate
+    :param mu: [scalar] recovery rate
+    :param sim: [scalar] index of the simulation
+
+    :return: plot of the node's states in the space of variables
+    """
+    N = N_row * N_col
+
+    datadir = os.getcwd()
+    folder_dict = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/'
+    folder_dict_normalized = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/Normalized/'
+
+    # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
+    # Initialize grid for later visualization at the beginning of every new simulation! That is my initial state
+    grid = np.zeros(shape=(N_row, N_col))
+    # Load dictionary that contains the information of every node (x_node, y_node, #S, #I, #R) at each timestep
+    dict_load = pickle.load(open(folder_dict + f'dict_data-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
+    dict_load_values = list(dict_load.values())
+    dict_load_normalized = pickle.load(open(folder_dict_normalized + f'dict_data_normalized-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized_values = list(dict_load_normalized.values())
+    #Brute force : maximum value of density of I in whole dictionary
+    max_density_I = 1#max(np.array(dict_load_normalized_values))
+    # Setup animation
+    fig, ax = plt.subplots()
+    img = ax.imshow(grid, vmin=0, vmax=0.2, cmap='coolwarm')
+    fig.colorbar(img, cmap='coolwarm')
+    ax.set_xlabel('Node index')
+    ax.set_ylabel('Node index')
+    ax.set_title(f'Heatmap outbreak : beta = {beta}, mu = {mu}, sim = {sim}')
+    ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values, ),
+                                  frames=dict_load.keys())
+    ani.save('animation.gif')
+    plt.show()
+    print('Done!')
+

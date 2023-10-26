@@ -30,7 +30,7 @@ datadir = os.getcwd()
 
 c1 = 0  # for now
 
-beta = 0.9
+beta = 0.3
 mu = 0.1
 
 
@@ -76,7 +76,7 @@ plt.figure()
 #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
 # ----------------------------------------------  Simulation analysis  ----------------------------------------------
-bool_density = 0
+bool_density = 1
 
 idx_sims = [0]
 idx_nodes = [item for item in range(0, N)]
@@ -139,5 +139,8 @@ print('hello')
 # 5. See data in phase space
 sim = 0
 plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim)
+
+# 6. Temporal heatmap
+heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim)
 
 
