@@ -204,7 +204,7 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
 
     # Data for a three-dimensional line
     color_map = plt.get_cmap('spring')
-    for idx_node in range(N):
+    for idx_node in range(1):
         x = node_NS_time[:, idx_node]
         y = node_NI_time[:, idx_node]
         z = node_NR_time[:, idx_node]
@@ -225,6 +225,8 @@ def animate(t, img, grid, dict_vals, dict_norm_vals):
     y_nodes = mtrx_t[:, 1]
     # Extract the density of infected from the normalized dictionary
     density_I_nodes = mtrx_norm_t[:, 3]
+    print('t: ', t)
+    print('dI: ', density_I_nodes)
     idx_row = 0
     for i, j in zip(x_nodes, y_nodes):
         # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
@@ -279,9 +281,10 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     fig.colorbar(img, cmap='coolwarm')
     ax.set_xlabel('Node index')
     ax.set_ylabel('Node index')
-    ax.set_title(f'Heatmap outbreak : beta = {beta}, mu = {mu}, sim = {sim}')
+    ax.set_title(f'Heatmap no outbreak : beta = {beta}, mu = {mu}, sim = {sim}')
     ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values, ),
-                                  frames=dict_load.keys())
+                                  frames= 38#dict_load.keys()
+                                   )
     ani.save('animation.gif')
     plt.show()
     print('Done!')

@@ -141,7 +141,7 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
 
 
 # -------------------------------------------- Transition matrix  -----------------------------------------------------
-def transition_matrix(G, D, density):
+def transition_matrix(G, D, density, a, b):
     """ Compute probability to create an edge and its reversed one.
         Compute weights of edges that correspond to the transition probability of people
         among nodes.
@@ -149,14 +149,15 @@ def transition_matrix(G, D, density):
     :param G: [networkx.class] graph structure from networkx
     :param D: matrix of Euclidean distance
     :param density: [np.array] population density inside every node
+    :param a :
+    :param b :
     """
     N = len(G.nodes)
     N_row = N
     N_col = N
 
     max_density = max(density)
-    a = 0.2 # establish connectivity
-    b = 0.9 # establish self loop (low b means very high self loops)
+
     # Parameter that quantifies the number of connections between nodes
     c = a / max(density)
     T = np.zeros(shape=(N_row, N_col))
@@ -582,7 +583,7 @@ def write_topology_file(N_row, N_col, N, avg_pop_node, choice_bool, Nfix, percen
 def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta, mu, nbr_repetitions,
                           nbr_sim_not_start):
     datadir = os.getcwd()
-    folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/'
+    folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
     f = open(folder_simulation + f'simulationFile_{N_row}x{N_col}.txt', 'w')
     f.write(f'[Simulation parameters]\n')
     f.write(f'Length of simulation, T : {T}\n')
