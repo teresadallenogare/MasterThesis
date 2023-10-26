@@ -123,7 +123,6 @@ def mean_stdDev_repetitions(N_row, N_col, choice_bool, c1, T, beta, mu, bool_den
     node_NI_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
     node_NR_time_repeat = np.zeros(shape=(T + 1, N, nbr_repetitions))
 
-
     # 3D matrix that stores repetitions along axis = 2
     # To see repetition k : node_NI_time_repeat[:,:,k]
     for sim in range(nbr_repetitions):
@@ -265,10 +264,18 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     dict_load_normalized = pickle.load(open(folder_dict_normalized + f'dict_data_normalized-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
     dict_load_normalized_values = list(dict_load_normalized.values())
     #Brute force : maximum value of density of I in whole dictionary
-    max_density_I = 1#max(np.array(dict_load_normalized_values))
+    max_densityI_time = []
+    for t in dict_load.keys():
+        mtrx_t_normalized = dict_load_normalized[t]
+        density_I = mtrx_t_normalized[:, 3]
+        max_densityI_time.append(max(density_I))
+    max_densityI_time = np.array(max_densityI_time)
+    max_densityI = max(max_densityI_time)
+    print('max-densityI', max_densityI)
+
     # Setup animation
     fig, ax = plt.subplots()
-    img = ax.imshow(grid, vmin=0, vmax=0.2, cmap='coolwarm')
+    img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
     fig.colorbar(img, cmap='coolwarm')
     ax.set_xlabel('Node index')
     ax.set_ylabel('Node index')

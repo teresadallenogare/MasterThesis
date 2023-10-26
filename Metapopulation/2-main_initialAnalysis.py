@@ -63,7 +63,6 @@ node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 
 # ----------------------------------------------  Network analysis  ----------------------------------------------
-
 #plot_centralities(G)
 
 in_degrees = [G.in_degree(n) for n in G.nodes()]
@@ -71,7 +70,6 @@ plt.bar(*np.unique(in_degrees, return_counts=True))
 plt.xlabel('Degree of in-edges')
 plt.ylabel('Frequency')
 plt.show()
-plt.figure()
 
 #plot_static_network(G, node_population0, dict_nodes, weightNonZero)
 
@@ -94,8 +92,6 @@ mean_R_time = y_mean_std[2]
 stdDev_S_time = y_mean_std[3]
 stdDev_I_time = y_mean_std[4]
 stdDev_R_time = y_mean_std[5]
-
-print('Hello')
 
 # 3. Plot deterministic SIR
 if bool_density == 1:
@@ -124,17 +120,6 @@ plot_mean_std_singleNode(T_sim, mean_S_time, mean_I_time, mean_R_time, stdDev_S_
                          stdDev_I_time, stdDev_R_time, det_s, det_i, det_r, idx_node)
 
 plot_mean_allNodes(T_sim, mean_S_time, mean_I_time, mean_R_time,det_s, det_i, det_r, N)
-
-# 4. Quantify the distance of the mean simulated to the deterministic curve for the infection population inside a node.
-
-# Pointwise difference of the mean simulated curve to the deterministic one for the node with index idx_node
-diff_meanI_detI_node0 = mean_I_time[:, idx_node] - det_i
-mean_diff_meanI_detI_node0 = np.mean(diff_meanI_detI_node0)
-mean_std_dev_diff_meanI_detI_node0 = np.mean(stdDev_I_time[:, idx_node])
-
-plt.errorbar(avg_popPerNode, mean_diff_meanI_detI_node0, yerr = mean_std_dev_diff_meanI_detI_node0, marker = 'o')
-plt.show()
-print('hello')
 
 # 5. See data in phase space
 sim = 0
