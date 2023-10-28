@@ -17,17 +17,19 @@ import pickle
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
-N_row = [10]#, 30]
-N_col = [10]#, 30]
+N_row = [10, 30]
+N_col = [10, 30]
 
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta_vals  = [0.4, 0.3, 0.9, 0.35, 0.75]
+beta_vals = [0.4, 0.3, 0.9, 0.35, 0.75]
 mu_vals = [0.2, 0.1, 0.1, 0.3, 0.6]
 
 
-normalization = 1
+normalization = 2
+
+
 
 for row, col in zip(N_row, N_col):
     N = row * col
@@ -74,7 +76,6 @@ for row, col in zip(N_row, N_col):
                 # Save dictionary. It goes in the folder of the corresponding beta and mu
                 pickle.dump(dict_5d_nodes, open(folder_dict + f'/dict_data-{row}x{col}-sim{sim}.pickle', 'wb'))
 
-
             elif normalization == 1:
 
                 # 1. Normalization position nodes : divide by the number of rows
@@ -112,5 +113,24 @@ for row, col in zip(N_row, N_col):
                 # Save dictionary. It goes in the folder of the corresponding beta and mu
                 pickle.dump(dict_5d_densities, open(folder_dict + f'/Normalized/dict_data_normalized-{row}x{col}-sim{sim}.pickle', 'wb'))
 
-            else:
-                print('wrong value of normalization inserted')
+            elif normalization == 2:
+                print('Standard scaler')
+                from sklearn.preprocessing import StandardScaler
+                folder_dict = datadir + f'/Data-simpleLattice/{row}x{col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/'
+                dict_data = pickle.load(
+                    open(folder_dict + f'No-normalized/dict_data-{row}x{col}-sim{sim}.pickle', 'rb'))
+                dict_vals = list(dict_data.values())
+                dict_vals_scaled = {}
+                for t in dict_data.keys():
+                    mtrx_t = np.array(dict_vals[t])
+                    scaler = StandardScaler()
+                    # DOUBT : DO I HAVE TO SCALE FOR EVERY TIMESTEP OR ONCE EVERYTHING?
+                    mtrx_t_scaled = scaler.fit_transform(mtrx_t)
+                    dict_vals_scaled[t] = mtrx_t_scaled
+                    # Save dictionary. It goes in the folder of the corresponding beta and mu
+                    pickle.dump(dict_vals_scaled,
+                                open(folder_dict + f'/Normalized-scaler/dict_data_normalized-{row}x{col}-sim{sim}.pickle',
+                                     'wb'))
+
+
+

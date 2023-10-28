@@ -3,10 +3,10 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 21 October 2023
+Version : 25 October 2023
 
 --------------------------------------------------------------------
-First analysis concerning the application of TDA to data obtained from the simulations
+First analysis concerning the application of TDA to data obtained from the simulations.
 
 """
 from functions_SIR_metapop import *
@@ -33,14 +33,14 @@ N_col = [30]# ,30]
 choice_bool = 0
 datadir = os.getcwd()
 c1 = 0  # for now
-beta_outbreak = [0.9]#, 0.4, 0.9]
-beta_no_outbreak = [0.75]#, 0.75]
-mu_outbreak = [0.1]#, 0.2, 0.1]
-mu_no_outbreak = [0.6]#, 0.6]
+beta_outbreak = [0.4]#, 0.4, 0.9]
+beta_no_outbreak = [0.35]#, 0.75]
+mu_outbreak = [0.2]#, 0.2, 0.1]
+mu_no_outbreak = [0.3]#, 0.6]
 
 nbr_simulations = 10
 
-outbreak = 1
+outbreak = 0
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
 grad_red = []
@@ -65,7 +65,7 @@ def animate(t, img, grid, dict_vals, node_pop, N):
     avg_pop_node = [np.mean(node_pop[:, idx_node]) for idx_node in range(N)]
     # do that every row is averaged over the temporal average of the node population (of that node)
     density_I_nodes = nbr_I_nodes/ avg_pop_node
-    print('t: ', t, '\n', density_I_nodes)
+    #print('t: ', t, '\n', density_I_nodes)
     idx_row = 0
     for i, j in zip(x_nodes, y_nodes):
         #grid[int(i), int(j)] = nbr_I_nodes[idx_row]
@@ -97,7 +97,7 @@ if outbreak == 1:
             node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
             # Setup animation
             fig, ax = plt.subplots()
-            img = ax.imshow(grid,  vmin = 0, vmax = 1, cmap = 'coolwarm')
+            img = ax.imshow(grid,  vmin = 0, vmax = 0.5, cmap = 'coolwarm')
             fig.colorbar(img, cmap = 'coolwarm')
             ax.set_xlabel('Node index')
             ax.set_ylabel('Node index')
@@ -197,7 +197,7 @@ for row, col in zip(N_row, N_col):
         ax.set_ylabel("Persistent Entropy")
         ax.set_title(f"Persistent entropy for no outbreak data, {N_row}x{N_col}, beta = {beta}, mu = {mu} ")
         #ax.legend()
-        #plt.show()
+        plt.show()
 
 
 
