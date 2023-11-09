@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
+
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
 N_row = 30
@@ -30,9 +31,9 @@ datadir = os.getcwd()
 
 c1 = 0  # for now
 
-beta = 0.9
-mu = 0.1
-
+beta = 0.35
+mu = 0.3
+sim = 7
 
 # --------------------------------------------- Load data ---------------------------------------------
 
@@ -75,12 +76,12 @@ plt.show()
 
 # ----------------------------------------------  Simulation analysis  ----------------------------------------------
 bool_density = 1
-sim = 7
+
 idx_sims = [sim]
 idx_nodes = [item for item in range(0, N)]
 
 # 1. Plot number of individuals of densities in SIR for a certain simulation and for certain nodes
-plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_popPerNode)
+#plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_popPerNode)
 
 # 2. Mean and average over different simulations having the same topology
 nbr_repetitions = np.load(folder_simulation + 'nbr_repetitions.npy')
@@ -116,14 +117,13 @@ elif bool_density == 0:
 
 idx_node = 0
 
-plot_mean_std_singleNode(T_sim, mean_S_time, mean_I_time, mean_R_time, stdDev_S_time,
-                         stdDev_I_time, stdDev_R_time, det_s, det_i, det_r, idx_node)
+#plot_mean_std_singleNode(T_sim, mean_S_time, mean_I_time, mean_R_time, stdDev_S_time,
+#                         stdDev_I_time, stdDev_R_time, det_s, det_i, det_r, idx_node)
 
 # plot_mean_allNodes(T_sim, mean_S_time, mean_I_time, mean_R_time,det_s, det_i, det_r, N)
 
 # 5. See data in phase space
-
-plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim)
+#plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim)
 
 # 6. Temporal heatmap
 heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim)

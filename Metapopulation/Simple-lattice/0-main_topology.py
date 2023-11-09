@@ -8,8 +8,9 @@ Version : 15 October 2023
 --------------------------------------------------------------------
 
 Generate a strongly connected network with populations in nodes that are
-randomly selected from a multinomial distribution. On the network I generate, I then perfoorm
-multiple simulations with different values of infection and recovery rate.
+randomly selected from a multinomial distribution.
+Generate the transition (stochastic matrix) imposing row normalization to 1 by fixing the self loop value.
+This transition matrix is fixed.
 
 """
 

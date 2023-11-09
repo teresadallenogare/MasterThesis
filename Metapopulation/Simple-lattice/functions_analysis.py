@@ -20,6 +20,9 @@ import matplotlib.pyplot as plt
 import os
 import matplotlib.animation as animation
 import pickle
+from IPython import display
+
+
 # ---------------------------------------- Simulation SIR analysis ----------------------------------------
 def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_pop_node):
     """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
@@ -194,7 +197,7 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
 
     folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
     # Load data
-    new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
+
     node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
     node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
     node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
@@ -225,8 +228,8 @@ def animate(t, img, grid, dict_vals, dict_norm_vals):
     y_nodes = mtrx_t[:, 1]
     # Extract the density of infected from the normalized dictionary
     density_I_nodes = mtrx_norm_t[:, 3]
-    print('t: ', t)
-    print('dI: ', density_I_nodes)
+    #print('t: ', t)
+    #print('dI: ', density_I_nodes)
     idx_row = 0
     for i, j in zip(x_nodes, y_nodes):
         # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
@@ -251,11 +254,12 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
 
     :return: plot of the node's states in the space of variables
     """
-    N = N_row * N_col
 
     datadir = os.getcwd()
-    folder_dict = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/'
+    folder_dict = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/No-normalized/'
     folder_dict_normalized = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/Normalized/'
+    folder_densities = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Densities/'
+    folder_animations = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Animations/'
 
     # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
     # Initialize grid for later visualization at the beginning of every new simulation! That is my initial state
@@ -263,29 +267,61 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     # Load dictionary that contains the information of every node (x_node, y_node, #S, #I, #R) at each timestep
     dict_load = pickle.load(open(folder_dict + f'dict_data-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
     dict_load_values = list(dict_load.values())
+    # Load normalized dictionary to have the density of individuals
     dict_load_normalized = pickle.load(open(folder_dict_normalized + f'dict_data_normalized-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
     dict_load_normalized_values = list(dict_load_normalized.values())
-    #Brute force : maximum value of density of I in whole dictionary
+    # Brute force : maximum value of density of I in whole dictionary
     max_densityI_time = []
+    f = open(folder_densities + f'densities-sim{sim}.txt', 'w')
+
+    # Determination of the maximum density of infected
     for t in dict_load.keys():
         mtrx_t_normalized = dict_load_normalized[t]
+        density_S = mtrx_t_normalized[:, 2]
         density_I = mtrx_t_normalized[:, 3]
+        density_R = mtrx_t_normalized[:, 4]
+        f.write('--------------------------------------------------------\n')
+        f.write(f't: {t}\n')
+        f.write(f'density_S: {density_S}\n\n')
+        f.write(f'density_I: {density_I}\n\n')
+        f.write(f'density_R: {density_R}\n\n\n')
         max_densityI_time.append(max(density_I))
+    f.close()
     max_densityI_time = np.array(max_densityI_time)
     max_densityI = max(max_densityI_time)
     print('max-densityI', max_densityI)
 
     # Setup animation
+    Writer = animation.FFMpegWriter(fps=1)
+
     fig, ax = plt.subplots()
     img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
     fig.colorbar(img, cmap='coolwarm')
     ax.set_xlabel('Node index')
     ax.set_ylabel('Node index')
-    ax.set_title(f'Heatmap no outbreak : beta = {beta}, mu = {mu}, sim = {sim}')
+    ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
     ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values, ),
-                                  frames= 38#dict_load.keys()
-                                   )
-    ani.save('animation.gif')
+                                  frames= dict_load.keys())
+    # converting to a html5 video
+    video = ani.to_html5_video()
+
+    ani.save(folder_animations+f'animation-sim{sim}.mp4', writer=Writer)
+    # embedding for the video
+    html = display.HTML(video)
+    # draw the animation
+    display.display(html)
+    plt.close()
     plt.show()
     print('Done!')
 
+def min_PE(pe, time):
+    list_pe = list(pe)
+    min_pe = min(list_pe)
+    idx_min_pe = list_pe.index(min_pe)
+    t_min_pe = time[idx_min_pe]
+
+    return [min_pe, t_min_pe]
+
+# trial1 : because I consider as density of infected in node k rhoI_k(t) = NI_k(t)/<N_k>,  <N_k> = temporal average over
+# the whole simulation of the population in node k
+#def flux_new_I_node_k_trial1(newI, rhoI, t, k, TransMat):
