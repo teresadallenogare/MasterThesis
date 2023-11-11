@@ -62,7 +62,8 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
     T_df = pd.DataFrame(T)
     labels = T_df.applymap(lambda v: str(np.round(v, 2)) if v != 0 else '')
     palette = sns.cubehelix_palette(n_colors = 100, start=2,  dark = 0.1, reverse = True)
-    for annotation in [True, False]:
+    annotation_list = [True, False] if N_row == 3 else [False]
+    for annotation in annotation_list:
         if annotation == True:
             ax = sns.heatmap(T, linewidth=0, square = True,  annot = labels, fmt = '', cmap= palette, cbar_kws={'label': 'weight'})
         else:

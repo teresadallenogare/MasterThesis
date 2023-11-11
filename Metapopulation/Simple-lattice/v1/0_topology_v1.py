@@ -34,8 +34,8 @@ np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 30
-N_col = 30
+N_row = 3
+N_col = 3
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
@@ -52,8 +52,8 @@ choice_bool = 0
 a = 0.2  # establish connectivity
 b = 0.9  # establish self loop (low b means very high self loops)
 
-c1 = 0
-
+c1 = 0 if b == 0.9 else 1
+print('c1: ', c1)
 folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 
 # ------------------------------------------------ Lattice initialization  -------------------------------------------------
@@ -109,15 +109,13 @@ plot_TransitionMatrix(TransitionMatrix, N_row, N_col, choice_bool, c1)
 in_degrees = [G.in_degree(n) for n in G.nodes()]
 
 # Check PF convergence
-rho0 = PF_convergence(TransitionMatrix)
+rho0, k_list, diff_list = PF_convergence(TransitionMatrix)
 # Stationary density vector of people per node
 print('rho0: ', rho0)
-
 # Write the files
 write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, percentage_FixNodes, c1,
-                        node_population0, strongConnection, a, b, rho0, in_degrees)
+                        node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)
 # Save parameters
-np.save(folder_topology + '/rho0', rho0)
 np.save(folder_topology + '/pos_nodes', pos_nodes)
 np.save(folder_topology + '/avg_popPerNode', avg_popPerNode)
 np.save(folder_topology + '/choice_bool', choice_bool)
@@ -127,7 +125,9 @@ np.save(folder_topology + '/c1_real', c1_real)
 if choice_bool == 1:
     np.save(folder_topology + '/Nfix', Nfix)
     np.save(folder_topology + '/percentage_FixNodes', percentage_FixNodes)
-
+np.save(folder_topology + '/rho0', rho0)
+np.save(folder_topology + '/k_list', k_list)
+np.save(folder_topology + '/diff_list', diff_list)
 # Save graph object
 pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
 pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))

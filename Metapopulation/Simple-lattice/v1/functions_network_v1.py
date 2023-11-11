@@ -195,11 +195,15 @@ def PF_convergence(A):
     #Perron projection matrix
     P = PF_r_norm @ PF_l_norm.T
     # Verify that lim_{k-> infty} (A/eigval)^k = P
-    k_list = [1, 10, 1000, 10000]
+    k_list = [1, 5, 10, 20, 50, 100, 200, 500, 1000]
+    diff_norm_lst = []
     for k in k_list:
         A_k = np.linalg.matrix_power(A/PF_eigval, k)
         diff = np.abs(A_k - P)
         # Calculate the norm of the difference matrix
         diff_norm = np.linalg.norm(diff, 'fro')
+        diff_norm_lst.append(diff_norm)
         print(f"n = {k}, error = {diff_norm:.10f}")
-    return rho0
+    k_list = np.array(k_list)
+    diff_norm_lst = np.array(diff_norm_lst)
+    return rho0, k_list, diff_norm_lst
