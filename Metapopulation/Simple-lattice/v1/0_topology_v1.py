@@ -27,22 +27,22 @@ import pickle
 
 datadir = os.getcwd()
 
-plt.figure(figsize=(8, 8))
+plt.figure(figsize=(9, 9))
 
 seed = None
 np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 30
+N_col = 30
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
 Nfix = 3
-percentage_FixNodes = 15
+percentage_FixNodes = 20
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
