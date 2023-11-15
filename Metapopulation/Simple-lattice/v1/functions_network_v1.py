@@ -119,7 +119,7 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
         # List with index of all nodes
         idx_AllNodes = [i for i in range(0, N)]
         idx_FixNodes = []
-        for i in range(Nfix + 1):
+        for i in range(Nfix):
             idxN = np.random.randint(0, N - 1)
             if idxN not in idx_FixNodes:
                 idx_FixNodes.append(idxN)
@@ -129,8 +129,12 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
         dict_Npop = {idx_AllNodes_final[i]: n_AllNodes_final[i] for i in G.nodes}
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
+        print('idx fixed nodes: ', idx_FixNodes)
+        return idx_FixNodes
     else:
         print('Wrong value for choice_bool')
+
+    return 0
 
 
 
@@ -157,15 +161,18 @@ def transition_matrix(G, D, density, a, b):
             if j > i and i != j:
                 # Probability to establish both the direct and forward edge in a pair of nodes
                 prob = max(c * density[i]/D[i,j], c * density[j]/D[i,j])
+                print('\n---------------- \n')
+                print('(i,j): ', i, j)
+                print('prob: ', prob)
                 #print('prob:', prob)
                 rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                print('rnd ch: ', rnd_ch)
                 if rnd_ch == 1:
                     T[i, j] = density[j] / D[i, j] # Tji (i->j)
                     T[j, i] = density[i] / D[i, j] # Tij (j->i)
     # sum over all the rows and take the maximum between these sums and call it Pmax.
     # axis = 1 sums over rows
     Pmax = T.sum(axis=1).max()
-    print('Pmax:', Pmax)
     c1 = b / Pmax
     T *= c1
     for i in range(N):

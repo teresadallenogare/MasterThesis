@@ -21,7 +21,6 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import time
 import pickle
 
 
@@ -41,22 +40,25 @@ N_col = 3
 avg_popPerNode = 1e4
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
-Nfix = 3
-percentage_FixNodes = 20
+Nfix = 2
+percentage_FixNodes = 30
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 0
+choice_bool = 1
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2  # establish connectivity
-b = 0.9  # establish self loop (low b means very high self loops)
+b = 0.9  # establish self loop (b = 0.3 means very high self loops, b = 0.9 means lower self-loops)
 
 c1 = 0 if b == 0.9 else 1
 print('c1: ', c1)
+
+save = 1
+
 folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 
-# ------------------------------------------------ Lattice initialization  -------------------------------------------------
+# ------------------------------------------ Lattice initialization  -----------------------------------------
 
 # Define node position in the lattice with a square topology
 G, dict_nodes = initialize_lattice(N_row, N_col)
@@ -69,7 +71,7 @@ populationTot = N * avg_popPerNode
 # Compute distance matrix of every node with all the others
 DistanceMatrix = distance_matrix(G, pos_nodes)
 # Populate nodes and set initial conditions for infection
-initialize_node_population(G, populationTot, Nfix, percentage_FixNodes, choice_bool, seed)
+idxNfix = initialize_node_population(G, populationTot, Nfix, percentage_FixNodes, choice_bool, seed)
 
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
@@ -101,10 +103,6 @@ while strongConnection == False and contFalse < 1000:
                 if TransitionMatrix[i, j] != 0:
                     G.remove_edge(i, j)
 
-# Plot network
-plot_static_network(G, node_population0, dict_nodes, weightNonZero, N_row, N_col, choice_bool, c1)
-plot_TransitionMatrix(TransitionMatrix, N_row, N_col, choice_bool, c1)
-
 # Input degree
 in_degrees = [G.in_degree(n) for n in G.nodes()]
 
@@ -112,25 +110,33 @@ in_degrees = [G.in_degree(n) for n in G.nodes()]
 rho0, k_list, diff_list = PF_convergence(TransitionMatrix)
 # Stationary density vector of people per node
 print('rho0: ', rho0)
-# Write the files
-write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, percentage_FixNodes, c1,
+# Write topology file
+write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, idxNfix, percentage_FixNodes, c1,
                         node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)
-# Save parameters
-np.save(folder_topology + '/pos_nodes', pos_nodes)
-np.save(folder_topology + '/avg_popPerNode', avg_popPerNode)
-np.save(folder_topology + '/choice_bool', choice_bool)
-np.save(folder_topology + '/a', a)
-np.save(folder_topology + '/b', b)
-np.save(folder_topology + '/c1_real', c1_real)
-if choice_bool == 1:
-    np.save(folder_topology + '/Nfix', Nfix)
-    np.save(folder_topology + '/percentage_FixNodes', percentage_FixNodes)
-np.save(folder_topology + '/rho0', rho0)
-np.save(folder_topology + '/k_list', k_list)
-np.save(folder_topology + '/diff_list', diff_list)
-# Save graph object
-pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
-pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))
-np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
-np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
 
+if save == 1:
+    # Plot network
+    plot_static_network(G, node_population0, dict_nodes, weightNonZero, N_row, N_col, choice_bool, c1)
+    plot_TransitionMatrix(TransitionMatrix, N_row, N_col, choice_bool, c1)
+
+    # Save parameters
+    np.save(folder_topology + '/pos_nodes', pos_nodes)
+    np.save(folder_topology + '/avg_popPerNode', avg_popPerNode)
+    np.save(folder_topology + '/choice_bool', choice_bool)
+    np.save(folder_topology + '/a', a)
+    np.save(folder_topology + '/b', b)
+    np.save(folder_topology + '/c1_real', c1_real)
+    if choice_bool == 1:
+        np.save(folder_topology + '/Nfix', Nfix)
+        np.save(folder_topology + '/percentage_FixNodes', percentage_FixNodes)
+        np.save(folder_topology + '/idxNfix', idxNfix)
+    np.save(folder_topology + '/rho0', rho0)
+    np.save(folder_topology + '/k_list', k_list)
+    np.save(folder_topology + '/diff_list', diff_list)
+    # Save graph object
+    pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
+    pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))
+    np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
+    np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
+else:
+    print('No saved data')

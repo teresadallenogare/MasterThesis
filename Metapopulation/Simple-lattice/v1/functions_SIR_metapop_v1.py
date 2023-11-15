@@ -13,7 +13,6 @@ Functions to perform SIR metapopulation infection process
 import networkx as nx
 import numpy as np
 
-
 # --------------------------------------------------- Simulation --------------------------------------------------------
 def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
     """ Assign nodes with attributes:
@@ -39,13 +38,11 @@ def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percen
 
         """
     if seed is not None: np.random.seed(seed)
-
+    nI = popI_init
+    nR = 0
+    nS = node_pop0 - nI - nR
     # Populate nodes
-    if choice_bool == 0:
-        nI = popI_init
-        nR = 0
-        nS = node_pop0 - nI - nR
-        print('nS:', nS)
+    if choice_bool == 0 or choice_bool == 1:
         # If the node index is not in the list of nodes with infected individuals, I assign the population of
         # susceptible to be the total one. Otherwise, I assign nS = n - nI - nR
         dict_S = {i: node_pop0[i] if i not in idx_I_nodes else nS[i] for i in G.nodes}
@@ -63,10 +60,7 @@ def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percen
         nx.set_node_attributes(G, dict_R, 'N_R')
         nx.set_node_attributes(G, dict_state, 'state')
 
-    elif choice_bool == 1:
-        print('To implement')
-    else:
-        print('Wrong value for choice_bool')
+
 
 def choice_particle_to_move(G, T):
     """ Stochastic choice of the number of particles to move inside a certain node i.
@@ -124,7 +118,7 @@ def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
     # Perform motion of particles and update number of particles
     for i in range(N):
         for j in range(N):
-            if i!=j:
+            if i != j:
                 # Population going out from node i towards node j
                 NS_nodes[i] -= Nij_S[i,j]
                 NI_nodes[i] -= Nij_I[i,j]
@@ -143,7 +137,6 @@ def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
     dict_N_R = {lab_nodes[i]: NR_nodes[i] for i in G.nodes}
 
     # Update the state of each node AFTER the move
-
     for i in range(N):
         if NS_nodes[i] == Npop_nodes[i]:
             state_nodes[i] = 'S'
@@ -160,7 +153,7 @@ def move_particle(G, Nij, Nij_S, Nij_I, Nij_R):
         else:
             state_nodes[i] = 'SIR'
 
-    dict_state = {i : state_nodes[i] for i in G.nodes}
+    dict_state = {i: state_nodes[i] for i in G.nodes}
 
     # Assign attributes to nodes
     nx.set_node_attributes(G, dict_Npop, 'Npop')
@@ -210,7 +203,8 @@ def infection_step_node(G, beta, mu):
     for i in range(N):
         # force of infection : rate of infection * (infected population in node i / total population in node i)
         alpha[i] = beta * NI_nodes[i]/Npop_nodes[i]
-
+        #print('NI', NI_nodes[i]/Npop_nodes[i])
+        #print('alpha: ', alpha[i])
         # if the node contains infected ('I', 'SI', 'RI', 'SIR')
         if 'I' in state_nodes[i]:
             # Generate from a binomial distribution new infected and recovered individuals

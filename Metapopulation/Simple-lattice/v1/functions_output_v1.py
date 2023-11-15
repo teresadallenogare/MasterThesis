@@ -14,7 +14,7 @@ import numpy as np
 import os
 from datetime import datetime
 
-def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot, choice_bool, Nfix, percentPopNfix, c1,
+def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot, choice_bool, Nfix, idxNfix, percentPopNfix, c1,
                         node_pop0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees):
 
     datadir = os.getcwd()
@@ -25,7 +25,6 @@ def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot,
     f.write('              TOPOLOGY FILE - v1      \n\n')
     f.write('      Author : Teresa Dalle Nogare\n')
     f.write('      Date :' + datetime.today().strftime('%Y-%m-%d')+'\n\n')
-
     f.write(' ---------------------------------------------\n\n')
     f.write('[Nodes] \n')
     f.write(f'N_row = {N_row}, N_col = {N_col}, N = N_row x N_col = {N} \n')
@@ -38,6 +37,7 @@ def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot,
     elif choice_bool == 1:
         f.write(f'choice bool = {choice_bool} - non uniform population (heterogeneous network) \n')
         f.write(f'number of fixed nodes = {Nfix}\n')
+        f.write(f'Index fixed nodes = {idxNfix}\n')
         f.write(f'percentage of population in fixed nodes = {percentPopNfix}\n\n')
     else:
         f.write(f'Wrong choice bool value \n\n')
@@ -56,19 +56,26 @@ def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot,
     f.close()
 
 def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta, mu, nbr_repetitions,
-                          nbr_sim_not_start):
+                          nbr_sim_not_start, idx_sim_not_start):
     datadir = os.getcwd()
-    folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
-    f = open(folder_simulation + f'simulationFile_{N_row}x{N_col}.txt', 'w')
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    f = open(folder_simulation + f'simulationFile.txt', 'w')
+    f.write(' ---------------------------------------------\n\n')
+    f.write('              SIMULATION FILE - v1      \n\n')
+    f.write('      Author : Teresa Dalle Nogare\n')
+    f.write('      Date :' + datetime.today().strftime('%Y-%m-%d')+'\n\n')
+    f.write(' ---------------------------------------------\n\n')
     f.write(f'[Simulation parameters]\n')
     f.write(f'Length of simulation, T : {T}\n')
     f.write(f'Infection rate, beta: {beta}\n')
     f.write(f'Recovery rate, mu: {mu}\n')
     f.write(f'Nuber of repetitions: {nbr_repetitions}\n')
-    f.write(f'Number of simulations that did not start: {nbr_sim_not_start}\n')
     f.write(f'[Initial configuration]\n')
     f.write(f'Node population 0: {node_pop0}\n')
     f.write(f'Node S0: {node_S0}\n')
     f.write(f'Node I0: {node_I0}\n')
     f.write(f'Node R0: {node_R0}\n')
     f.write(f'Node state0: {node_state0}\n\n')
+    f.write('[Not started simulations]\n')
+    f.write(f'Number of not started simulations: {nbr_sim_not_start}\n')
+    f.write(f'Index of not started simulations: {idx_sim_not_start}')
