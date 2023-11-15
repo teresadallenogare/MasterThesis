@@ -45,7 +45,7 @@ percentage_FixNodes = 30
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 1
+choice_bool = 0
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2  # establish connectivity
@@ -73,10 +73,18 @@ DistanceMatrix = distance_matrix(G, pos_nodes)
 # Populate nodes and set initial conditions for infection
 idxNfix = initialize_node_population(G, populationTot, Nfix, percentage_FixNodes, choice_bool, seed)
 
+# Density in principle can be density per node or global density in the system, that is I can have density obtained by dividing
+# by the average population per node or the density obtained dividing  by the whole population. What changes is a factor
+# N at the denominator.
+# Density calculated like this for both choice_bool 0 and 1 to keep track of presence of more populated nodes.
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
-# / np.mean(node_population) : I divide by a constant number so I keep fluctuations
-node_density0 = node_population0 / np.mean(node_population0)
+node_density0 = node_population0 / avg_popPerNode
+
+
+print('avg: ', avg_popPerNode)
+print('np.mean: ', np.mean(node_population0))
+print('node_density0: ', node_density0)
 # Cycle until I have a strongly connected graph but with population initialized at the beginning
 # Calculate transition matrix
 strongConnection = False
@@ -108,8 +116,10 @@ in_degrees = [G.in_degree(n) for n in G.nodes()]
 
 # Check PF convergence
 rho0, k_list, diff_list = PF_convergence(TransitionMatrix)
+
 # Stationary density vector of people per node
 print('rho0: ', rho0)
+
 # Write topology file
 write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, idxNfix, percentage_FixNodes, c1,
                         node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)

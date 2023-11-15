@@ -18,7 +18,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
-from math import factorial as fact
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
