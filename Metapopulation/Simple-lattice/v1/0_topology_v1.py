@@ -22,6 +22,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+import sys
 
 
 datadir = os.getcwd()
@@ -33,8 +34,8 @@ np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 30
+N_col = 30
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
@@ -48,13 +49,13 @@ percentage_FixNodes = 30
 choice_bool = 0
 
 # Parameters to establish the connectivity and the self loops
-a = 0.2  # establish connectivity
-b = 0.9  # establish self loop (b = 0.3 means very high self loops, b = 0.9 means lower self-loops)
+a = 0.2 # Fixed parameter for the connectivity
+alpha = 1 # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
+b = alpha * np.exp(- 1/N_row)
 
-c1 = 0 if b == 0.9 else 1
+c1 = 0 #if b == 0.99 else 1
 print('c1: ', c1)
 
-save = 1
 
 folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 
@@ -80,7 +81,6 @@ idxNfix = initialize_node_population(G, populationTot, Nfix, percentage_FixNodes
 node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 node_density0 = node_population0 / avg_popPerNode
-
 
 print('avg: ', avg_popPerNode)
 print('np.mean: ', np.mean(node_population0))
@@ -120,33 +120,43 @@ rho0, k_list, diff_list = PF_convergence(TransitionMatrix)
 # Stationary density vector of people per node
 print('rho0: ', rho0)
 
+# Control if the topology file exists.
+# If it exists, then ask if I want to overwrite data
+# If it does not exist, save data
+check_file = os.path.isfile(folder_topology+'topologyFile.txt')
+if check_file == True:
+    print('Files already saved ')
+    overwrite = int(input('Do you want to overwrite files? 0 for no, 1 for yes : '))
+    if overwrite == 0:
+        sys.exit('Files no overwritten')
+    elif overwrite == 1:
+        print('Overwrite files')
 # Write topology file
-write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, idxNfix, percentage_FixNodes, c1,
-                        node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)
-
-if save == 1:
-    # Plot network
+write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, idxNfix,
+                    percentage_FixNodes, c1,
+                    node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)
+# Plot network
+if N_row == 3 or N_row == 5 or N_row == 10:
     plot_static_network(G, node_population0, dict_nodes, weightNonZero, N_row, N_col, choice_bool, c1)
     plot_TransitionMatrix(TransitionMatrix, N_row, N_col, choice_bool, c1)
 
-    # Save parameters
-    np.save(folder_topology + '/pos_nodes', pos_nodes)
-    np.save(folder_topology + '/avg_popPerNode', avg_popPerNode)
-    np.save(folder_topology + '/choice_bool', choice_bool)
-    np.save(folder_topology + '/a', a)
-    np.save(folder_topology + '/b', b)
-    np.save(folder_topology + '/c1_real', c1_real)
-    if choice_bool == 1:
-        np.save(folder_topology + '/Nfix', Nfix)
-        np.save(folder_topology + '/percentage_FixNodes', percentage_FixNodes)
-        np.save(folder_topology + '/idxNfix', idxNfix)
-    np.save(folder_topology + '/rho0', rho0)
-    np.save(folder_topology + '/k_list', k_list)
-    np.save(folder_topology + '/diff_list', diff_list)
-    # Save graph object
-    pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
-    pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))
-    np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
-    np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
-else:
-    print('No saved data')
+# Save parameters
+np.save(folder_topology + '/pos_nodes', pos_nodes)
+np.save(folder_topology + '/avg_popPerNode', avg_popPerNode)
+np.save(folder_topology + '/choice_bool', choice_bool)
+np.save(folder_topology + '/a', a)
+np.save(folder_topology + '/b', b)
+np.save(folder_topology + '/c1_real', c1_real)
+if choice_bool == 1:
+    np.save(folder_topology + '/Nfix', Nfix)
+    np.save(folder_topology + '/percentage_FixNodes', percentage_FixNodes)
+    np.save(folder_topology + '/idxNfix', idxNfix)
+np.save(folder_topology + '/rho0', rho0)
+np.save(folder_topology + '/k_list', k_list)
+np.save(folder_topology + '/diff_list', diff_list)
+# Save graph object
+pickle.dump(G, open(folder_topology + '/G.pickle', 'wb'))
+pickle.dump(dict_nodes, open(folder_topology + '/dict_nodes.pickle', 'wb'))
+np.save(folder_topology + '/DistanceMatrix', DistanceMatrix)
+np.save(folder_topology + '/TransitionMatrix', TransitionMatrix)
+print('Files saved or overwritten')

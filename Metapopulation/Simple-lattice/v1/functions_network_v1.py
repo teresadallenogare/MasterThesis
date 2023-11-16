@@ -161,12 +161,12 @@ def transition_matrix(G, D, density, a, b):
             if j > i and i != j:
                 # Probability to establish both the direct and forward edge in a pair of nodes
                 prob = max(c * density[i]/D[i,j], c * density[j]/D[i,j])
-                print('\n---------------- \n')
-                print('(i,j): ', i, j)
-                print('prob: ', prob)
+                #print('\n---------------- \n')
+                #print('(i,j): ', i, j)
+                #print('prob: ', prob)
                 #print('prob:', prob)
                 rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
-                print('rnd ch: ', rnd_ch)
+                #print('rnd ch: ', rnd_ch)
                 if rnd_ch == 1:
                     T[i, j] = density[j] / D[i, j] # Tji (i->j)
                     T[j, i] = density[i] / D[i, j] # Tij (j->i)
@@ -178,6 +178,7 @@ def transition_matrix(G, D, density, a, b):
     for i in range(N):
         # Self loop
         T[i, i] = 1. - T[i, :].sum()
+        print('Tii: ', T[i,i])
         if T[i, i] < 0:
             print(f'ERROR : SELF LOOP WITH PROBABILITY < 0, i = {i}')
 

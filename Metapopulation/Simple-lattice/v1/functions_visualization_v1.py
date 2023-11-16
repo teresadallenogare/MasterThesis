@@ -75,7 +75,76 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
         plt.savefig(folder_topology + f'TransMat_annot-{annotation}.pdf')
         plt.show()
 
-def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_pop_node):
+def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim, avg_pop_node, avg_pop_Nfix, avg_pop_Others):
+    """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T_sim: [array] array with timesteps of the simulation
+
+    :param bool_density: [bool] if 0 : compute the number of individuals
+                                if 1 : compute the density
+    :param idx_sims : [list] index of simulations to include in the plot
+    :param idx_nodes : [list] index of nodes to include in the plot
+    :param avg_pop_node : [scalar] value of average population per node
+
+    :return: plot of SIR timeseries
+    """
+
+    # ------------------------------------------------ Colors  -------------------------------------------------
+
+    grad_gray = []
+    grad_red = []
+    grad_blue = []
+    grad_green = []
+
+    for x in range(N_row * N_col):
+        #                                dark           light
+        grad_gray.append(colorFader('#505050', '#EAE9E9', x / (N_row * N_col)))
+        grad_red.append(colorFader('#E51C00', '#FCE0DC', x / (N_row * N_col)))
+        grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x / (N_row * N_col)))
+        grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x / (N_row * N_col)))
+
+    datadir = os.getcwd()
+    # Folder
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+
+    for sim in idx_sims:
+        # Load data
+        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+        first = True
+        for node in idx_nodes:
+            if first == True:
+                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label = 'Population')
+                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label = 'S')
+                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label = 'I')
+                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label = 'R')
+                first = False
+            else:
+                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node])
+                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node])
+                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node])
+                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node])
+        plt.xlabel('Timestep')
+        plt.ylabel('Node population')
+        if choice_bool == 0:
+            plt.axhline(y = avg_pop_node, color='black', linestyle='--', label = 'Average population ')
+        elif choice_bool == 1:
+            plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
+            plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
+        else:
+            print('Wrong choice_bool')
+        plt.legend()
+        plt.show()
+
+
+def plot_SIR_timeseries_density(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_pop_node):
     """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
     :param N_row: [scalar] number of rows of the lattice
     :param N_col: [scalar] number of columns of the lattice

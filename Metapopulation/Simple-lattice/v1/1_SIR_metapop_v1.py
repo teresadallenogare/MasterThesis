@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+import math
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
@@ -26,25 +27,25 @@ seed = None
 np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = 3
-N_col = 3
+N_row = 10
+N_col = 10
 
-choice_bool = 1
+choice_bool = 0
 c1 = 0
 
 # Infection and recovery rate
-beta = 0.115
-mu = 0.1
+beta = 1.2
+mu = 0.3
 
 # Total simulation length
-T = 800
+T = 120
 T_sim = np.linspace(0, T-1, T)
 
 # Number of infected individuals in one node
 popI_node = 2
 
 # List of index of nodes initially containing popI_node infected individuals
-idx_nodes_I_init = [0,3]
+idx_nodes_I_init = [0]
 
 # Number of repetitions of a simulation with fixed parameters
 nbr_repetitions = 10
@@ -68,13 +69,20 @@ for sim in range(nbr_repetitions):
     weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
     weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
     avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
+    popTot = avg_popPerNode * N
     if choice_bool == 1:
         Nfix = np.load(folder_topology + 'Nfix.npy')
         percentage_FixNodes = np.load(folder_topology + 'percentage_FixNodes.npy')
+        idxNfix = np.load(folder_topology + 'idxNfix.npy')
+        pop_FixNodes = math.floor(percentage_FixNodes / 100 * popTot)
+        pop_others = popTot - pop_FixNodes
+
+        avg_popPerNode_Nfix = pop_FixNodes / Nfix
+        avg_popPerNode_Others = pop_others / (N-Nfix)
     else:
         Nfix = 0
         percentage_FixNodes = 0
-
+    # I have population in nodes in both choice_bool = 0,1 cases
     node_population0 = nx.get_node_attributes(G, name='Npop')
     node_population0 = np.array(list(node_population0.values()))
 
@@ -158,7 +166,7 @@ for sim in range(nbr_repetitions):
     max_deltaNS = np.max(delta_NS_time)
     max_delta_densityNS = max_deltaNS / np.mean(node_population)
 
-    if nodeS_density_time[int(T - 5), idx_node] < (avg_popPerNode / avg_popPerNode + 1.5 * max_delta_densityNS) and nodeS_density_time[int(T - 5), idx_node] > (avg_popPerNode / avg_popPerNode - 1.5 * max_delta_densityNS):
+    if nodeS_density_time[int(T - 5), idx_node] < (avg_popPerNode / avg_popPerNode + 2.0 * max_delta_densityNS) and nodeS_density_time[int(T - 5), idx_node] > (avg_popPerNode / avg_popPerNode - 2.0 * max_delta_densityNS):
         print('Simulation did not start')
         nbr_sim_not_start += 1
         idx_sim_not_start.append(sim)
@@ -186,8 +194,14 @@ write_simulation_file(N_row, N_col, choice_bool, c1, node_population0, node_NS0,
 
 bool_density = 0
 idx_sims = [0,1,2,3,4,5,6,7,8,9]
-idx_nodes = [0, 4]
-plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, bool_density, idx_sims, idx_nodes, T_sim, avg_popPerNode)
+
+
+
+idx_nodes = list(idxNfix)
+idx_nodes.append(6)
+print(idxNfix)
+plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim,
+                    avg_popPerNode, avg_popPerNode_Nfix, avg_popPerNode_Others)
 
 
 

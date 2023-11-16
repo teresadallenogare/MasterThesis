@@ -18,6 +18,7 @@ from functions_visualization_v1 import *
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pickle
 
 
 datadir = os.getcwd()
@@ -38,7 +39,14 @@ sim = 0
 idx_node = 0
 
 folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
+folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 
+G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+in_degrees = [G.in_degree(n) for n in G.nodes()]
+plt.bar(*np.unique(in_degrees, return_counts=True))
+plt.xlabel('Degree of in-edges')
+plt.ylabel('Frequency')
+plt.show()
 
 # Load data
 for beta, mu in zip(beta_R0_2, mu_R0_2):
@@ -54,6 +62,7 @@ for beta, mu in zip(beta_R0_2, mu_R0_2):
     #plt.plot(T_sim, node_NR_time[:, idx_node], label = f'beta = {beta}, mu = {mu}')
     plt.legend()
 plt.show()
+
 
 
 
