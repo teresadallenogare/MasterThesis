@@ -120,9 +120,20 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
         idx_AllNodes = [i for i in range(0, N)]
         idx_FixNodes = []
         for i in range(Nfix):
+            noInList = True
             idxN = np.random.randint(0, N - 1)
             if idxN not in idx_FixNodes:
                 idx_FixNodes.append(idxN)
+            else:
+                noInList = False
+                while noInList == False:
+                    idxN = np.random.randint(0, N - 1)
+                    if idxN not in idx_FixNodes:
+                        idx_FixNodes.append(idxN)
+                        noInList = True
+
+
+
         idx_others = list(set(idx_AllNodes) - set(idx_FixNodes))
         idx_AllNodes_final = idx_FixNodes + idx_others
         # Dictionary in which at nodes with index in idx_FixNodes I attribute the population
@@ -130,6 +141,7 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
         # Assign attributes to nodes
         nx.set_node_attributes(G, dict_Npop, 'Npop')
         print('idx fixed nodes: ', idx_FixNodes)
+        print(len(idx_FixNodes))
         return idx_FixNodes
     else:
         print('Wrong value for choice_bool')
@@ -178,7 +190,7 @@ def transition_matrix(G, D, density, a, b):
     for i in range(N):
         # Self loop
         T[i, i] = 1. - T[i, :].sum()
-        print('Tii: ', T[i,i])
+        print('T[i.i]: ', T[i,i])
         if T[i, i] < 0:
             print(f'ERROR : SELF LOOP WITH PROBABILITY < 0, i = {i}')
 

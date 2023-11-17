@@ -27,18 +27,18 @@ seed = None
 np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = 10
-N_col = 10
+N_row = 30
+N_col = 30
 
 choice_bool = 0
 c1 = 0
 
 # Infection and recovery rate
-beta = 1.2
-mu = 0.3
+beta = 0.115
+mu = 0.1
 
 # Total simulation length
-T = 120
+T = 300
 T_sim = np.linspace(0, T-1, T)
 
 # Number of infected individuals in one node
@@ -48,7 +48,7 @@ popI_node = 2
 idx_nodes_I_init = [0]
 
 # Number of repetitions of a simulation with fixed parameters
-nbr_repetitions = 10
+nbr_repetitions = 1
 
 folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
@@ -61,6 +61,7 @@ nbr_sim_not_start = 0
 idx_sim_not_start = []
 
 for sim in range(nbr_repetitions):
+    print('Sim: ', sim)
     # Load graph and initial conditions at every new simulation
     G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
     dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
@@ -81,7 +82,10 @@ for sim in range(nbr_repetitions):
         avg_popPerNode_Others = pop_others / (N-Nfix)
     else:
         Nfix = 0
+        idxNfix = []
         percentage_FixNodes = 0
+        avg_popPerNode_Nfix = 0
+        avg_popPerNode_Others = 0
     # I have population in nodes in both choice_bool = 0,1 cases
     node_population0 = nx.get_node_attributes(G, name='Npop')
     node_population0 = np.array(list(node_population0.values()))

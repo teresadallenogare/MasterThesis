@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 09 November 2023
+Version : 15 November 2023
 
 --------------------------------------------------------------------
 
@@ -24,7 +24,6 @@ import os
 import pickle
 import sys
 
-
 datadir = os.getcwd()
 
 plt.figure(figsize=(9, 9))
@@ -34,28 +33,29 @@ np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 30
-N_col = 30
+N_row = 50
+N_col = 50
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
-Nfix = 2
+# consider the 30% of population in the 20% of nodes
+Nfix = math.ceil(20/100 * N_col * N_row)
+print('Nfix: ', Nfix)
 percentage_FixNodes = 30
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 0
+choice_bool = 1
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2 # Fixed parameter for the connectivity
-alpha = 1 # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
+alpha = 1/2 # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
 b = alpha * np.exp(- 1/N_row)
 
-c1 = 0 #if b == 0.99 else 1
+c1 = 0 if alpha == 1 else 1
 print('c1: ', c1)
-
 
 folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
 
@@ -82,9 +82,6 @@ node_population0 = nx.get_node_attributes(G, name='Npop')
 node_population0 = np.array(list(node_population0.values()))
 node_density0 = node_population0 / avg_popPerNode
 
-print('avg: ', avg_popPerNode)
-print('np.mean: ', np.mean(node_population0))
-print('node_density0: ', node_density0)
 # Cycle until I have a strongly connected graph but with population initialized at the beginning
 # Calculate transition matrix
 strongConnection = False
@@ -131,10 +128,12 @@ if check_file == True:
         sys.exit('Files no overwritten')
     elif overwrite == 1:
         print('Overwrite files')
+
 # Write topology file
 write_topology_file(N_row, N_col, N, pos_nodes, avg_popPerNode, populationTot, choice_bool, Nfix, idxNfix,
                     percentage_FixNodes, c1,
                     node_population0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees)
+
 # Plot network
 if N_row == 3 or N_row == 5 or N_row == 10:
     plot_static_network(G, node_population0, dict_nodes, weightNonZero, N_row, N_col, choice_bool, c1)
