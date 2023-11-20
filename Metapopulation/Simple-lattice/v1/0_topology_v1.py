@@ -32,25 +32,25 @@ np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 3
-N_col = 3
+N_row = 50
+N_col = 50
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
 
 # Number of fixed nodes containing the percentage percentage_FixNodes of population
-# consider the 30% of population in the 20% of nodes
-Nfix = math.ceil(20/100 * N_col * N_row)
+# consider the 20% of population in the 10% of nodes
+Nfix = math.ceil(10 / 100 * N_col * N_row)
 print('Nfix: ', Nfix)
-percentage_FixNodes = 30
+percentage_FixNodes = 20
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 1
+choice_bool = 0
 
 # Parameters to establish the connectivity and the self loops
-a = 0.2 # Fixed parameter for the connectivity
-alpha_vals = [0.1, 1]  # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
+a = 0.2  # Fixed parameter for the connectivity
+alpha_vals = [0.2, 1]  # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
 
 # ------------------------------------------ Lattice initialization  -----------------------------------------
 # Define node position in the lattice with a square topology
@@ -89,7 +89,7 @@ while strongConnection == False and contFalse < 1000:
     # Control strongly connected graph
     strongConnection = nx.is_strongly_connected(G)
     print('Strong connection : ', strongConnection)
-    if strongConnection == False:
+    if not strongConnection:
         for i in range(N):
             for j in range(N):
                 if AdjacencyMatrix[i, j] != 0:
@@ -124,13 +124,10 @@ for alpha in alpha_vals:
     dict_edges = nx.get_edge_attributes(G, name='weight')
 
     # Input degree
-    #in_degrees = [G.in_degree(n) for n in G.nodes()]
+    in_degrees = [G.in_degree(n) for n in G.nodes()]
 
     print('------------ Transition matrix ------------ ')
     # Check PF convergence
-    rho0 = 0
-    k_list = []
-    diff_list = []
     rho0, k_list, diff_list = PF_convergence(TransitionMatrix, N)
     # Stationary density vector of people per node
     print('rho0: ', rho0)
@@ -138,8 +135,8 @@ for alpha in alpha_vals:
     # Control if the topology file exists.
     # If it exists, then ask if I want to overwrite data
     # If it does not exist, save data
-    check_file = os.path.isfile(folder_topology+'topologyFile.txt')
-    if check_file == True:
+    check_file = os.path.isfile(folder_topology + 'topologyFile.txt')
+    if check_file:
         print('Files already saved ')
         overwrite = int(input('Do you want to overwrite files? 0 for no, 1 for yes : '))
         if overwrite == 0:

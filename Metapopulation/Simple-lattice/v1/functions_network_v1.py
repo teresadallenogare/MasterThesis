@@ -260,7 +260,4 @@ def PF_convergence(A, N):
     rho0 = PF_l_norm_pd
     norm_factor_pd = PF_l_norm_pd @ PF_r
     PF_r_norm_pd = PF_r / norm_factor_pd
-    print('norm factor:', norm_factor_pd)
-    print('rho0:', rho0)
-    print('PF_r_norm_pd', PF_r_norm_pd)
     return rho0, k_list, diff_norm_lst
