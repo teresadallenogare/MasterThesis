@@ -148,9 +148,35 @@ def initialize_node_population(G, popTot,Nfix, percentage_FixNodes, choice_bool,
 
     return 0
 
+def adjacency_matrix(G, D, density, a):
+    """ Calculate the adjacency matrix that represent the connectivity of the network.
 
+    :param G:
+    :param D:
+    :param density:
+    :param a:
+    :return:
+    """
+    N = len(G.nodes)
 
-def transition_matrix(G, D, density, a, b):
+    # Parameter that quantifies the number of connections between nodes
+    c = a / max(density)
+
+    # Normalization condition ensured by the self loop value
+    A = np.zeros(shape=(N, N))
+    for i in range(N):
+        for j in range(N):
+            if j > i:
+                # Probability to establish both the direct and forward edge in a pair of nodes
+                prob = max(c * density[i] / D[i, j], c * density[j] / D[i, j])
+                rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
+                # This is the adjacency matrix built from the random choice
+                A[i, j] = rnd_ch
+                A[j, i] = rnd_ch
+
+    return A
+
+def transition_matrix(G, A, D, density, b):
     """ Compute probability to create an edge and its reversed one.
         Compute weights of edges that correspond to the transition probability of people
         among nodes.
@@ -163,23 +189,12 @@ def transition_matrix(G, D, density, a, b):
     """
     N = len(G.nodes)
 
-    # Parameter that quantifies the number of connections between nodes
-    c = a / max(density)
     T = np.zeros(shape=(N, N))
 
-    # Normalization condition ensured by the self loop value
     for i in range(N):
         for j in range(N):
-            if j > i and i != j:
-                # Probability to establish both the direct and forward edge in a pair of nodes
-                prob = max(c * density[i]/D[i,j], c * density[j]/D[i,j])
-                #print('\n---------------- \n')
-                #print('(i,j): ', i, j)
-                #print('prob: ', prob)
-                #print('prob:', prob)
-                rnd_ch = np.random.choice([1, 0], p=[prob, 1 - prob])
-                #print('rnd ch: ', rnd_ch)
-                if rnd_ch == 1:
+            if j > i:
+                if A[i,j] == 1:
                     T[i, j] = density[j] / D[i, j] # Tji (i->j)
                     T[j, i] = density[i] / D[i, j] # Tij (j->i)
     # sum over all the rows and take the maximum between these sums and call it Pmax.
@@ -190,7 +205,7 @@ def transition_matrix(G, D, density, a, b):
     for i in range(N):
         # Self loop
         T[i, i] = 1. - T[i, :].sum()
-        print('T[i.i]: ', T[i,i])
+        #print('T[i.i]: ', T[i,i])
         if T[i, i] < 0:
             print(f'ERROR : SELF LOOP WITH PROBABILITY < 0, i = {i}')
 
@@ -200,9 +215,13 @@ def transition_matrix(G, D, density, a, b):
 def PF_convergence(A):
     # 1. Find the stationary probability distribution (that is the normalized left PF eigenvector)
     # Right PF eigvals and eigvect
+
     PF_eigval, PF_r = sla.eigs(A, k = 1, which = 'LR')
+    print('PF_eigval: ',PF_eigval)
+    print('PFr: ', PF_r)
     # Left PF eigvals and eigvect
     PF_eigval, PF_l = sla.eigs(A.T, k = 1, which = 'LR')
+    print('PFl: ', PF_l)
     # Normalized stationary probability distribution (density of people)
     rho0 = np.abs(PF_l.T)[0]
     rho0 = rho0 / rho0.sum()
@@ -226,4 +245,5 @@ def PF_convergence(A):
         print(f"n = {k}, error = {diff_norm:.10f}")
     k_list = np.array(k_list)
     diff_norm_lst = np.array(diff_norm_lst)
+
     return rho0, k_list, diff_norm_lst
