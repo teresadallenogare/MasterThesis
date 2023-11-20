@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 15 November 2023
+Version : 20 November 2023
 
 --------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ for alpha in alpha_vals:
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     # Cycle until I have a strongly connected graph but with population initialized at the beginning
     # Calculate transition matrix
-    TransitionMatrix,   c1_real = transition_matrix(G, AdjacencyMatrix, DistanceMatrix, node_density0, b)
+    TransitionMatrix, c1_real = transition_matrix(G, AdjacencyMatrix, DistanceMatrix, node_density0, b)
     print('c1: ', c1_real)
     weight = [TransitionMatrix[i, j] for i in range(N) for j in range(N)]
     weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
@@ -124,11 +124,14 @@ for alpha in alpha_vals:
     dict_edges = nx.get_edge_attributes(G, name='weight')
 
     # Input degree
-    in_degrees = [G.in_degree(n) for n in G.nodes()]
+    #in_degrees = [G.in_degree(n) for n in G.nodes()]
 
+    print('------------ Transition matrix ------------ ')
     # Check PF convergence
-    rho0, k_list, diff_list = PF_convergence(TransitionMatrix)
-
+    rho0 = 0
+    k_list = []
+    diff_list = []
+    rho0, k_list, diff_list = PF_convergence(TransitionMatrix, N)
     # Stationary density vector of people per node
     print('rho0: ', rho0)
 

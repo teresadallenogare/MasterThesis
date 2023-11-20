@@ -15,7 +15,7 @@ import networkx as nx
 import numpy as np
 import math
 import scipy.sparse.linalg as sla
-
+import scipy.linalg as linalg
 
 def initialize_lattice(N_row, N_col):
     """ Define a lattice with square topology with N_row rows and N_col columns, that is a
@@ -212,27 +212,35 @@ def transition_matrix(G, A, D, density, b):
     return T, c1
 
 
-def PF_convergence(A):
-    # 1. Find the stationary probability distribution (that is the normalized left PF eigenvector)
-    # Right PF eigvals and eigvect
-
-    PF_eigval, PF_r = sla.eigs(A, k = 1, which = 'LR')
-    print('PF_eigval: ',PF_eigval)
+def PF_convergence(A, N):
+    # 1. Calculate the left and right PF eigenvectors
+    # - Right PF eigvals and eigvect
+    eigval, eigvect_r = linalg.eig(A, left = False, right = True)
+    idx_PF = np.argmax(eigval)
+    PF_r = np.array(eigvect_r[:, idx_PF])
+    # Force it to be a column vector
+    PF_r.shape = (N, 1)
+    print('------ Right ------')
     print('PFr: ', PF_r)
-    # Left PF eigvals and eigvect
-    PF_eigval, PF_l = sla.eigs(A.T, k = 1, which = 'LR')
+
+    # - Left PF eigvals and eigvect
+    eigval, eigvect_l = linalg.eig(A, left = True, right = False)
+    PF_eigval = np.max(eigval)
+    idx_PF = np.argmax(eigval)
+    PF_l = eigvect_l[:, idx_PF]
+    # Force it to be a row vector
+    PF_l.shape = (1, N)
+    print('------ Left ------')
     print('PFl: ', PF_l)
-    # Normalized stationary probability distribution (density of people)
-    rho0 = np.abs(PF_l.T)[0]
-    rho0 = rho0 / rho0.sum()
 
     # 2. Check long term convergence through the Perron-projection matrix
     # Normalization such that l^T * r = 1
-    norm_factor = PF_l.T @ PF_r
+    norm_factor = PF_l @ PF_r
     PF_l_norm = PF_l / norm_factor
+    print('PF_l_norm:', PF_l_norm)
     PF_r_norm = PF_r / norm_factor
     #Perron projection matrix
-    P = PF_r_norm @ PF_l_norm.T
+    P = PF_r_norm @ PF_l_norm
     # Verify that lim_{k-> infty} (A/eigval)^k = P
     k_list = [1, 5, 10, 20, 50, 100, 200, 500, 1000]
     diff_norm_lst = []
@@ -246,4 +254,13 @@ def PF_convergence(A):
     k_list = np.array(k_list)
     diff_norm_lst = np.array(diff_norm_lst)
 
+    # 3. Convergence of the NORMALIZED left eigenvector to the density distribution in the long time limit
+    # The left eigenvector gives me the correct density if it is normalized such that right = (1,1,1,1...)
+    PF_l_norm_pd = PF_l / PF_l.sum()
+    rho0 = PF_l_norm_pd
+    norm_factor_pd = PF_l_norm_pd @ PF_r
+    PF_r_norm_pd = PF_r / norm_factor_pd
+    print('norm factor:', norm_factor_pd)
+    print('rho0:', rho0)
+    print('PF_r_norm_pd', PF_r_norm_pd)
     return rho0, k_list, diff_norm_lst
