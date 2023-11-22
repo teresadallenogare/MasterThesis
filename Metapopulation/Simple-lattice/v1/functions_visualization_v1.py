@@ -69,7 +69,7 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
     :param T: [matrix] transition matrix
     :param N_row, N_col: [scalar] number of rows and columns of the network
     :param choice_bool: [bool] 0 if uniform population, 1 if non-uniform population
-    :param c1: [scalar] strenght of the connection
+    :param c1: [scalar] strength of the connection
     """
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
@@ -91,16 +91,30 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
         plt.savefig(folder_topology + f'TransMat_annot-{annotation}.pdf')
         plt.show()
 
-def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k):
+def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisson_funct, param):
+    """ Plot degree distribution with Poisson fit
+
+    :param N_row: [scalar] number of rows
+    :param N_col: [scalar] number of columns
+    :param choice_bool: [bool] 0 if uniform population, 1 if non-uniform population
+    :param c1: [scalar] strength of the connection
+    :param k: [array] values of degrees
+    :param pk: [array] probability distribution of degrees
+    :param avg_k: [scalar] average degree
+    :param Poisson_funct: [function] fitting function
+    :param param: [scalar] parameter of the fitting function
+    """
+
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    plt.bar(k, pk, color='#6F918A')
+    plt.bar(k, pk, color='#6F918A', label = 'Data')
     plt.axvline(x=avg_k, color='k', label=r'$\langle k_{in} \rangle$', linestyle='--')
+    plt.plot(k, Poisson_funct(k, *param), marker = 'o', color = 'red', label = 'Poisson pmf')
     plt.xlabel('$k_{in}$')
     plt.ylabel('$p_k$')
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
     plt.legend()
-    #plt.savefig(folder_topology + f'degree_distribution.pdf')
+    #plt.savefig(folder_topology + f'degree_distribution_poisson.pdf')
     plt.show()
 
 
