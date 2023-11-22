@@ -79,3 +79,29 @@ def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, nod
     f.write('[Not started simulations]\n')
     f.write(f'Number of not started simulations: {nbr_sim_not_start}\n')
     f.write(f'Index of not started simulations: {idx_sim_not_start}')
+
+def write_network_file(N_row, N_col, choice_bool, c1, in_degrees, kin_avg, L, Lmax, percL, k, pk_noNorm, pk_norm,
+                       diameter, avg_distance):
+
+    datadir = os.getcwd()
+    folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+    f = open(folder_topology + f'networkFile.txt', 'w')
+    f.write(' ---------------------------------------------\n\n')
+    f.write('              NETWORK PROPERTIES FILE - v1      \n\n')
+    f.write('      Author : Teresa Dalle Nogare\n')
+    f.write('      Date : ' + datetime.today().strftime('%Y-%m-%d') + '\n\n')
+    f.write(' ---------------------------------------------\n\n')
+    f.write('[Degree properties]\n')
+    f.write(f'Input degree: {in_degrees}\n')
+    f.write(f'Total number of input links: {L}\n')
+    f.write(f'Maximum number of input links: {Lmax}\n')
+    f.write(f'Average input degree: {kin_avg}\n')
+    f.write(f'Fraction of links compared to complete graph: {percL}\n\n')
+    f.write('[Degree distribution]\n')
+    f.write(f'In-degree values: {k}\n')
+    f.write(f'pk no normalized: {pk_noNorm}\n')
+    f.write(f'pk normalized: {pk_norm}\n\n')
+    f.write('[Paths and distances]\n')
+    f.write(f'Diameter: {diameter}\n')
+    f.write(f'Average distance: {np.round(avg_distance, 3)}')
+

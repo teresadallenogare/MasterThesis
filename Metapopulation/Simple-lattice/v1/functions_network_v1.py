@@ -261,3 +261,43 @@ def PF_convergence(A, N):
     norm_factor_pd = PF_l_norm_pd @ PF_r
     PF_r_norm_pd = PF_r / norm_factor_pd
     return rho0, k_list, diff_norm_lst
+
+
+def path_analysis(G, max_dist):
+    N = len(G.nodes)
+    d_vals = np.linspace(0, max_dist, max_dist+1)
+
+    max_dist_sources = []
+    distance_sum_sources = []
+    pd = np.zeros(shape = ( max_dist +1, 1))
+    for source in range(N):
+        # Cycle over the sources to find the diameter
+        empty = False
+        distance_sum = 0
+        for distance in d_vals:
+            # At fixed source, cycle over the distances and find the maximum
+            idx_nodes_at_d = nx.descendants_at_distance(G, source, distance)
+            if not idx_nodes_at_d and empty == False:
+                max_distance = distance - 1
+                empty = True
+            # Calculate the sum of distances excluding the self loop
+            if distance != 0:
+                distance_sum = distance_sum + distance * len(idx_nodes_at_d)
+
+            pd[ int(distance)] = pd[ int(distance)] + len(idx_nodes_at_d)
+        max_dist_sources.append(max_distance)
+        # Sum of distances at fixed source
+        distance_sum_sources.append(distance_sum)
+    max_dist_sources = np.array(max_dist_sources)
+    diameter = max(max_dist_sources)
+    pd_norm = pd / (N**2)
+
+    # Sum of distances among sources
+    distance_sum_sources = np.array(distance_sum_sources)
+    sum_distances = distance_sum_sources.sum()
+    avg_distance = 1/(N * (N-1)) * sum_distances
+
+    return diameter, avg_distance, pd_norm
+
+
+

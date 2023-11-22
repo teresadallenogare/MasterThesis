@@ -46,7 +46,7 @@ percentage_FixNodes = 20
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 0
+choice_bool = 1
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2  # Fixed parameter for the connectivity
