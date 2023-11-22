@@ -1,0 +1,35 @@
+ ---------------------------------------------
+
+              TOPOLOGY FILE - v1      
+
+      Author : Teresa Dalle Nogare
+      Date :2023-11-20
+
+ ---------------------------------------------
+
+[Nodes] 
+N_row = 3, N_col = 3, N = N_row x N_col = 9 
+Position of nodes = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
+[Population data] 
+Average population per node = 10000.0 
+Total population = 90000.0
+
+choice bool = 0 - uniform population (homogeneous network) 
+
+[Initial configuration]
+Node population 0: [ 9971 10050  9976 10010 10013  9904  9852  9999 10225]
+
+[Connectivity]
+Strong connection = True
+a = 0.2
+b = 0.14330626211475786
+
+[PF convergence]
+rho0 = [[0.11078889 0.11166667 0.11084444 0.11122222 0.11125556 0.11004444
+  0.10946667 0.1111     0.11361111]]
+k_list = [   1    5   10   20   50  100  200  500 1000]
+diff_list = [2.54987524 1.88671663 1.52094777 1.19602026 0.82534521 0.5890944
+ 0.34092994 0.06783974 0.00460228]
+
+[Input degrees]
+in_degrees = [4, 3, 2, 2, 2, 3, 3, 3, 3]
