@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author : Teresa Dalle Nogare
-Version : 10 November 2023
+Version : 21 November 2023
 
 --------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, nod
     f.write(f'Index of not started simulations: {idx_sim_not_start}')
 
 def write_network_file(N_row, N_col, choice_bool, c1, in_degrees, kin_avg, L, Lmax, percL, k, pk_noNorm, pk_norm,
-                       diameter, avg_distance):
+                       diameter, avg_distance, param):
 
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
@@ -103,5 +103,7 @@ def write_network_file(N_row, N_col, choice_bool, c1, in_degrees, kin_avg, L, Lm
     f.write(f'pk normalized: {pk_norm}\n\n')
     f.write('[Paths and distances]\n')
     f.write(f'Diameter: {diameter}\n')
-    f.write(f'Average distance: {np.round(avg_distance, 3)}')
+    f.write(f'Average distance: {np.round(avg_distance, 3)}\n\n')
+    f.write('[Posson fit]\n')
+    f.write(f'param: {param}')
 

@@ -114,7 +114,7 @@ def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisso
     plt.ylabel('$p_k$')
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
     plt.legend()
-    #plt.savefig(folder_topology + f'degree_distribution_poisson.pdf')
+    plt.savefig(folder_topology + f'degree_distribution_poisson.pdf')
     plt.show()
 
 

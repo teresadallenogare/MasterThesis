@@ -38,11 +38,11 @@ beta = 0.115
 mu = 0.1
 
 # Total simulation length
-T = 300
+T = 1000
 T_sim = np.linspace(0, T-1, T)
 
 # Number of infected individuals in one node
-popI_node = 2
+popI_node = 5
 
 # List of index of nodes initially containing popI_node infected individuals
 idx_nodes_I_init = [0]
@@ -198,7 +198,6 @@ write_simulation_file(N_row, N_col, choice_bool, c1, node_population0, node_NS0,
 
 bool_density = 0
 idx_sims = [0,1,2,3,4,5,6,7,8,9]
-
 
 
 idx_nodes = list(idxNfix)

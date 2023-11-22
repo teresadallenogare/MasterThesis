@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 
 Author  :   Teresa Dalle Nogare
-Version :   20 November 2023
+Version :   22 November 2023
 
 --------------------------------------------------------------------
 
@@ -23,24 +23,27 @@ from scipy.stats import poisson
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
 
-
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = [30, 50]
-N_col = [30, 50]
+N_row = [3, 5, 10, 30, 50]
+N_col = [3, 5, 10, 30, 50]
 
 choice_bool_lst = [0, 1]
 c1_lst = [0, 1]
 
 degree_analysis = 1
-path_analysis = 0
+distance_analysis = 1
 clustering_analysis = 0
-PF_convergence = 0
+PF_convergence = 1
+
+write_file = 1
+
 
 # --------------------------------------------------------------------------------------------------------------
 
 def Poisson_funct(k, lamb):
     # poisson probability mass function
     return poisson.pmf(k, lamb)
+
 
 for row, col in zip(N_row, N_col):
     N = row * col
@@ -55,9 +58,9 @@ for row, col in zip(N_row, N_col):
                 in_degrees = np.array([G.in_degree(n) for n in G.nodes()])
                 # Total number of links
                 L = in_degrees.sum()
-                L_max = N * (N-1)/2
+                L_max = N * (N - 1) / 2
                 # Average input degree
-                avg_in_degree = L/N
+                avg_in_degree = L / N
                 # In-degree distribution
                 # No normalized
                 Pk_noNorm = np.unique(in_degrees, return_counts=True)
@@ -65,19 +68,18 @@ for row, col in zip(N_row, N_col):
                 # Normalization : the Pk divided by the total number of nodes st sum(pk) = 1
                 Pk_norm = Pk_noNorm[1] / N
                 # Fit with Poisson distribution
-                guess = (10)
+                guess = avg_in_degree
                 param, cov_matrix = curve_fit(Poisson_funct, k_vals, Pk_norm, p0 = guess)
                 print('param:', param)
                 SE = np.sqrt(np.diag(cov_matrix))
                 SE_A = SE[0]
 
-                plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct, param)
+                plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct,
+                                         param)
                 print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
                       L_max, 'Perc. link: ', np.round(L / L_max * 100, 2), '%')
 
-
-
-            if path_analysis == 1:
+            if distance_analysis == 1:
                 # [Paths and distances] (referred to the number of edges composing a path not to the Euclidan distance)
                 max_dist = 10
                 d_vals = np.linspace(0, max_dist, max_dist + 1)
@@ -101,15 +103,7 @@ for row, col in zip(N_row, N_col):
                 # a function of the network dimension.
                 plt.show()
 
-            if degree_analysis == 1 and path_analysis == 1:
-                write_network_file(row, col, choice_bool, c1, in_degrees, avg_in_degree, L, L_max, np.round(L/L_max * 100, 2),
-                                    k_vals, Pk_norm, Pk_noNorm, diameter, avg_distance)
-
-
-
-
-
-
-
-
-
+            if write_file == 1:
+                write_network_file(row, col, choice_bool, c1, in_degrees, avg_in_degree, L, L_max,
+                                   np.round(L / L_max * 100, 2),
+                                   k_vals, Pk_norm, Pk_noNorm, diameter, avg_distance, param)
