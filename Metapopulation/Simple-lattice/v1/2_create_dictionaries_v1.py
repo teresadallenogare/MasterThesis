@@ -35,20 +35,14 @@ mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.
 beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
 mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
-# Total simulation length
-T_3_5_10 = [1000, 800, 600, 300, 250, 200, 120, 120, 800, 600, 250, 200, 150, 120, 500, 500, 250, 150, 120, 120]
-T_30_50 = [1000, 800, 600, 300, 250, 200, 120, 120]
-
 for row, col in zip(N_row, N_col):
     N = row * col
     if row == 3 or row == 5 or row == 10:
         beta_vals = beta_vals_3_5_10
         mu_vals = mu_vals_3_5_10
-        T = T_3_5_10
     else:
         beta_vals = beta_vals_30_50
         mu_vals = mu_vals_30_50
-        T = T_30_50
 
     for choice_bool in choice_bool_lst:
         for c1 in c1_lst:
