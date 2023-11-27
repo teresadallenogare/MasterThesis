@@ -121,3 +121,169 @@ def plot_distance_distribution(N_row, N_col, choice_bool, c1, d, pd, avg_d):
     plt.legend()
     plt.savefig(folder_topology + f'distance_distribution.pdf')
     plt.show()
+
+
+#######################################################################################################################
+#                                                                                                                     #
+#                                            SIR SIMULATIONS                                                          #
+#                                                                                                                     #
+#######################################################################################################################
+def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim, avg_pop_node, avg_pop_Nfix, avg_pop_Others):
+    """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T_sim: [array] array with timesteps of the simulation
+
+    :param bool_density: [bool] if 0 : compute the number of individuals
+                                if 1 : compute the density
+    :param idx_sims : [list] index of simulations to include in the plot
+    :param idx_nodes : [list] index of nodes to include in the plot
+    :param avg_pop_node : [scalar] value of average population per node
+
+    :return: plot of SIR timeseries
+    """
+
+    # ------------------------------------------------ Colors  -------------------------------------------------
+
+    grad_gray = []
+    grad_red = []
+    grad_blue = []
+    grad_green = []
+
+    for x in range(N_row * N_col):
+        #                                dark           light
+        grad_gray.append(colorFader('#505050', '#EAE9E9', x / (N_row * N_col)))
+        grad_red.append(colorFader('#E51C00', '#FCE0DC', x / (N_row * N_col)))
+        grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x / (N_row * N_col)))
+        grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x / (N_row * N_col)))
+
+    datadir = os.getcwd()
+    # Folder
+    folder_simulation = datadir + f'/Data_squareLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+
+    for sim in idx_sims:
+        # Load data
+        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+        first = True
+        for node in idx_nodes:
+            if first == True:
+                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label = 'Population')
+                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label = 'S')
+                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label = 'I')
+                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label = 'R')
+                first = False
+            else:
+                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node])
+                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node])
+                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node])
+                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node])
+        plt.xlabel('Timestep')
+        plt.ylabel('Node population')
+        if choice_bool == 0:
+            plt.axhline(y = avg_pop_node, color='black', linestyle='--', label = 'Average population ')
+        elif choice_bool == 1:
+            plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
+            plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
+        else:
+            print('Wrong choice_bool')
+        plt.legend()
+        plt.show()
+
+
+def animate(t, img, grid, dict_vals, dict_norm_vals):
+    mtrx_t = dict_vals[t]
+    mtrx_norm_t = dict_norm_vals[t]
+    # Extract node positions from the non-normalized dictionary
+    x_nodes = mtrx_t[:, 0]
+    y_nodes = mtrx_t[:, 1]
+    # Extract the density of infected from the normalized dictionary
+    density_I_nodes = mtrx_norm_t[:, 3]
+    #print('t: ', t)
+    #print('dI: ', density_I_nodes)
+    idx_row = 0
+    for i, j in zip(x_nodes, y_nodes):
+        # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
+        grid[int(i), int(j)] = density_I_nodes[idx_row]
+        idx_row += 1
+    img.set_data(grid)
+    return img,
+
+
+def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
+    """ Plot data in space of variables
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T: [scalar] length of the simulation
+    :param beta: [scalar] infection rate
+    :param mu: [scalar] recovery rate
+    :param sim: [scalar] index of the simulation
+
+    :return: plot of the node's states in the space of variables
+    """
+
+    datadir = os.getcwd()
+    folder_dict_noNorm = datadir + f'/Data_squareLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
+    folder_dict_normHand = datadir + f'/Data_squareLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
+
+
+    folder_animations = datadir + f'/Data_squareLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Animations/'
+
+    # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
+    # Initialize grid for later visualization at the beginning of every new simulation! That is my initial state
+    grid = np.zeros(shape=(N_row, N_col))
+    # Load dictionary that contains the information of every node (x_node, y_node, #S, #I, #R) at each timestep
+    dict_load = pickle.load(open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_values = list(dict_load.values())
+    # Load normalized dictionary to have the density of individuals
+    dict_load_normalized = pickle.load(open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized_values = list(dict_load_normalized.values())
+    # Brute force : maximum value of density of I in whole dictionary
+    max_densityI_time = []
+
+    # Determination of the maximum density of infected
+    for t in dict_load.keys():
+        mtrx_t_normalized = dict_load_normalized[t]
+        density_S = mtrx_t_normalized[:, 2]
+        density_I = mtrx_t_normalized[:, 3]
+        density_R = mtrx_t_normalized[:, 4]
+        max_densityI_time.append(max(density_I))
+    max_densityI_time = np.array(max_densityI_time)
+    max_densityI = max(max_densityI_time)
+    print('max-densityI', max_densityI)
+
+    # Setup animation
+    Writer = animation.FFMpegWriter(fps=1)
+
+    fig, ax = plt.subplots()
+    img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+    fig.colorbar(img, cmap='coolwarm')
+    ax.set_xlabel('Node index')
+    ax.set_ylabel('Node index')
+    ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+    ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values, ),
+                                  frames= dict_load.keys())
+    # converting to a html5 video
+    video = ani.to_html5_video()
+
+    ani.save(folder_animations+f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+    # embedding for the video
+    html = display.HTML(video)
+    # draw the animation
+    display.display(html)
+    plt.close()
+    plt.show()
+    print('Done!')
+
+

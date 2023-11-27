@@ -103,3 +103,29 @@ def write_network_file(N_row, N_col, choice_bool, c1, in_degrees, kin_avg, L, Lm
     f.write(f'Diameter: {diameter}\n')
     f.write(f'Average distance: {np.round(avg_distance, 3)}\n\n')
 
+def write_simulation_file(N_row, N_col, choice_bool, c1, node_pop0, node_S0, node_I0, node_R0, node_state0, T, beta,
+                          mu, nbr_repetitions,
+                          nbr_sim_not_start, idx_sim_not_start):
+    datadir = os.getcwd()
+    folder_simulation = datadir + f'/Data_squareLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    f = open(folder_simulation + f'simulationFile.txt', 'w')
+    f.write(' ---------------------------------------------\n\n')
+    f.write('              SIMULATION FILE - v1      \n\n')
+    f.write('      Author : Teresa Dalle Nogare\n')
+    f.write('      Date :' + datetime.today().strftime('%Y-%m-%d') + '\n\n')
+    f.write(' ---------------------------------------------\n\n')
+    f.write(f'[Simulation parameters]\n')
+    f.write(f'Length of simulation, T : {T}\n')
+    f.write(f'Infection rate, beta: {beta}\n')
+    f.write(f'Recovery rate, mu: {mu}\n')
+    f.write(f'Nuber of repetitions: {nbr_repetitions}\n')
+    f.write(f'[Initial configuration]\n')
+    f.write(f'Node population 0: {node_pop0}\n')
+    f.write(f'Node S0: {node_S0}\n')
+    f.write(f'Node I0: {node_I0}\n')
+    f.write(f'Node R0: {node_R0}\n')
+    f.write(f'Node state0: {node_state0}\n\n')
+    f.write('[Not started simulations]\n')
+    f.write(f'Number of not started simulations: {nbr_sim_not_start}\n')
+    f.write(f'Index of not started simulations: {idx_sim_not_start}')
+
