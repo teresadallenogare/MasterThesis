@@ -10,7 +10,7 @@ Version : 23 November 2023
 Topological data analysis pipeline.
 
 """
-from functions_TDA_v1 import *
+from functions_TDA_v1_cluster import *
 import os
 import pickle
 import numpy as np
