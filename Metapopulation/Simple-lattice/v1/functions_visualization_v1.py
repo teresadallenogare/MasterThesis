@@ -54,7 +54,7 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     plt.figure(figsize=(8, 8))
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-
+    G1 = copy(G)
     size_map = [pop_nodes[i] / 10. for i in G.nodes]
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_color = '#B7C8C4', edgecolors = '#374845', linewidths= 1.5, node_size=size_map)
     nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, arrows = True, min_source_margin = 20,
@@ -240,23 +240,23 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     """
 
     datadir = os.getcwd()
-    folder_dict = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/No-normalized/'
-    folder_dict_normalized = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Dictionaries/Normalized/'
-    folder_densities = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Densities/'
-    folder_animations = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/Animations/'
+    folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
+    folder_dict_normHand = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
+
+
+    folder_animations = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Animations/'
 
     # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
     # Initialize grid for later visualization at the beginning of every new simulation! That is my initial state
     grid = np.zeros(shape=(N_row, N_col))
     # Load dictionary that contains the information of every node (x_node, y_node, #S, #I, #R) at each timestep
-    dict_load = pickle.load(open(folder_dict + f'dict_data-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
+    dict_load = pickle.load(open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
     dict_load_values = list(dict_load.values())
     # Load normalized dictionary to have the density of individuals
-    dict_load_normalized = pickle.load(open(folder_dict_normalized + f'dict_data_normalized-{N_row}x{N_col}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized = pickle.load(open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
     dict_load_normalized_values = list(dict_load_normalized.values())
     # Brute force : maximum value of density of I in whole dictionary
     max_densityI_time = []
-    f = open(folder_densities + f'densities-sim{sim}.txt', 'w')
 
     # Determination of the maximum density of infected
     for t in dict_load.keys():
@@ -264,13 +264,7 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
         density_S = mtrx_t_normalized[:, 2]
         density_I = mtrx_t_normalized[:, 3]
         density_R = mtrx_t_normalized[:, 4]
-        f.write('--------------------------------------------------------\n')
-        f.write(f't: {t}\n')
-        f.write(f'density_S: {density_S}\n\n')
-        f.write(f'density_I: {density_I}\n\n')
-        f.write(f'density_R: {density_R}\n\n\n')
         max_densityI_time.append(max(density_I))
-    f.close()
     max_densityI_time = np.array(max_densityI_time)
     max_densityI = max(max_densityI_time)
     print('max-densityI', max_densityI)
@@ -289,7 +283,7 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     # converting to a html5 video
     video = ani.to_html5_video()
 
-    ani.save(folder_animations+f'animation-sim{sim}.mp4', writer=Writer)
+    ani.save(folder_animations+f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
     # embedding for the video
     html = display.HTML(video)
     # draw the animation
