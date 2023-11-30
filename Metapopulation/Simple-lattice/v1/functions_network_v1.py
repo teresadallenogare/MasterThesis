@@ -14,7 +14,6 @@ Functions to initialize the network
 import networkx as nx
 import numpy as np
 import math
-import scipy.sparse.linalg as sla
 import scipy.linalg as linalg
 
 def initialize_lattice(N_row, N_col):

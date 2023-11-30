@@ -54,7 +54,7 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     plt.figure(figsize=(8, 8))
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    G1 = copy(G)
+    #G1 = copy(G)
     size_map = [pop_nodes[i] / 10. for i in G.nodes]
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_color = '#B7C8C4', edgecolors = '#374845', linewidths= 1.5, node_size=size_map)
     nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, arrows = True, min_source_margin = 20,
@@ -129,6 +129,7 @@ def plot_distance_distribution(N_row, N_col, choice_bool, c1, d, pd, avg_d):
     plt.legend()
     plt.savefig(folder_topology + f'distance_distribution.pdf')
     plt.show()
+
 #######################################################################################################################
 #                                                                                                                     #
 #                                            SIR SIMULATIONS                                                          #

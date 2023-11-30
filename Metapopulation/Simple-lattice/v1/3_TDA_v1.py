@@ -86,18 +86,18 @@ for row, col in zip(N_row, N_col):
                         print('normalize_entropy: ', normalize_entropy)
                         ph, dgms, entropy_H0, entropy_H1 = entropy_calculation(df_dict_data, columns, normalize_entropy)
                         if normalization == 0:
-                            pickle.dump(ph, open(folder_entropy_noNorm + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
-                            pickle.dump(dgms, open(folder_entropy_noNorm + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
+                            pickle.dump(ph, open(folder_entropy_noNorm + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
+                            pickle.dump(dgms, open(folder_entropy_noNorm + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
                             np.save(folder_entropy_noNorm + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H0)
                             np.save(folder_entropy_noNorm + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H1)
                         elif normalization == 1:
-                            pickle.dump(ph, open(folder_entropy_normScaler + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
-                            pickle.dump(dgms, open(folder_entropy_normScaler + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
+                            pickle.dump(ph, open(folder_entropy_normScaler + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
+                            pickle.dump(dgms, open(folder_entropy_normScaler + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
                             np.save(folder_entropy_normScaler + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H0)
                             np.save(folder_entropy_normScaler + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H1)
                         elif normalization == 2:
-                            pickle.dump(ph, open(folder_entropy_normHand + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
-                            pickle.dump(dgms,open(folder_entropy_normHand + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', 'wb'))
+                            pickle.dump(ph, open(folder_entropy_normHand + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
+                            pickle.dump(dgms,open(folder_entropy_normHand + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
                             np.save(folder_entropy_normHand + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H0)
                             np.save(folder_entropy_normHand + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}', entropy_H1)
 

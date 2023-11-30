@@ -32,8 +32,8 @@ np.random.seed(seed)
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 # Number of rows and columns in the lattice
-N_row = 50
-N_col = 50
+N_row = 100
+N_col = 100
 
 # Average population per node (fixed)
 avg_popPerNode = 1e4
@@ -46,7 +46,7 @@ percentage_FixNodes = 20
 
 # choice_bool = 0 : uniform distribution
 # choice_bool = 1 : Nfix nodes have percentage of population equal to percentage_FixNodes %
-choice_bool = 1
+choice_bool = 0
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2  # Fixed parameter for the connectivity
