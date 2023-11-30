@@ -12,7 +12,6 @@ Metapopulation simulation of SIR epidemics on network G
 """
 from functions_square_SIR_metapop_v1_cluster import *
 from functions_square_output_v1 import write_simulation_file
-from functions_square_visualization_v1 import plot_SIR_timeseries
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
