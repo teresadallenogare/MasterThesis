@@ -15,16 +15,21 @@ from sklearn.preprocessing import StandardScaler
 import ripser
 from persim.persistent_entropy import *
 
+def string_2_int(lst):
+    for i in range(len(lst)):
+        lst[i] = int(lst[i])
+    return lst
+
 def data_2_pandas(data_dict):
     """ Convert the dictionary of data in a DataFrame
 
     :param data_dict: [dictionary] input dictionary containing data
     :return: data_dict_df: [DataFrame] DataFrame of the input dictionary
     """
-    frames = [] # List to hold individual dataframes
+    frames = []  # List to hold individual dataframes
 
     for time, array in data_dict.items():
-        N = len(array) # Get the number of rows in the numpy array
+        N = len(array)  # Get the number of rows in the numpy array
         node_id = np.arange(0, N)  # Generate Node ID sequence from 0 to N-1
         time_column = np.full((N,), time)  # Create a column filled with the current time value
         # Create a DataFrame
@@ -54,16 +59,17 @@ def scaler_df_data_dict(df_data):
     scaler = StandardScaler()
     df_data_scaled = pd.DataFrame()
 
-    df_data_scaled = pd.DataFrame(scaler.fit_transform(df_data[['X', 'Y', 'S', 'I', 'R']]), columns = ['X', 'Y', 'S', 'I', 'R'])
+    df_data_scaled = pd.DataFrame(scaler.fit_transform(df_data[['X', 'Y', 'S', 'I', 'R']]),
+                                  columns=['X', 'Y', 'S', 'I', 'R'])
     # Time and Node ID are preserved attributes, not subject to rescaling
     df_data_scaled['Time'] = df_data['Time']
     df_data_scaled['Node ID'] = df_data['Node ID']
 
     return df_data_scaled
 
-def entropy_calculation(df_data, columns, normalize_entropy):
 
-    time_interval = range(df_data['Time']. min(), df_data['Time'].max())
+def entropy_calculation(df_data, columns, normalize_entropy):
+    time_interval = range(df_data['Time'].min(), df_data['Time'].max())
 
     entropy_H0 = []
     entropy_H1 = []
@@ -71,14 +77,14 @@ def entropy_calculation(df_data, columns, normalize_entropy):
     for t in time_interval:
         mask = df_data['Time'] == t
         # Extract data to analyse from DataFrame
-        extracted_df_data = df_data.loc[mask, columns]. values
+        extracted_df_data = df_data.loc[mask, columns].values
 
         # Calculate persistent diagrams
         pers_homology = ripser.ripser(extracted_df_data)
         dgms = pers_homology['dgms']
 
         # Calculate persistent entropy
-        entropy = persistent_entropy(dgms, normalize = normalize_entropy)
+        entropy = persistent_entropy(dgms, normalize=normalize_entropy)
         entropy_H0.append(entropy[0])
         entropy_H1.append(entropy[1])
 

@@ -7,7 +7,7 @@ Version : 23 November 2023
 
 --------------------------------------------------------------------
 
-Topological data analysis pipeline.
+Scheleton of persistent entropy calculation (done in cluster so versions in cluster should be updated)
 
 """
 from functions_TDA_v1 import *
@@ -65,7 +65,7 @@ for row, col in zip(N_row, N_col):
                 print('beta: ', beta, 'mu: ', mu)
                 for normalization in normalization_data_vals:
                     #### Load data and transform in DataFrame
-                    if normalization != 2 :
+                    if normalization != 2:
                         # Import no normalized dictionary
                         dict_data = pickle.load(
                             open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
