@@ -98,17 +98,16 @@ for row, col in zip(N_row, N_col):
 
                 for i in range(N):
                     for j in range(N): # self-loops??
-                        if TransitionMatrix[i, j] != 0: # take tridiagonal superior (input) and consider that an edge exists
+                        if TransitionMatrix[i, j] != 0:
                             k = G.in_degree(i)
                             k_prime = G.in_degree(j)
-
+                            # Cont the number of edges from k to k' and viceversa
                             ContactMatrix[k, k_prime] = ContactMatrix[k, k_prime] + 1
                 # Delete if both row and col are zeros
                 max_dim = max(k_vals) + 1
                 idx_delete = []
                 for i in range(max_dim):
                     sum_row = np.sum(ContactMatrix[i, :])
-                    print('sum_row :', sum_row)
                     sum_col = np.sum(ContactMatrix[:, i])
                     if sum_row == 0 and sum_col == 0:
                         idx_delete.append(i)
@@ -122,7 +121,7 @@ for row, col in zip(N_row, N_col):
                 # Conditional probability P(k|k')
                 P_cond = np.zeros(shape = (len(k_vals), len(k_vals)))
                 for k in range(len(k_vals)):
-                    P_cond[k, :] = P_joint[k, :] / (k_vals[k] * N_k[k])
+                        P_cond[k, :] =  ContactMatrix[k, :] / (k_vals[k] * N_k[k])
 
                 # ANND k_barn_nn
                 k_bar_nn = []
@@ -135,7 +134,7 @@ for row, col in zip(N_row, N_col):
 
                 k_bar_nn_non_corr = second_moment / avg_in_degree
                 plt.plot(k_vals, k_bar_nn, marker = 'o')
-                #plt.axhline(y = k_bar_nn_non_corr, linestyle = '--', color = 'k')
+                plt.axhline(y = k_bar_nn_non_corr, linestyle = '--', color = 'k')
                 plt.xlabel('k')
                 plt.ylabel(r'\bar{k}_{nn}(k)')
 

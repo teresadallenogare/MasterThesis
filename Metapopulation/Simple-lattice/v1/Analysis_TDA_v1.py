@@ -23,8 +23,8 @@ import re
 
 datadir = os.getcwd()
 
-generator_HomLoops = 1
-plot_histogram = 0
+generator_HomLoops = 0
+plot_histogram = 1
 PE_beta_mu = 0
 
 sim = 0
@@ -43,10 +43,10 @@ col = 30
 N = row * col
 
 # Population method
-choice_bool_vals = [0, 1]
+choice_bool_vals = [0]
 
 # Strength self loops
-c1_vals = [0, 1]
+c1_vals = [1]
 
 # Infection and recovery rate
 beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
@@ -54,13 +54,6 @@ mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.
 
 beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
 mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-
-
-#beta_vals_3_5_10 = [0.115]
-#mu_vals_3_5_10 = [0.1]
-
-
-
 
 ########################################################################################################################
 # Fix configuration (dim, population, strength loops) and extract generators of homological loops.
@@ -165,6 +158,7 @@ if plot_histogram == 1:
         beta_vals = beta_vals_30_50
         mu_vals = mu_vals_30_50
     for choice_bool in choice_bool_vals:
+        plt.figure(figsize=(15, 8))
         print('choice bool: ', choice_bool)
         for c1 in c1_vals:
             print('c1: ', c1)
@@ -191,7 +185,7 @@ if plot_histogram == 1:
 
                 idx_nodes = np.linspace(0, N-1, N)
                 print('idx_nodes:', idx_nodes)
-                plt.bar(idx_nodes, array_hist_nodes0, color='crimson', edgecolor='white')
+                plt.bar(idx_nodes[:200], array_hist_nodes0[:200], color='crimson', edgecolor='white')
                 plt.xlabel('index node')
                 plt.ylabel('frequency')
                 plt.title(f'{row}x{col} ch_bool={choice_bool} c1={c1} beta={beta} mu={mu}')
