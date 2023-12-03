@@ -20,6 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial.distance import cdist
 import subprocess
 import re
+import seaborn as sns
 
 datadir = os.getcwd()
 
@@ -43,10 +44,10 @@ col = 30
 N = row * col
 
 # Population method
-choice_bool_vals = [0]
+choice_bool_vals = [0, 1]
 
 # Strength self loops
-c1_vals = [1]
+c1_vals = [0, 1]
 
 # Infection and recovery rate
 beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
@@ -181,17 +182,37 @@ if plot_histogram == 1:
                         cont = (idx_nodes0_time[t, :] == i).sum()
                         mtrx_hist_nodes0_time[t, i] = cont
                 array_hist_nodes0 = np.sum(mtrx_hist_nodes0_time, axis = 0)
+                top_indices = np.argsort(array_hist_nodes0)[-3:]
+                print('top indeces: ', top_indices)
                 #array_hist_nodes0 = array_hist_nodes0.reshape((N, 1))
 
-                idx_nodes = np.linspace(0, N-1, N)
-                print('idx_nodes:', idx_nodes)
-                plt.bar(idx_nodes[:200], array_hist_nodes0[:200], color='crimson', edgecolor='white')
-                plt.xlabel('index node')
-                plt.ylabel('frequency')
-                plt.title(f'{row}x{col} ch_bool={choice_bool} c1={c1} beta={beta} mu={mu}')
+                # Try heatmap + histogram
+                # Create a subplot grid
+                fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [1, 0.2]}, figsize=(10, 5))
+                idx_nodes = np.linspace(0, N - 1, N)
+                mtrx_hist_nodes0_time_T = mtrx_hist_nodes0_time.T
+                vmin = mtrx_hist_nodes0_time_T.min()
+                vmax = mtrx_hist_nodes0_time_T.max()
+                heatm = sns.heatmap(mtrx_hist_nodes0_time_T, ax=ax1, cmap='viridis', cbar=True)
+                heatm.invert_yaxis()
+                #ax.set_xlabel('Time')
+                #ax.set_ylabel('Node index')
+                #ax.set_title(f'{row}x{col} ch_bool={choice_bool} c1={c1} beta={beta} mu={mu}')
+                bars = ax2.barh(idx_nodes, array_hist_nodes0, color = 'gray' )
+                # Color the top three bars differently
+                for i in top_indices:
+                    bars[i].set_color('red')
+                ax1.set_title(f'{row}x{col} ch_bool={choice_bool} c1={c1} beta={beta} mu={mu}')
                 plt.show()
 
-                print('hello')
+                # Try 2D
+                #idx_nodes = np.linspace(0, N-1, N)
+                #plt.bar(idx_nodes, array_hist_nodes0, color='crimson', edgecolor='white')
+                #plt.xlabel('index node')
+                #plt.ylabel('frequency')
+                #plt.title(f'{row}x{col} ch_bool={choice_bool} c1={c1} beta={beta} mu={mu}')
+                #plt.show()
+
 ########################################################################################################################
 # Fix configuration (dim, population, strength loops) and study PE as a function of beta and mu
 ########################################################################################################################
