@@ -22,7 +22,8 @@ from IPython import display
 import matplotlib.animation as animation
 import pickle
 
-def colorFader(c1 ,c2, mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+
+def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
     """ Color gradient between c1 - darker - and c2 - lighter.
 
     :param c1: [scalar] dark value of color
@@ -33,7 +34,8 @@ def colorFader(c1 ,c2, mix=0): #fade (linear interpolate) from color c1 (at mix=
     c1 = np.array(matplotlib.colors.to_rgb(c1))
     c2 = np.array(matplotlib.colors.to_rgb(c2))
 
-    return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)
+    return matplotlib.colors.to_hex((1 - mix) * c1 + mix * c2)
+
 
 #######################################################################################################################
 #                                                                                                                     #
@@ -54,14 +56,16 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     plt.figure(figsize=(8, 8))
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    #G1 = copy(G)
+    # G1 = copy(G)
     size_map = [pop_nodes[i] / 10. for i in G.nodes]
-    nx.draw_networkx_nodes(G, pos=dict_nodes, node_color = '#B7C8C4', edgecolors = '#374845', linewidths= 1.5, node_size=size_map)
-    nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, arrows = True, min_source_margin = 20,
-                           min_target_margin = 20, connectionstyle= "arc3,rad=0.1")
+    nx.draw_networkx_nodes(G, pos=dict_nodes, node_color='#B7C8C4', edgecolors='#374845', linewidths=1.5,
+                           node_size=size_map)
+    nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, arrows=True, min_source_margin=20,
+                           min_target_margin=20, connectionstyle="arc3,rad=0.1")
     nx.draw_networkx_labels(G, pos=dict_nodes, font_size=10)
-    #plt.savefig(folder_topology + f'net-topol.pdf')
+    # plt.savefig(folder_topology + f'net-topol.pdf')
     plt.show()
+
 
 def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
     """ Plot the transition matrix both with annotations and without annotations
@@ -75,21 +79,24 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     T_df = pd.DataFrame(T)
     labels = T_df.applymap(lambda v: str(np.round(v, 2)) if v != 0 else '')
-    palette = sns.cubehelix_palette(n_colors = 100, start=2,  dark = 0.1, reverse = True)
+    palette = sns.cubehelix_palette(n_colors=100, start=2, dark=0.1, reverse=True)
     annotation_list = [True, False] if N_row == 3 else [False]
     for annotation in annotation_list:
         if annotation == True:
-            #plt.figure(figsize=(9, 8))
-            ax = sns.heatmap(T, linewidth=0, square = True,  annot = labels, fmt = '', cmap= palette, cbar_kws={'label': 'weight'})
+            # plt.figure(figsize=(9, 8))
+            ax = sns.heatmap(T, linewidth=0, square=True, annot=labels, fmt='', cmap=palette,
+                             cbar_kws={'label': 'weight'})
         else:
-            #plt.figure(figsize=(9, 8))
-            ax = sns.heatmap(T, linewidth=0, square=True, annot=annotation, fmt='', cmap= palette, cbar_kws={'label': 'weight'})
+            # plt.figure(figsize=(9, 8))
+            ax = sns.heatmap(T, linewidth=0, square=True, annot=annotation, fmt='', cmap=palette,
+                             cbar_kws={'label': 'weight'})
 
-        ax.set_xlabel("Node index", fontsize = 12)
+        ax.set_xlabel("Node index", fontsize=12)
         ax.set_ylabel("Node index", fontsize=12)
 
         plt.savefig(folder_topology + f'TransMat_annot-{annotation}.pdf')
         plt.show()
+
 
 def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisson_funct, param):
     """ Plot degree distribution with Poisson fit
@@ -107,9 +114,9 @@ def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisso
 
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    plt.bar(k, pk, color='#6F918A', label = 'Data')
+    plt.bar(k, pk, color='#6F918A', label='Data')
     plt.axvline(x=avg_k, color='k', label=r'$\langle k_{in} \rangle$', linestyle='--')
-    plt.plot(k, Poisson_funct(k, *param), marker = 'o', color = 'red', label = 'Poisson pmf')
+    plt.plot(k, Poisson_funct(k, *param), marker='o', color='red', label='Poisson pmf')
     plt.xlabel('$k_{in}$')
     plt.ylabel('$p_k$')
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
@@ -121,7 +128,7 @@ def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisso
 def plot_distance_distribution(N_row, N_col, choice_bool, c1, d, pd, avg_d):
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    plt.plot(d, pd, '-o', color='#93ACA7', mfc = '#536C67')
+    plt.plot(d, pd, '-o', color='#93ACA7', mfc='#536C67')
     plt.axvline(x=avg_d, color='k', label=r'$\langle d \rangle$', linestyle='--')
     plt.xlabel('$d$')
     plt.ylabel('$p_d$')
@@ -130,12 +137,46 @@ def plot_distance_distribution(N_row, N_col, choice_bool, c1, d, pd, avg_d):
     plt.savefig(folder_topology + f'distance_distribution.pdf')
     plt.show()
 
+
+def plot_node_population_0(N, N_fix, idx_Nfix, node_pop, mean_pop1, stdDev_pop1, mean_pop2, stdDev_pop2, homogeneous):
+    idx_node = np.linspace(0, N - 1, N)
+    x = np.linspace(0, N - 1, N * 1000)
+    if homogeneous == 0:
+        y_err1_up = (mean_pop1 + stdDev_pop1) * np.ones(len(x))
+        y_err1_down = (mean_pop1 - stdDev_pop1) * np.ones(len(x))
+        plt.scatter(idx_node, node_pop, marker = 'o', s = 10, color = 'red')
+        plt.axhline(y=mean_pop1, color='black', linestyle='--', label='Average population ')
+        plt.fill_between(x, y_err1_down, y_err1_up, color='C0', alpha=0.3)
+        plt.xlabel('Index node')
+        plt.ylabel('Node population')
+        plt.legend()
+        plt.show()
+
+    elif homogeneous == 1:
+
+        y_err1_up = (mean_pop1 + stdDev_pop1) * np.ones(len(x))
+        y_err1_down = (mean_pop1 - stdDev_pop1) * np.ones(len(x))
+        y_err2_up = (mean_pop2 + stdDev_pop2) * np.ones(len(x))
+        y_err2_down = (mean_pop2 - stdDev_pop2) * np.ones(len(x))
+        plt.scatter(idx_node, node_pop,  marker = 'o', s = 10, color = 'red')
+        plt.axhline(y=mean_pop1, color='black', linestyle='--', label='Average population ')
+        plt.fill_between(x, y_err1_down, y_err1_up, color='C0', alpha=0.5)
+        plt.axhline(y=mean_pop2, color='black', linestyle='--')
+        plt.fill_between(x, y_err2_down, y_err2_up, color='C0', alpha=0.5)
+        plt.xlabel('Index node')
+        plt.ylabel('Node population')
+        plt.legend()
+        plt.show()
+
+        print('hello')
+
 #######################################################################################################################
 #                                                                                                                     #
 #                                            SIR SIMULATIONS                                                          #
 #                                                                                                                     #
 #######################################################################################################################
-def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim, avg_pop_node, avg_pop_Nfix, avg_pop_Others):
+def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim, avg_pop_node, avg_pop_Nfix,
+                        avg_pop_Others):
     """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
 
     :param N_row: [scalar] number of rows of the lattice
@@ -182,10 +223,10 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
         first = True
         for node in idx_nodes:
             if first == True:
-                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label = 'Population')
-                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label = 'S')
-                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label = 'I')
-                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label = 'R')
+                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label='Population')
+                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label='S')
+                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label='I')
+                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label='R')
                 first = False
             else:
                 plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node])
@@ -195,7 +236,7 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
         plt.xlabel('Timestep')
         plt.ylabel('Node population')
         if choice_bool == 0:
-            plt.axhline(y = avg_pop_node, color='black', linestyle='--', label = 'Average population ')
+            plt.axhline(y=avg_pop_node, color='black', linestyle='--', label='Average population ')
         elif choice_bool == 1:
             plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
             plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
@@ -213,8 +254,8 @@ def animate(t, img, grid, dict_vals, dict_norm_vals):
     y_nodes = mtrx_t[:, 1]
     # Extract the density of infected from the normalized dictionary
     density_I_nodes = mtrx_norm_t[:, 3]
-    #print('t: ', t)
-    #print('dI: ', density_I_nodes)
+    # print('t: ', t)
+    # print('dI: ', density_I_nodes)
     idx_row = 0
     for i, j in zip(x_nodes, y_nodes):
         # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
@@ -244,7 +285,6 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
     folder_dict_normHand = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
 
-
     folder_animations = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Animations/'
 
     # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
@@ -254,7 +294,8 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     dict_load = pickle.load(open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
     dict_load_values = list(dict_load.values())
     # Load normalized dictionary to have the density of individuals
-    dict_load_normalized = pickle.load(open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized = pickle.load(
+        open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
     dict_load_normalized_values = list(dict_load_normalized.values())
     # Brute force : maximum value of density of I in whole dictionary
     max_densityI_time = []
@@ -275,16 +316,17 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
 
     fig, ax = plt.subplots()
     img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+    ax.invert_yaxis()
     fig.colorbar(img, cmap='coolwarm')
     ax.set_xlabel('Node index')
     ax.set_ylabel('Node index')
     ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
-    ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values, ),
-                                  frames= dict_load.keys())
+    ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
+                                  frames=dict_load.keys())
     # converting to a html5 video
     video = ani.to_html5_video()
 
-    ani.save(folder_animations+f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+    ani.save(folder_animations + f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
     # embedding for the video
     html = display.HTML(video)
     # draw the animation
@@ -292,5 +334,6 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     plt.close()
     plt.show()
     print('Done!')
+
 
 

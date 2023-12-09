@@ -89,3 +89,12 @@ def entropy_calculation(df_data, columns, normalize_entropy):
         entropy_H1.append(entropy[1])
 
     return pers_homology, dgms, entropy_H0, entropy_H1
+
+
+def min_PE(pe, time):
+    list_pe = list(pe)
+    min_pe = min(list_pe)
+    idx_min_pe = list_pe.index(min_pe)
+    t_min_pe = time[idx_min_pe]
+
+    return [min_pe, t_min_pe]

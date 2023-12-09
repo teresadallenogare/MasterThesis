@@ -50,7 +50,7 @@ choice_bool = 0
 
 # Parameters to establish the connectivity and the self loops
 a = 0.2  # Fixed parameter for the connectivity
-alpha_vals = [0.2, 1]  # Strength of the loop (alpha = 1 means low self loops, alpha = 1/2  means high self-loops)
+alpha_vals = [0.2, 1]  # Strength of the loop (alpha = 1 means low self loops, alpha = 0.2 means high self-loops)
 
 # ------------------------------------------ Lattice initialization  -----------------------------------------
 # Define node position in the lattice with a square topology

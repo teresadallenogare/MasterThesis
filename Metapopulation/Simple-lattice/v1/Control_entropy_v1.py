@@ -72,6 +72,7 @@ for row, col in zip(N_row, N_col):
 
                     plt.plot(x, entropy_H0, color = 'r', label = 'entropy at H0')
                     plt.plot(x, entropy_H1, color = 'b', label = 'entropy at H1')
+
                     plt.xlabel('Time')
                     plt.ylabel('Persistent Entropy')
                     plt.title(f'PE choice_bool:{choice_bool}, c1:{c1}, beta:{beta}, mu:{mu}, normE:{normalize_entropy}, normDat:{normalization}')

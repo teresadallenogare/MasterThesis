@@ -27,11 +27,11 @@ fixedR0 = 0
 fixed_mu = 0
 heatmap = 1
 
-row = 50
-col = 50
+row = 30
+col = 30
 
 choice_bool = 0
-c1 = 1
+c1 = 0
 
 sim = 0
 
@@ -99,7 +99,7 @@ if fixedR0 == 1:
 ### Heatmap
 
 if heatmap == 1:
-    beta = 0.2
+    beta = 0.9
     mu = 0.1
     T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
     print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)

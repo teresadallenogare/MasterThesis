@@ -30,11 +30,19 @@ N_col = [3, 5, 10, 30, 50]
 choice_bool_lst = [0]
 c1_lst = [0]
 
+beta_vals_3_5_10 = [0.115]#, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
+mu_vals_3_5_10 = [0.1]#, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+
+beta_vals_30_50 = [0.115]#, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+mu_vals_30_50 = [0.1]#, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+population_analysis = 0
 degree_analysis = 1
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
+show_transition_matrix = 0
 
 write_file = 0
 
@@ -57,8 +65,47 @@ for row, col in zip(N_row, N_col):
             folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
             G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
             TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
-
 ######################################################################################################################
+
+            if population_analysis == 1:
+                # Node population
+                avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
+                total_population = N * avg_population
+                node_population_0 = nx.get_node_attributes(G, name='Npop')
+                node_population_0 = np.array(list(node_population_0.values()))
+                if choice_bool == 0:
+
+                    # Mean and average from the multinomial distribution
+                    prob_sample1 = 1/N
+                    mean_population_multi1 = total_population * prob_sample1
+                    stdDev_population_multi1 = np.sqrt(total_population * prob_sample1 * (1-prob_sample1))
+
+                    N_fix = 0
+                    mean_population_multi2 = 0
+                    stdDev_population_multi2 = 0
+                    idx_Nfix = 0
+                elif choice_bool == 1:
+                    N_fix = np.load(folder_topology + 'Nfix.npy')
+                    idx_Nfix = np.load(folder_topology + 'idxNfix.npy')
+                    percentage_Nfix = np.load(folder_topology + 'percentage_FixNodes.npy')
+
+                    N_fix_population = total_population * percentage_Nfix/100
+                    N_other_population = total_population - N_fix_population
+
+                    prob_sample1 = 1 / N_fix
+                    prob_sample2 = 1 / (N - N_fix)
+
+
+                    mean_population_multi1 =  N_fix_population * prob_sample1
+                    stdDev_population_multi1 = np.sqrt(N_fix_population * prob_sample1 * (1. - prob_sample1))
+
+                    mean_population_multi2 = N_other_population * prob_sample2
+                    stdDev_population_multi2 = np.sqrt(N_other_population * prob_sample2 * (1. - prob_sample2))
+
+                plot_node_population_0(N, N_fix, idx_Nfix,node_population_0, mean_population_multi1, stdDev_population_multi1, mean_population_multi2, stdDev_population_multi2, choice_bool)
+
+                print('hello')
+            ######################################################################################################################
 
             if degree_analysis == 1:
                 # [Degree properties]
@@ -89,8 +136,8 @@ for row, col in zip(N_row, N_col):
                 SE = np.sqrt(np.diag(cov_matrix))
                 SE_A = SE[0]
 
-                # plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct,
-                #                         param)
+                plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct,
+                                         param)
 
                 # Matrix of connections: total number of edges between vertices of degree k and vertices of degree k′ N_kk'
                 print('k_vals:', k_vals)
@@ -121,7 +168,7 @@ for row, col in zip(N_row, N_col):
                 # Conditional probability P(k|k')
                 P_cond = np.zeros(shape = (len(k_vals), len(k_vals)))
                 for k in range(len(k_vals)):
-                        P_cond[k, :] =  ContactMatrix[k, :] / (k_vals[k] * N_k[k])
+                        P_cond[k, :] = ContactMatrix[k, :] / (k_vals[k] * N_k[k])
 
                 # ANND k_barn_nn
                 k_bar_nn = []
@@ -136,7 +183,7 @@ for row, col in zip(N_row, N_col):
                 plt.plot(k_vals, k_bar_nn, marker = 'o')
                 plt.axhline(y = k_bar_nn_non_corr, linestyle = '--', color = 'k')
                 plt.xlabel('k')
-                plt.ylabel(r'\bar{k}_{nn}(k)')
+                plt.ylabel(r'$\bar{k}_{nn}(k)$')
 
                 plt.show()
                 #print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
@@ -163,16 +210,47 @@ for row, col in zip(N_row, N_col):
 ######################################################################################################################
 
             if PF_convergence == 1:
+                idx_node = np.linspace(0, N-1, N)
+
+                folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+                avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
+                rho0 = np.load(folder_topology + '/rho0.npy')
+                rho0 = rho0 * N
                 # [PF convergence]
+                # Plot the error as a function of the dimension
                 k_list = np.load(folder_topology + 'k_list.npy')
                 diff_list = np.load(folder_topology + 'diff_list.npy')
 
                 plt.plot(k_list, diff_list, '-o')
                 # add labels and plot multiple dimensions in one to see how the decay of the error to zero changes as
                 # a function of the network dimension.
+                plt.xlabel('Power law')
+                plt.ylabel('Error')
                 plt.show()
 
-######################################################################################################################
+                # Plot the difference between rho0 and the density of people in the final time
+                if row == 3 or row == 5 or row == 10:
+                    beta_vals = beta_vals_3_5_10
+                    mu_vals = mu_vals_3_5_10
+                else:
+                    beta_vals = beta_vals_30_50
+                    mu_vals = mu_vals_30_50
+
+                for beta, mu in zip(beta_vals, mu_vals):
+                    folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+                    node_population_time = np.load(folder_simulation + 'sim_0_node_population_time.npy')
+                    node_population_final = node_population_time[-1, :]
+                    node_density_final = node_population_final / avg_population
+
+                    diff_density = node_density_final - rho0
+
+                    plt.scatter(idx_node, diff_density, color = 'k')
+                    plt.axhline(y=0, linestyle='--', color='k')
+                    plt.xlabel('Index node')
+                    plt.ylabel(r'$\rho_{\infty} - \rho_0$')
+                    plt.show()
+                    print('hello')
+            ######################################################################################################################
 
             if weight_analysis == 1:
                 TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
@@ -186,7 +264,10 @@ for row, col in zip(N_row, N_col):
                 plt.ylabel('Frequency')
                 plt.title(f'dim = {row}x{col}, choice_bool = {choice_bool}, c1 = {c1}')
                 plt.show()
-
+######################################################################################################################
+            if show_transition_matrix == 1:
+                TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+                print('hello')
 ######################################################################################################################
 
             if write_file == 1:
