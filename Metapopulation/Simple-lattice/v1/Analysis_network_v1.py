@@ -19,30 +19,34 @@ import os
 import pickle
 from scipy.optimize import curve_fit
 from scipy.stats import poisson
+import scipy.linalg as linalg
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = [3, 5, 10, 30, 50]
-N_col = [3, 5, 10, 30, 50]
+N_row = [30]
+N_col = [30]
 
-choice_bool_lst = [0]
-c1_lst = [0]
+choice_bool_lst = [0, 1]
+c1_lst = [0, 1]
 
-beta_vals_3_5_10 = [0.115]#, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
-mu_vals_3_5_10 = [0.1]#, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
+mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
 
-beta_vals_30_50 = [0.115]#, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
-mu_vals_30_50 = [0.1]#, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+sim = 0
 
 population_analysis = 0
-degree_analysis = 1
+degree_analysis = 0
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
-show_transition_matrix = 0
+Rstar_def = 1
+outbreak = 0
 
 write_file = 0
 
@@ -57,6 +61,8 @@ def nth_moment_v2(g,n):
     degree_np = np.array(list(dict(g.in_degree).values()))
     return (sum(degree_np**n)/len(g))
 
+######################################################################################################################
+
 for row, col in zip(N_row, N_col):
     N = row * col
     for choice_bool in choice_bool_lst:
@@ -65,12 +71,13 @@ for row, col in zip(N_row, N_col):
             folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
             G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
             TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+            avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
+            total_population = N * avg_population
+
 ######################################################################################################################
 
             if population_analysis == 1:
                 # Node population
-                avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
-                total_population = N * avg_population
                 node_population_0 = nx.get_node_attributes(G, name='Npop')
                 node_population_0 = np.array(list(node_population_0.values()))
                 if choice_bool == 0:
@@ -188,6 +195,20 @@ for row, col in zip(N_row, N_col):
                 plt.show()
                 #print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
                 #      L_max, 'Perc. link: ', np.round(L / L_max * 100, 2), '%')
+
+
+                # Attempt to find an epidemic threshold by diagonalization of the C_matrix (ref. Epidemic spreading in complex netwokrs)
+                C_matrix = np.zeros(shape = (len(k_vals), len(k_vals)))
+                for k in range(len(k_vals)):
+                    for k_prime in range(len(k_vals)):
+                        C_matrix[k, k_prime] = k_vals[k] * (k_vals[k_prime] - 1.)/k_vals[k_prime] * P_cond[k, k_prime]
+                eigval, eigvect = linalg.eig(C_matrix, left=False, right=True)
+                max_eigval = max(eigval)
+                print('eigval:', eigval)
+                print('max eigval: ', max_eigval)
+                beta_threshold = 1./max_eigval
+
+                print('beta_threshold:', beta_threshold)
                 print('hello')
 ######################################################################################################################
 
@@ -265,9 +286,71 @@ for row, col in zip(N_row, N_col):
                 plt.title(f'dim = {row}x{col}, choice_bool = {choice_bool}, c1 = {c1}')
                 plt.show()
 ######################################################################################################################
-            if show_transition_matrix == 1:
-                TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
-                print('hello')
+
+            if Rstar_def == 1:
+                if row == 3 or row == 5 or row == 10:
+                    beta_vals = beta_vals_3_5_10
+                    mu_vals = mu_vals_3_5_10
+                else:
+                    beta_vals = beta_vals_30_50
+                    mu_vals = mu_vals_30_50
+
+                # Input degrees
+                in_degrees = np.array([G.in_degree(n) for n in G.nodes()])
+                # Total number of links
+                L = in_degrees.sum()
+                L_max = N * (N - 1) / 2
+                # Average input degree and second moment
+                avg_in_degree = L / N
+                second_moment = nth_moment_v2(G, 2)
+                weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if
+                                 TransitionMatrix[i, j] != 0]
+                # Since the transmission rate is not constant, I take the average value
+                avg_transmission = np.mean(weightNonZero)
+                # avg_population = avg_population / total_population
+                for beta, mu in zip(beta_vals, mu_vals):
+                    R0 = beta / mu
+                    alpha = 2. * (R0 - 1.)/ R0**2
+                    # Global invasion threshold (don't really understand the meaning)
+                    R_star = (R0 - 1.) * (second_moment - avg_in_degree)/avg_in_degree**2. * avg_transmission * avg_population * alpha / mu
+                    print('row: ', row, 'col: ', col, 'choice-bool: ', choice_bool, 'c1: ', c1, 'beta: ', beta, 'mu: ', mu,
+                          'R0: ', R0, 'R_star: ', R_star, 'avg_transmisison: ', avg_transmission)
+
+######################################################################################################################
+            if outbreak == 1:
+
+                # Plot the difference between rho0 and the density of people in the final time
+                if row == 3 or row == 5 or row == 10:
+                    beta_vals = beta_vals_3_5_10
+                    mu_vals = mu_vals_3_5_10
+                else:
+                    beta_vals = beta_vals_30_50
+                    mu_vals = mu_vals_30_50
+
+                for beta, mu in zip(beta_vals, mu_vals):
+                    folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+                    T = np.load(folder_simulation + 'T.npy')
+                    new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
+                    print('--------- outbreak trial 1 ---------')
+                    # Calculate the cumulative number of NEW infected individuals per node over the whole period of time
+                    cumulat_newI_perNode = np.zeros(shape=(T , N))
+                    for i in range(N):
+                        cumulat_newI_perNode[:, i] = np.cumsum(new_I_time[:, i])
+                    # Cumulative new infected in the whole network per time step
+                    cumulat_newI = cumulat_newI_perNode.sum(axis = 1)
+                    # The last number is the cumulative number of new infected in the whole network that is the
+                    # number of individuals who got infected in the whole network during the total duration of the epidemics
+                    total_newI = cumulat_newI[-1]
+                    perc_newI = total_newI / total_population * 100
+                    print('N: ', N, 'choice_bool: ', choice_bool, 'c1: ', c1, 'beta: ', beta, 'mu:', mu)
+                    print('percentage new I: ', perc_newI, '%')
+                    # Threshold outbreak : lim_t->infinity R_N(t) > N^1/4
+                    threshold_outbreak = pow(total_population, 1./4.)
+                    print('total newI: ', total_newI, 'threshold_outbreak: ', threshold_outbreak)
+                    print('--------- outbreak trial 2 ---------')
+                    threshold_outbreak = pow(total_population, 7./8.)
+                    print('total newI: ', total_newI, 'threshold_outbreak: ', threshold_outbreak)
+                    # + done eigenvalue on the degree_analysis part
 ######################################################################################################################
 
             if write_file == 1:
