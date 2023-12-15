@@ -21,6 +21,7 @@ import seaborn as sns
 from IPython import display
 import matplotlib.animation as animation
 import pickle
+import random
 
 
 def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
@@ -55,7 +56,6 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     """
     plt.figure(figsize=(8, 8))
     datadir = os.getcwd()
-    folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     # G1 = copy(G)
     size_map = [pop_nodes[i] / 10. for i in G.nodes]
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_color='#B7C8C4', edgecolors='#374845', linewidths=1.5,
@@ -334,6 +334,67 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     plt.close()
     plt.show()
     print('Done!')
+
+def plot_network_final_size(G, row, pop_nodes, dict_nodes, weight, state_nodes):
+    """ Plot directed network. For the visualization, I distinguish between edges with weight equal to zero and non.
+        In this way, I can attribute to edges with 0-weight the wight color to hide the arrowhead.
+        It plots a single time step.
+        Attribute a color to nodes depending on their state. Later on I can attribute it based on the density of
+        infection inside each node.
+
+    :param G: [networkx.class] graph structure from networkx
+    :param pos: [list] position of nodes
+    :param pop_nodes: [list] population inside every node
+    :param dict_nodes: [dict] dictionary of nodes attributing each key a position
+    :param weight: [list] weight to attribute to edges
+    :param state_nodes: [list] state of the node
+    """
+
+    N = len(G.nodes)
+    # Size of nodes
+    size_map = [pop_nodes[i] if pop_nodes[i] < 1e2 else 20 for i in G.nodes]
+    #        blue=S     red=I      green=R    violet=SI  vaqua=SR   orange=IR
+    cmap = ['#1C86EE', '#FF3030', '#00C957']
+    color_map = [''] * N
+    i = 0
+    idx = []
+    while i < N:
+        if 0 == state_nodes[i]:
+           # idx.append(i)
+            color_map[i] = cmap[0]
+        elif 1 == state_nodes[i]:
+            color_map[i] = cmap[1]
+        i += 1
+
+    plt.figure(figsize = (8, 8), frameon=True)  # Disable the figure frame
+    ax = plt.Axes(plt.gcf(), [0., 0., 1., 1.], )
+    ax.set_axis_off()
+    plt.gcf().add_axes(ax)
+
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map, node_color = color_map)
+    # Nodes with labels
+    #nx.draw_networkx_labels(G, pos=dict_nodes)
+    # Draw edges
+    # Sort if I have a 10x10 or higher dimensional network
+    if row == 10 or row == 30 or row == 50:
+        random.seed(42)  # You can use any integer as the seed
+        if row == 10:
+            nbr_edges = 1000
+        else:
+            nbr_edges = 1000
+        selected_nodes = [random.randint(0, N) for _ in range(nbr_edges)]
+        # Create a subgraph containing only the selected nodes and their edges
+        edges_to_draw = [(u, v) for u, v in G.edges() if u in selected_nodes and v in selected_nodes and u != v]
+        nx.draw_networkx_edges(G, pos = dict_nodes, edgelist=edges_to_draw, edge_color='black', width=0.1, arrows=False, min_source_margin=5,
+                           min_target_margin=5, alpha = 0.2)
+
+
+
+    # Edge with labels
+   # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
+
+
 
 
 

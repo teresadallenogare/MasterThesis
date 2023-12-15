@@ -18,18 +18,18 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from scipy.optimize import curve_fit
-from scipy.stats import poisson
+from scipy.stats import poisson, kstest, chisquare
 import scipy.linalg as linalg
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = [30]
-N_col = [30]
+N_row = [3, 5, 10, 30]
+N_col = [3, 5,10, 30]
 
-choice_bool_lst = [0, 1]
-c1_lst = [0, 1]
+choice_bool_lst = [0]
+c1_lst = [0]
 
 beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
 mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
@@ -45,8 +45,8 @@ distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
-Rstar_def = 1
-outbreak = 0
+Rstar_def = 0
+outbreak = 1
 
 write_file = 0
 
@@ -62,7 +62,8 @@ def nth_moment_v2(g,n):
     return (sum(degree_np**n)/len(g))
 
 ######################################################################################################################
-
+avg_distance_N = []
+N_vals = []
 for row, col in zip(N_row, N_col):
     N = row * col
     for choice_bool in choice_bool_lst:
@@ -143,8 +144,20 @@ for row, col in zip(N_row, N_col):
                 SE = np.sqrt(np.diag(cov_matrix))
                 SE_A = SE[0]
 
+                ### KS test
+                ks_statistic, ks_p_value = kstest(Pk_norm, 'poisson', N = len(k_vals), args=(param,))
                 plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct,
                                          param)
+                # Display the KS test results
+                print(f'KS Statistic: {ks_statistic}')
+                print(f'P-value: {ks_p_value}')
+
+                # Interpret the results
+                KS_threshold = 0.05
+                if ks_p_value < KS_threshold:
+                    print("Reject the null hypothesis: The sample does not follow a poisson distribution.")
+                else:
+                    print("Fail to reject the null hypothesis: The sample follows a poisson distribution.")
 
                 # Matrix of connections: total number of edges between vertices of degree k and vertices of degree k′ N_kk'
                 print('k_vals:', k_vals)
@@ -218,9 +231,10 @@ for row, col in zip(N_row, N_col):
                 d_vals = np.linspace(0, max_dist, max_dist + 1)
                 diameter, avg_distance, pd_norm = path_analysis(G, max_dist)
                 print('sum pd: ', pd_norm.sum())
-                plot_distance_distribution(row, col, choice_bool, c1, d_vals, pd_norm, avg_distance)
-
+                # plot_distance_distribution(row, col, choice_bool, c1, d_vals, pd_norm, avg_distance)
                 print('diameter:', diameter, 'avg_distance', np.round(avg_distance, 3))
+                avg_distance_N.append(avg_distance)
+                N_vals.append(N)
 
 ######################################################################################################################
 
