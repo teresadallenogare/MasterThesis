@@ -21,9 +21,11 @@ import pickle
 from scipy.integrate import odeint
 
 datadir = os.getcwd()
-plt.figure(figsize=(8, 8))
+plt.figure(figsize=(8, 6))
+sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
-repeat_trials = 1
+repeat_trials = 0
+SIR_time = 1
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -119,7 +121,7 @@ if SIR_time == 1:
     c1 = 0
 
     bool_density = 1
-    bool_network = 1
+    bool_network = 0
 
     idx_nodes = np.linspace(0, N, N - 1)
 
@@ -150,5 +152,6 @@ if SIR_time == 1:
             plot_SIR_repeated_timeseries(row, col, choice_bool, c1, beta, mu, idx_sim_start, idx_nodes, T_sim,
                                          avg_popPerNode,
                                          avg_pop_Nfix, avg_pop_Others)
+
 
 

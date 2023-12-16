@@ -22,7 +22,7 @@ import pickle
 datadir = os.getcwd()
 plt.figure(figsize=(8, 8))
 
-SIR_time = 0
+SIR_time = 1
 fixedR0 = 0
 fixed_mu = 0
 duration_analysis = 0
@@ -30,7 +30,7 @@ heatmap = 0
 outbreak_analysis = 0
 final_size_analysis = 0
 network_infected = 0
-phase_space = 1
+phase_space = 0
 
 lineStyle = ['-', '--', ':']
 
@@ -66,11 +66,11 @@ if SIR_time == 1:
     idx_node = 0
 
     # Infection and recovery rate
-    beta_vals = [0.3, 0.4]
-    mu_vals = [0.1, 0.1]
+    beta_vals = [0.115]
+    mu_vals = [0.1]
 
     bool_density = 1
-    bool_network = 0
+    bool_network = 1
 
     folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
@@ -113,14 +113,14 @@ if SIR_time == 1:
             plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
-            plt.xlim(0, 150)
+            plt.xlim(0, 1000)
             first = False
         else:
             # plt.plot(T_sim, vals_population, color='gray', label='Population')
             plt.plot(T_sim, vals_NS_time, color='#261bf7', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NI_time, color='#ff0000', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NR_time, color='#05b032', linestyle=lineStyle[i])
-            plt.xlim(0, 150)
+            plt.xlim(0, 1000)
         i = i + 1
     plt.xlabel('t')
     if bool_network == 0:
@@ -128,7 +128,7 @@ if SIR_time == 1:
     else:
         plt.ylabel('Network population' if bool_density == 0 else 'Network density')
     plt.text(100, 0.7, r'$R_0 =$' + str(np.round(beta_vals[0] / mu_vals[0], 2)), fontsize=10)
-    plt.text(30, 0.7, r'$R_0 =$' + str(np.round(beta_vals[1] / mu_vals[1], 2)), fontsize=10)
+    #plt.text(30, 0.7, r'$R_0 =$' + str(np.round(beta_vals[1] / mu_vals[1], 2)), fontsize=10)
     plt.legend(fontsize=14)
     plt.show()
 
