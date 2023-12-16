@@ -343,7 +343,7 @@ def funct_speed(t, Nx, x ):
         speed_Nx.append(dNx / dt)
     return speed_Nx
 
-def phase_space_flux(row, col, bool_network, NS_time, NI_time, NR_time, avg_popPerNode, T_sim, lineStyle):
+def phase_space_flux(row, col, bool_network, NS_time, NI_time, beta, avg_popPerNode, T_sim, lineStyle):
     N = row * col
     if bool_network == 0:
         idx_node = 0
@@ -364,7 +364,7 @@ def phase_space_flux(row, col, bool_network, NS_time, NI_time, NR_time, avg_popP
     speed_S = funct_speed(T_sim, densityS_time, x)
     speed_I = funct_speed(T_sim, densityI_time, y)
 
-    plot_nullcline(densityS_time, densityI_time, x, y, speed_S, speed_I, lineStyle)
+    plot_nullcline(densityS_time, densityI_time, x, y, speed_S, speed_I, lineStyle, beta)
 
 
 

@@ -110,7 +110,45 @@ if repeat_trials == 1:
         #if bool_density == 1:
         #    plt.plot(x, exp_growth(x, val_NI0, beta, mu), 'k--')
 
+### SIR time repeated trials
+if SIR_time == 1:
+    row = 30
+    col = 30
+    N = row * col
+    choice_bool = 0
+    c1 = 0
 
+    bool_density = 1
+    bool_network = 1
 
+    idx_nodes = np.linspace(0, N, N - 1)
+
+    # Infection and recovery rate
+    beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+    mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+    for beta, mu in zip(beta_vals, mu_vals):
+        folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+
+        T = np.load(folder_simulation + f'T.npy')
+        print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
+        T_sim = np.linspace(0, T - 1, T)
+        nbr_repetitions = np.load(folder_simulation + f'nbr_repetitions.npy')
+        idx_repetitions = np.linspace(0, nbr_repetitions - 1, nbr_repetitions)
+        idx_sim_not_start = np.load(folder_simulation + 'idx_sim_not_start.npy')
+        idx_sim_start = list((set(idx_repetitions) - set(idx_sim_not_start)))
+        avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
+        if choice_bool == 1:
+            avg_pop_Nfix = np.load(folder_topology + 'avg_pop_Nfix.npy')
+            avg_pop_Others = np.load(folder_topology + 'avg_pop_Others.npy')
+        else:
+            avg_pop_Nfix = 0
+            avg_pop_Others = 0
+
+        if bool_network == 0:
+            plot_SIR_repeated_timeseries(row, col, choice_bool, c1, beta, mu, idx_sim_start, idx_nodes, T_sim,
+                                         avg_popPerNode,
+                                         avg_pop_Nfix, avg_pop_Others)
 
 
