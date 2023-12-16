@@ -22,7 +22,7 @@ from IPython import display
 import matplotlib.animation as animation
 import pickle
 import random
-
+from scipy import interpolate
 
 def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
     """ Color gradient between c1 - darker - and c2 - lighter.
@@ -170,6 +170,65 @@ def plot_node_population_0(N, N_fix, idx_Nfix, node_pop, mean_pop1, stdDev_pop1,
 
         print('hello')
 
+def plot_network_final_size(G, row, pop_nodes, dict_nodes, weight, state_nodes):
+    """ Plot directed network. For the visualization, I distinguish between edges with weight equal to zero and non.
+        In this way, I can attribute to edges with 0-weight the wight color to hide the arrowhead.
+        It plots a single time step.
+        Attribute a color to nodes depending on their state. Later on I can attribute it based on the density of
+        infection inside each node.
+
+    :param G: [networkx.class] graph structure from networkx
+    :param pos: [list] position of nodes
+    :param pop_nodes: [list] population inside every node
+    :param dict_nodes: [dict] dictionary of nodes attributing each key a position
+    :param weight: [list] weight to attribute to edges
+    :param state_nodes: [list] state of the node
+    """
+
+    N = len(G.nodes)
+    # Size of nodes
+    size_map = [pop_nodes[i] if pop_nodes[i] < 1e2 else 20 for i in G.nodes]
+    #        blue=S     red=I      green=R    violet=SI  vaqua=SR   orange=IR
+    cmap = ['#1C86EE', '#FF3030', '#00C957']
+    color_map = [''] * N
+    i = 0
+    idx = []
+    while i < N:
+        if 0 == state_nodes[i]:
+           # idx.append(i)
+            color_map[i] = cmap[0]
+        elif 1 == state_nodes[i]:
+            color_map[i] = cmap[1]
+        i += 1
+
+    plt.figure(figsize = (8, 8), frameon=True)  # Disable the figure frame
+    ax = plt.Axes(plt.gcf(), [0., 0., 1., 1.], )
+    ax.set_axis_off()
+    plt.gcf().add_axes(ax)
+
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map, node_color = color_map)
+    # Nodes with labels
+    #nx.draw_networkx_labels(G, pos=dict_nodes)
+    # Draw edges
+    # Sort if I have a 10x10 or higher dimensional network
+    if row == 10 or row == 30 or row == 50:
+        random.seed(42)  # You can use any integer as the seed
+        if row == 10:
+            nbr_edges = 1000
+        else:
+            nbr_edges = 1000
+        selected_nodes = [random.randint(0, N) for _ in range(nbr_edges)]
+        # Create a subgraph containing only the selected nodes and their edges
+        edges_to_draw = [(u, v) for u, v in G.edges() if u in selected_nodes and v in selected_nodes and u != v]
+        nx.draw_networkx_edges(G, pos = dict_nodes, edgelist=edges_to_draw, edge_color='black', width=0.1, arrows=False, min_source_margin=5,
+                           min_target_margin=5, alpha = 0.2)
+
+
+
+    # Edge with labels
+   # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
+
 #######################################################################################################################
 #                                                                                                                     #
 #                                            SIR SIMULATIONS                                                          #
@@ -202,7 +261,7 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
     grad_blue = []
     grad_green = []
 
-    for x in range(N_row * N_col):
+    for x in range(N_row * N_col + 1):
         #                                dark           light
         grad_gray.append(colorFader('#505050', '#EAE9E9', x / (N_row * N_col)))
         grad_red.append(colorFader('#E51C00', '#FCE0DC', x / (N_row * N_col)))
@@ -211,9 +270,10 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
 
     datadir = os.getcwd()
     # Folder
-    folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
     for sim in idx_sims:
+        sim = int(sim)
         # Load data
         node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
         node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
@@ -222,19 +282,24 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
 
         first = True
         for node in idx_nodes:
+            node = int(node)
             if first == True:
-                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label='Population')
-                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label='S')
-                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label='I')
-                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label='R')
+                plt.plot(T_sim, node_population_time[:, node-1], color=grad_gray[node], label='Population')
+                plt.plot(T_sim, node_NS_time[:, node-1], color=grad_blue[node], label='S')
+                plt.plot(T_sim, node_NI_time[:, node-1], color=grad_red[node], label='I')
+                plt.plot(T_sim, node_NR_time[:, node-1], color=grad_green[node], label='R')
+                #plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
+
                 first = False
             else:
-                plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node])
-                plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node])
-                plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node])
-                plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node])
+                plt.plot(T_sim, node_population_time[:, node-1], color=grad_gray[node])
+                plt.plot(T_sim, node_NS_time[:, node-1], color=grad_blue[node])
+                plt.plot(T_sim, node_NI_time[:, node-1], color=grad_red[node])
+                plt.plot(T_sim, node_NR_time[:, node-1], color=grad_green[node])
+                #plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
         plt.xlabel('Timestep')
         plt.ylabel('Node population')
+
         if choice_bool == 0:
             plt.axhline(y=avg_pop_node, color='black', linestyle='--', label='Average population ')
         elif choice_bool == 1:
@@ -245,6 +310,29 @@ def plot_SIR_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_n
         plt.legend()
         plt.show()
 
+def plot_mean_std_singleNode(T_sim, meanS, meanI, meanR, stdDevS, stdDevI, stdDevR, detS, detI, detR, idx_node, bool_density):
+    """ Plot mean and standard deviation of repetitions for only 1 node, together with the deterministic model
+
+    """
+
+    plt.plot(T_sim, meanS[:, idx_node],  label = 'S')
+    plt.plot(T_sim, meanI[:, idx_node],  label = 'I')
+    plt.plot(T_sim, meanR[:, idx_node],  label = 'R')
+
+    plt.fill_between(T_sim, meanS[:, idx_node] - stdDevS[:, idx_node], meanS[:, idx_node] + stdDevS[:, idx_node], facecolor='blue', alpha=0.25)
+    plt.fill_between(T_sim, meanI[:, idx_node] - stdDevI[:, idx_node], meanI[:, idx_node] + stdDevI[:, idx_node], facecolor='red', alpha=0.25)
+    plt.fill_between(T_sim, meanR[:, idx_node] - stdDevR[:, idx_node], meanR[:, idx_node] + stdDevR[:, idx_node], facecolor='green', alpha=0.25)
+    if bool_density == 1:
+        plt.plot(T_sim, detS, 'b--')
+        plt.plot(T_sim, detI, 'r--')
+        plt.plot(T_sim, detR, 'g--')
+
+    plt.title(f'Mean and standard deviation of density per node: {idx_node}')
+    plt.xlabel('Timestep')
+    plt.ylabel('Density')
+
+    plt.legend()
+    plt.show()
 
 def animate(t, img, grid, dict_vals, dict_norm_vals):
     mtrx_t = dict_vals[t]
@@ -335,66 +423,56 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     plt.show()
     print('Done!')
 
-def plot_network_final_size(G, row, pop_nodes, dict_nodes, weight, state_nodes):
-    """ Plot directed network. For the visualization, I distinguish between edges with weight equal to zero and non.
-        In this way, I can attribute to edges with 0-weight the wight color to hide the arrowhead.
-        It plots a single time step.
-        Attribute a color to nodes depending on their state. Later on I can attribute it based on the density of
-        infection inside each node.
+def plot_nullcline(nodeNS, nodeNI, x, y, u, v, lineStyle):
+    plt.quiver(x, y, u, v, linewidth = 0.5, color = 'k', capstyle = 'round',
+               scale = 1, scale_units = 'xy', angles = 'xy')
+    plt.plot(nodeNS, nodeNI, linewidth = 1, color = 'r', linestyle = lineStyle)
+    plt.scatter(x, y, color = 'k')
 
-    :param G: [networkx.class] graph structure from networkx
-    :param pos: [list] position of nodes
-    :param pop_nodes: [list] population inside every node
-    :param dict_nodes: [dict] dictionary of nodes attributing each key a position
-    :param weight: [list] weight to attribute to edges
-    :param state_nodes: [list] state of the node
+
+
+
+def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
+    """ Plot data in space of variables
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T: [scalar] length of the simulation
+    :param beta: [scalar] infection rate
+    :param mu: [scalar] recovery rate
+    :param sim: [scalar] index of the simulation
+
+    :return: plot of the node's states in the space of variables
     """
+    N = N_row * N_col
 
-    N = len(G.nodes)
-    # Size of nodes
-    size_map = [pop_nodes[i] if pop_nodes[i] < 1e2 else 20 for i in G.nodes]
-    #        blue=S     red=I      green=R    violet=SI  vaqua=SR   orange=IR
-    cmap = ['#1C86EE', '#FF3030', '#00C957']
-    color_map = [''] * N
-    i = 0
-    idx = []
-    while i < N:
-        if 0 == state_nodes[i]:
-           # idx.append(i)
-            color_map[i] = cmap[0]
-        elif 1 == state_nodes[i]:
-            color_map[i] = cmap[1]
-        i += 1
+    datadir = os.getcwd()
 
-    plt.figure(figsize = (8, 8), frameon=True)  # Disable the figure frame
-    ax = plt.Axes(plt.gcf(), [0., 0., 1., 1.], )
-    ax.set_axis_off()
-    plt.gcf().add_axes(ax)
+    folder_simulation = datadir + f'/Data-simpleLattice/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{int(np.floor(c1))}/Simulations/beta-{beta}mu-{mu}/'
+    # Load data
 
-    # Draw nodes
-    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map, node_color = color_map)
-    # Nodes with labels
-    #nx.draw_networkx_labels(G, pos=dict_nodes)
-    # Draw edges
-    # Sort if I have a 10x10 or higher dimensional network
-    if row == 10 or row == 30 or row == 50:
-        random.seed(42)  # You can use any integer as the seed
-        if row == 10:
-            nbr_edges = 1000
-        else:
-            nbr_edges = 1000
-        selected_nodes = [random.randint(0, N) for _ in range(nbr_edges)]
-        # Create a subgraph containing only the selected nodes and their edges
-        edges_to_draw = [(u, v) for u, v in G.edges() if u in selected_nodes and v in selected_nodes and u != v]
-        nx.draw_networkx_edges(G, pos = dict_nodes, edgelist=edges_to_draw, edge_color='black', width=0.1, arrows=False, min_source_margin=5,
-                           min_target_margin=5, alpha = 0.2)
+    node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+    node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+    node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+    node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+    # ADD NODE STATE
+    ax = plt.axes(projection='3d')
 
+    # Data for a three-dimensional line
+    color_map = plt.get_cmap('spring')
+    for idx_node in range(1):
+        x = node_NS_time[:, idx_node]
+        y = node_NI_time[:, idx_node]
+        z = node_NR_time[:, idx_node]
+        sc = ax.scatter3D(x, y, z)
 
+    ax.set_xlabel('S')
+    ax.set_ylabel('I')
+    ax.set_zlabel('R')
+    ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
 
-    # Edge with labels
-   # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
-
-
-
-
+    plt.show()
 

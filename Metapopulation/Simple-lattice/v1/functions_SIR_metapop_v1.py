@@ -10,9 +10,11 @@ Version : 10 November 2023
 Functions to perform SIR metapopulation infection process
 
 """
+from functions_visualization_v1 import plot_nullcline
 import networkx as nx
 import numpy as np
-
+import os
+import matplotlib.pyplot as plt
 # --------------------------------------------------- Simulation --------------------------------------------------------
 def initial_configuration_SIR(G, node_pop0, popI_init, idx_I_nodes ,Nfix, percentage_FixNodes, choice_bool, seed):
     """ Assign nodes with attributes:
@@ -244,6 +246,128 @@ def infection_step_node(G, beta, mu):
 
     return NI_nodes_new
 
+
+# ---------------------------------- Repeated trials  ----------------------------------------------
+
+def mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density,idx_sim_start):
+    """ Compute the mean and std deviation over repeated simulations with the same topology and parameters
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T: [scalar] length of the simulation
+    :param bool_density: [bool] if 0 : compute the number of individuals
+                                if 1 : compute the density
+    :param nbr_repetitions: [scalar] number of repeated simulations given fixed set of parameters and topology
+
+    :return: mean value and standard deviations of the repeated simulations for S, I and R states.
+    """
+
+    N = row * col
+    datadir = os.getcwd()
+
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+    nbr_repetitions = len(idx_sim_start)
+    node_population_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    node_NS_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    node_NI_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    node_NR_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+
+    # 3D matrix that stores repetitions along axis = 2
+    # To see repetition k : node_NI_time_repeat[:,:,k]
+    for sim in idx_sim_start:
+        # number of simulation
+        sim = int(sim)
+        sim_idx = idx_sim_start.index(sim)
+        print('sim index:', sim_idx)
+        # Load data
+        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+        # ADD NODE STATE
+
+        avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
+
+        #  Store data in 3D matrix
+        node_population_time_repeat[:, :, sim_idx] = node_population_time
+        node_NS_time_repeat[:, :, sim_idx] = node_NS_time
+        node_NI_time_repeat[:, :, sim_idx] = node_NI_time
+        node_NR_time_repeat[:, :, sim_idx] = node_NR_time
+
+    vals_population_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    vals_NS_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    vals_NI_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+    vals_NR_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
+
+    for sim in idx_sim_start:
+        # number of simulation
+        sim = int(sim)
+        sim_idx = idx_sim_start.index(sim)
+        if bool_density == 0:
+            vals_population_time_repeat = node_population_time_repeat
+            vals_NS_time_repeat = node_NS_time_repeat
+            vals_NI_time_repeat = node_NI_time_repeat
+            vals_NR_time_repeat = node_NR_time_repeat
+
+        elif bool_density == 1:
+            vals_NS_time_repeat[:, :, sim_idx] = node_NS_time_repeat[:, :, sim_idx] / avg_popPerNode
+            print('sim idx,', sim_idx)
+            vals_NI_time_repeat[:, :, sim_idx] = node_NI_time_repeat[:, :, sim_idx] / avg_popPerNode
+            vals_NR_time_repeat[:, :, sim_idx] = node_NR_time_repeat[:, :, sim_idx] / avg_popPerNode
+
+    # Mean value and stdDeviation over repetitions
+    mean_vals_S_time = np.mean(vals_NS_time_repeat, axis=2)
+    mean_vals_I_time = np.mean(vals_NI_time_repeat, axis=2)
+    mean_vals_R_time = np.mean(vals_NR_time_repeat, axis=2)
+    stdDev_vals_S_time = np.std(vals_NS_time_repeat, axis=2, ddof=1)
+    stdDev_vals_I_time = np.std(vals_NI_time_repeat, axis=2, ddof=1)
+    stdDev_vals_R_time = np.std(vals_NR_time_repeat, axis=2, ddof=1)
+
+    return [mean_vals_S_time, mean_vals_I_time, mean_vals_R_time, stdDev_vals_S_time, stdDev_vals_I_time, stdDev_vals_R_time,
+            vals_NS_time_repeat[0, 0, 0], vals_NI_time_repeat[0, 0, 0], vals_NR_time_repeat[0, 0, 0]]
+
+# ---------------------------------- Phase space ----------------------------------------------
+def funct_speed(t, Nx, x ):
+    speed_Nx = []
+    for i in x:
+        Nx = list(Nx)
+        idx_i = int(Nx.index(i))
+        Nx_1 = i
+        Nx_2 = Nx[idx_i + 1]
+        dNx = Nx_2 - Nx_1
+        dt = t[1] - t[0]
+        speed_Nx.append(dNx / dt)
+    return speed_Nx
+
+def phase_space_flux(row, col, bool_network, NS_time, NI_time, NR_time, avg_popPerNode, T_sim, lineStyle):
+    N = row * col
+    if bool_network == 0:
+        idx_node = 0
+        densityS_time = NS_time[:, idx_node] / avg_popPerNode
+        densityI_time = NI_time[:, idx_node] / avg_popPerNode
+
+    else:
+        densityS_time = NS_time.sum(axis=1) / (N * avg_popPerNode)
+        densityI_time = NI_time.sum(axis=1) / (N * avg_popPerNode)
+
+
+    nbr_x, nbr_y = (2, 2)
+    x = np.linspace(T_sim[0::10], densityS_time[0::10], nbr_x)
+    x = x[1]
+    y = np.linspace(T_sim[0::10], densityI_time[0::10], nbr_y)
+    y = y[1]
+
+    speed_S = funct_speed(T_sim, densityS_time, x)
+    speed_I = funct_speed(T_sim, densityI_time, y)
+
+    plot_nullcline(densityS_time, densityI_time, x, y, speed_S, speed_I, lineStyle)
+
+
+
 # ---------------------------------- Deterministic SIR  ----------------------------------------------
 
 def SIRDeterministic_equations(variables, t, params):
@@ -270,3 +394,48 @@ def SIRDeterministic_equations(variables, t, params):
   drdt = mu * i
 
   return [dsdt, didt, drdt]
+
+
+def Appendix_A():
+    """  Analytical solution of the SIR model.
+
+    :return:
+    """
+
+    taxis, xaxis, yaxis, zaxis = [], [], [], []
+    N = 10000
+    y = 10
+    x = N - y
+    z = 0
+    N1 = x
+    beta = 0.115
+    gamma = 0.1
+    du = -0.0001
+    u = 1.0
+    t_sum = 0
+    t = 0
+    while y > 0:
+    # print(f’{t:.2f}’,f’{x:.1f}’,f’{y:.1f}’,f’{z:.1f}’)
+        taxis.append(t)
+        xaxis.append(x)
+        yaxis.append(y)
+        zaxis.append(z)
+        u += du
+        x = N1 * u
+        y = - x + gamma / beta * N * np.log(u) + N
+        z = N - x - y
+        dt = -N / (u * beta * y)
+        t_sum += dt
+        t = t_sum * du
+    plt.title('SIR MODEL(exact)')
+    plt.xlim(0, 1000)
+    plt.xlabel('$t$')
+    plt.text(62, 2600,'$\gamma =$'+str(gamma), fontsize = 10)
+    plt.text(62, 3200,'$\\beta =$'+str(beta), fontsize = 10)
+    plt.grid(True)
+    plt.plot(taxis, xaxis, color=(0, 1, 0), linewidth=1.0, label='S')
+    plt.plot(taxis, yaxis, color=(1, 0, 0), linewidth=1.0, label='I')
+    plt.plot(taxis, zaxis, color=(0, 0, 1), linewidth=1.0, label='R')
+    plt.legend(loc='right')
+    # plt.savefig(’SIR_exact.eps’)
+    plt.show()

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from scipy.optimize import curve_fit
-from scipy.stats import poisson, kstest, chisquare
+from scipy.stats import poisson, kstest
 import scipy.linalg as linalg
 
 datadir = os.getcwd()
@@ -26,7 +26,7 @@ plt.figure(figsize=(8, 8))
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 N_row = [3, 5, 10, 30]
-N_col = [3, 5,10, 30]
+N_col = [3, 5, 10, 30]
 
 choice_bool_lst = [0]
 c1_lst = [0]
@@ -40,7 +40,7 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 sim = 0
 
 population_analysis = 0
-degree_analysis = 0
+degree_analysis = 1
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0

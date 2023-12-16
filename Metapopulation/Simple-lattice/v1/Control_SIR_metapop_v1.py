@@ -27,61 +27,57 @@ plt.figure(figsize=(8, 9))
 SIR_vs_time = 1
 
 
-N_row = [50]
-N_col = [50]
+N_row = [30]
+N_col = [30]
 
-choice_bool_lst = [0, 1]
-c1_lst = [0, 1]
+choice_bool = 0
+c1 = 0
 
 # Infection and recovery rate
-beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
-mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
-beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
-mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-
-
-beta_vals = beta_vals_30_50
-mu_vals = mu_vals_30_50
-
+def exp_growth(x, y0, beta, mu):
+    return y0 * np.exp((beta - mu) * x)
 
 if SIR_vs_time == 1:
     for row, col in zip(N_row, N_col):
         N = row * col
+        # Control on simulation: for every sim, see #SIR for every node
+        for beta, mu in zip(beta_vals, mu_vals):
+            folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
-        if row == 3 or row == 5 or row == 10:
-            beta_vals = beta_vals_3_5_10
-            mu_vals = mu_vals_3_5_10
-        else:
-            beta_vals = beta_vals_30_50
-            mu_vals = mu_vals_30_50
+            nbr_repetitions = np.load(folder_simulation + f'nbr_repetitions.npy')
+            idx_repetitions = np.linspace(0, nbr_repetitions-1, nbr_repetitions)
+            idx_sim_not_start = np.load(folder_simulation + 'idx_sim_not_start.npy')
+            idx_sim_start = list((set(idx_repetitions) - set(idx_sim_not_start)))
+            nbr_sim_start = len(idx_sim_start)
+            print('nbr sim start: ', nbr_sim_start)
+            T = np.load(folder_simulation + 'T.npy')
+            print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
+            T_sim = np.linspace(0, T - 1, T)
+            if beta == 0.115 or beta == 0.12:
+                nbr_repetitions = 12
+            else:
+                nbr_repetitions = 10
+            idx_sim_start = [0]
+            for sim in idx_sim_start:
+                sim = int(sim)
+                node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+                node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+                node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+                node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+                plt.plot(T_sim, node_NS_time[:, 0])
+                plt.plot(T_sim, node_NI_time[:, 0])
+                plt.plot(T_sim, node_NR_time[:, 0])
 
-        for choice_bool in choice_bool_lst:
-            for c1 in c1_lst:
-                folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
-                # Control on simulation: for every sim, see #SIR for every node
-                for beta, mu in zip(beta_vals, mu_vals):
-                    nbr_repetitions = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/nbr_repetitions.npy')
-                    idx_repetitions = np.linspace(0, nbr_repetitions-1, nbr_repetitions )
-                    T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
-                    print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
-                    T_sim = np.linspace(0, T - 1, T)
-                    if beta == 0.115 or beta == 0.12:
-                        nbr_repetitions = 2
-                    else:
-                        nbr_repetitions = 1
-                    for sim in range(nbr_repetitions):
-                        node_population_time = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/sim_{sim}_node_population_time.npy')
-                        node_NS_time = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/sim_{sim}_node_NS_time.npy')
-                        node_NI_time = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/sim_{sim}_node_NI_time.npy')
-                        node_NR_time = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/sim_{sim}_node_NR_time.npy')
-                        plt.plot(T_sim, node_NS_time[:, 0])
-                        plt.plot(T_sim, node_NI_time[:, 0])
-                        plt.plot(T_sim, node_NR_time[:, 0])
-                        plt.xlabel('Time')
-                        plt.ylabel('Population per node')
-                        plt.title(f'SIR for: dim: {row}x{col}, choice_bool: {choice_bool}, c1: {c1} sim: {sim}, beta: {beta}, mu: {mu}, R0 = {beta/mu}')
-                        plt.show()
+                x = np.linspace(0, 10, 100)
+                I0 = 5
+                plt.plot(x, exp_growth(x, I0, beta, mu), 'k--')
+                plt.xlabel('Time')
+                plt.ylabel('Population per node')
+                plt.title(f'SIR for: dim: {row}x{col}, choice_bool: {choice_bool}, c1: {c1} sim: {sim}, beta: {beta}, mu: {mu}, R0 = {beta/mu}')
+            plt.show()
 
 
 
