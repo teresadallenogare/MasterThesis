@@ -20,16 +20,17 @@ import os
 import pickle
 
 datadir = os.getcwd()
-plt.figure(figsize=(8, 8))
+plt.figure(figsize=(8, 6))
+sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
-SIR_time = 1
+SIR_time = 0
 fixedR0 = 0
 fixed_mu = 0
 duration_analysis = 0
 heatmap = 0
-outbreak_analysis = 0
+outbreak_analysis = 1
 final_size_analysis = 0
-network_infected = 0
+network_infected = 1
 phase_space = 0
 
 lineStyle = ['-', '--', ':']
@@ -50,8 +51,7 @@ for x in range(3):
 ######################################################################################################################
 ### SIR time_series at network level or node level
 
-plt.figure(figsize=(8, 6))
-sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
+
 
 if SIR_time == 1:
     row = 30
@@ -314,7 +314,7 @@ if heatmap == 1:
 
 ######################################################################################################################
 
-### Final size of the epidemics : with final size I intend the number of recovered people at the end of the epidemics
+### Outbreak analysis
 
 if outbreak_analysis == 1:
     # In the case of 3, 5, 10 I have both mu = 0.1, 0.2 and 0.3
@@ -346,9 +346,13 @@ if outbreak_analysis == 1:
                 total_population = avg_popPerNode * N
                 final_size_beta = []
                 R0_vals = []
+                # Number of recovered at long time limit inside every node
                 final_size_node = np.zeros(shape=(len(mu_vals), N))
+                # Population of the node at long time limit
                 final_population_node = np.zeros(shape=(len(mu_vals), N))
-                mtrx_nodes_infected = np.zeros(shape=(len(mu_vals), N)) # is 1 if node was infected, is 0 otherwise
+                # is 1 if node was infected, is 0 otherwise
+                mtrx_nodes_infected = np.zeros(shape=(len(mu_vals), N))
+
                 nbr_nodes_infected = []
                 count_R0 = 0
                 for beta, mu in zip(beta_vals, mu_vals):
@@ -359,16 +363,19 @@ if outbreak_analysis == 1:
                     for i in range(N):
                         final_size_node[count_R0, i] = node_NR_time[-1, i]
                         final_population_node[count_R0, i] = node_population_time[-1, i]
-                    np.save(folder_analysis + f'final_population_node_sim{sim}_mu{mu}_beta{beta}', final_population_node)
+                    # Number of individuals who R in the whole network
                     final_size = node_NR_time[-1].sum()
                     final_size_beta.append(final_size)
 
                     R0 = beta / mu
                     R0_vals.append(R0)
+                    # At node level
                     perc_final_size_node = final_size_node / final_population_node * 100
+                    # At network level
+                    perc_final_size = final_size_beta / total_population * 100
                     # Establish if the single node is infected
                     # 1 if %R in node and at fixed R0 is greater than threshold, else 0
-                    # perc_final_size_node tells me in which nodes I have a local outbreak
+                    # perc_final_size_node tells me in which nodes I have a local outbreak (look at every node of the network)
                     for i in range(N):
                         if perc_final_size_node[count_R0, i] > threshold_perc_R_outbreak:
                             mtrx_nodes_infected[count_R0, i] = 1
@@ -376,8 +383,9 @@ if outbreak_analysis == 1:
                             mtrx_nodes_infected[count_R0, i] = 0
                     sum_nodes_infected = mtrx_nodes_infected[count_R0, :].sum()
                     nbr_nodes_infected.append(sum_nodes_infected)
-
                     count_R0 = count_R0 + 1
+
+                np.save(folder_analysis + f'final_population_node_sim{sim}', final_population_node)
                 np.save(folder_analysis + f'final_size_beta_sim{sim}', final_size_beta)
                 np.save(folder_analysis + 'R0_vals', R0_vals)
                 np.save(folder_analysis + f'mtrx_nodes_infected_sim{sim}', mtrx_nodes_infected)
@@ -395,7 +403,8 @@ if outbreak_analysis == 1:
                 print('dim: ', row, 'ch_bool: ', choice_bool, 'c1: ', c1)
                 print('------------------------------------------------------------------------')
                 print('outbreak: ', outbreak)
-                print('perc_nodes_I', perc_nodes_infected)
+                print('final size network: % of population who got I\n', np.round(perc_final_size, 2) , '%' )
+                print('perc_nodes_I: % of nodes who got I\n', perc_nodes_infected, '%')
 
 ######################################################################################################################
 if final_size_analysis == 1:
@@ -441,11 +450,11 @@ if final_size_analysis == 1:
 
 if network_infected == 1:
     # In the case of 3, 5, 10 I have both mu = 0.1, 0.2 and 0.3
-    N_row = [10, 30, 50]
-    N_col = [10, 30, 50]
+    N_row = [30]
+    N_col = [30]
 
     # Infection and recovery rate
-    beta = 0.2
+    beta = 0.115
     mu = 0.1
     beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
     choice_bool_lst = [0, 1]

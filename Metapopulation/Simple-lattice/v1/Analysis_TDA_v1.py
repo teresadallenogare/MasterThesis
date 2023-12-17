@@ -26,10 +26,10 @@ from matplotlib.animation import FuncAnimation
 
 datadir = os.getcwd()
 
-generator_HomLoops = 1
+generator_HomLoops = 0
 plot_histogram = 0
 find_ends_barcodes = 0
-PE_beta_mu = 0
+PE_beta_mu = 1
 trial = 0
 
 
@@ -38,14 +38,14 @@ sim = 0
 # normalization = 0 -> no normalized data
 #               = 1 -> standard scaler normalization
 #               = 2 -> normalization by hand
-normalization = 1
+normalization = 2
 id = 'XYSIR'
 columns = ['X', 'Y', 'S', 'I', 'R']
-nrm_entropy = [False]
+nrm_entropy = [True]
 
 # Dimension
-row = 3
-col = 3
+row = 30
+col = 30
 N = row * col
 
 # Population method

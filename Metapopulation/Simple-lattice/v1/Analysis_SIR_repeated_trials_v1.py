@@ -24,8 +24,8 @@ datadir = os.getcwd()
 plt.figure(figsize=(8, 6))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
-repeat_trials = 0
-SIR_time = 1
+repeat_trials = 1
+SIR_time = 0
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -42,8 +42,8 @@ for x in range(3):
 
 ######################################################################################################################
 if repeat_trials == 1:
-    row = 30
-    col = 30
+    row = 10
+    col = 10
     N = row * col
 
     choice_bool = 0
@@ -123,7 +123,7 @@ if SIR_time == 1:
     bool_density = 1
     bool_network = 0
 
-    idx_nodes = np.linspace(0, N, N - 1)
+    idx_nodes = [0]#np.linspace(0, N, N - 1)
 
     # Infection and recovery rate
     beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]

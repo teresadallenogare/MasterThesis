@@ -23,7 +23,8 @@ import scipy.linalg as linalg
 import seaborn as sns
 
 datadir = os.getcwd()
-plt.figure(figsize=(8, 8))
+plt.figure(figsize=(8, 6))
+sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 N_row = [3, 5, 10, 30]
@@ -40,14 +41,14 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 sim = 0
 
-population_analysis = 1
+population_analysis = 0
 degree_analysis = 0
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
 Rstar_def = 0
-outbreak = 0
+outbreak = 1
 
 write_file = 0
 
