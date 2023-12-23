@@ -23,6 +23,8 @@ import matplotlib.animation as animation
 import pickle
 import random
 from scipy import interpolate
+from brokenaxes import brokenaxes
+
 # Set Seaborn style with custom background and grid color
 #sns.set_style("darkgrid", {"axes.facecolor": ".9", "grid.color": "white"})
 
@@ -93,11 +95,65 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
             ax = sns.heatmap(T, linewidth=0, square=True, annot=annotation, fmt='', cmap=palette,
                              cbar_kws={'label': 'weight'})
 
-        ax.set_xlabel("Node index", fontsize=12)
-        ax.set_ylabel("Node index", fontsize=12)
+        ax.set_xlabel("Node index", fontsize=14)
+        ax.set_ylabel("Node index", fontsize=14)
 
         plt.savefig(folder_topology + f'TransMat_annot-{annotation}.pdf')
         plt.show()
+
+
+def plot_population_distribution( data1, data2,  avg_data1, stdDev_data1, avg_data2,
+                                 stdDev_data2, choice_bool):
+
+
+    if choice_bool == 0:
+        plt.figure(figsize = (8, 6))
+
+        num_bins = int(np.sqrt(len(data1)))  # int(1 + (len(node_population_0) // 2.0 ** 0.5))
+
+        sns.histplot(data1, bins=num_bins, kde=True, color='g', label=r'Population in $V$')
+        plt.axvline(x = avg_data1, color = 'k', linestyle = '--', label = 'Average subpopulation')
+        plt.axvline(x=avg_data1 + stdDev_data1, color='red', linestyle=':', label='Std deviation')
+        plt.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
+
+        plt.xlabel('Subpopulations', fontsize = 14)
+        plt.ylabel('Frequency', fontsize = 14)
+
+        plt.legend(fontsize = 12)
+        plt.show()
+    elif choice_bool == 1:
+        f, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, sharey=False, figsize=((12, 6)))
+        num_bins1 = int(np.sqrt(len(data1)))
+        num_bins2 = int(np.sqrt(len(data2)))
+
+        # Plot histograms
+        sns.histplot(data2, bins=num_bins2, kde=True, color='g', label=r'Population in $V-V_{fix}$', ax = ax1)
+        sns.histplot(data1, bins=num_bins1, kde=True, color='orange', label=r'Population in $V_{fix}$', ax = ax2)
+
+        ax1.axvline(x = avg_data2, color = 'k', linestyle = '--', label = 'Average subpopulation')
+        ax1.axvline(x=avg_data2 + stdDev_data2, color='red', linestyle=':', label='Std deviation')
+        ax1.axvline(x=avg_data2 - stdDev_data2, color='red', linestyle=':')
+
+        ax2.axvline(x=avg_data1, color='k', linestyle='--', label='Average subpopulation')
+        ax2.axvline(x=avg_data1 + stdDev_data1, color='red', linestyle=':', label='Std deviation')
+        ax2.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
+
+        ax1.set_xlim(min(data2)-20, max(data2)+20)
+        ax2.set_xlim(min(data1) - 20, max(data1) + 20)
+
+        ax1.set_xlabel('Subpopulations', fontsize=14)
+        ax2.set_xlabel('Subpopulations', fontsize=14)
+        ax1.set_ylabel('Frequency', fontsize=14)
+        ax2.set_ylabel('Frequency', fontsize=14)
+
+        ax1.legend(fontsize=12)
+        ax2.legend(fontsize=12)
+
+        # Adjust layout for better spacing
+        plt.tight_layout()
+
+        plt.show()
+
 
 
 def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisson_funct, param):
@@ -232,22 +288,89 @@ def plot_network_final_size(G, row, pop_nodes, dict_nodes, weight, state_nodes):
 
 
 # nx.draw_networkx_edge_labels(G, pos=dict_nodes, edge_labels=dict_edges, label_pos=0.25, font_size=7)
-
-#######################################################################################################################
-#                                                                                                                     #
-#                                            SIR SIMULATIONS                                                          #
-#                                                                                                                     #
-#######################################################################################################################
-
-
 #######################################################################################################################
 #                                                                                                                     #
 #                                            SIR REPEATED TRIALS                                                      #
 #                                                                                                                     #
 #######################################################################################################################
-def plot_SIR_repeated_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_nodes, T_sim, avg_pop_node,
-                                 avg_pop_Nfix,
-                                 avg_pop_Others):
+def plot_SIR_repeated_timeseries_single_node(N_row, N_col, choice_bool, c1, beta, mu, idx_sims, idx_node, T_sim, avg_pop_node,
+                                            avg_pop_Nfix,
+                                            avg_pop_Others):
+    """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T_sim: [array] array with timesteps of the simulation
+
+    :param bool_density: [bool] if 0 : compute the number of individuals
+                                if 1 : compute the density
+    :param idx_sims : [list] index of simulations to include in the plot
+    :param idx_nodes : [list] index of nodes to include in the plot
+    :param avg_pop_node : [scalar] value of average population per node
+
+    :return: plot of SIR timeseries
+    """
+
+    # ------------------------------------------------ Colors  -------------------------------------------------
+
+    grad_gray = []
+    grad_red = []
+    grad_blue = []
+    grad_green = []
+    nbr_sims = int(len(idx_sims))
+    for x in range(nbr_sims + 1):
+        #                                dark           light
+        grad_gray.append(colorFader('#505050', '#EAE9E9', x / nbr_sims))
+        grad_red.append(colorFader('#E51C00', '#FCE0DC', x / nbr_sims))
+        grad_blue.append(colorFader('#1D3ACE', '#C5CEFF', x / nbr_sims))
+        grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x / nbr_sims))
+
+    datadir = os.getcwd()
+    # Folder
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    i = 0
+    first = True
+    for sim in idx_sims:
+        sim = int(sim)
+        # Load data
+        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+        if first:
+            plt.plot(T_sim, node_population_time[:, idx_node], color=grad_gray[i], label='Population')
+            plt.plot(T_sim, node_NS_time[:, idx_node], color=grad_blue[i], label='S')
+            plt.plot(T_sim, node_NI_time[:, idx_node], color=grad_red[i], label='I')
+            plt.plot(T_sim, node_NR_time[:, idx_node], color=grad_green[i], label='R')
+            # plt.plot(T_sim, node_NS_time[:, idx_node] + node_NI_time[:, idx_node] + node_NR_time[:, idx_node])
+            first = False
+        else:
+            plt.plot(T_sim, node_population_time[:, idx_node], color=grad_gray[i])
+            plt.plot(T_sim, node_NS_time[:, idx_node], color=grad_blue[i])
+            plt.plot(T_sim, node_NI_time[:, idx_node], color=grad_red[i])
+            plt.plot(T_sim, node_NR_time[:, idx_node], color=grad_green[i])
+            # plt.plot(T_sim, node_NS_time[:, idx_node] + node_NI_time[:, idx_node] + node_NR_time[:, idx_node])
+        i = i + 1
+    if choice_bool == 0:
+        plt.axhline(y=avg_pop_node, color='black', linestyle='--', label='Average population ')
+    elif choice_bool == 1:
+        plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
+        plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
+    else:
+        print('Wrong choice_bool')
+    plt.xlabel('Timestep')
+    plt.ylabel('Node population')
+    plt.legend()
+    plt.show()
+
+
+def plot_SIR_repeated_timeseries_single_sim(N_row, N_col, choice_bool, c1, beta, mu, sim, idx_nodes, T_sim, avg_pop_node,
+                                            avg_pop_Nfix,
+                                            avg_pop_Others):
     """ Compute plot of number of individuals (or density) in the S, I, R state for all simulations or for a specific one.
 
     :param N_row: [scalar] number of rows of the lattice
@@ -284,43 +407,42 @@ def plot_SIR_repeated_timeseries(N_row, N_col, choice_bool, c1, beta, mu, idx_si
     # Folder
     folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
-    for sim in idx_sims:
-        sim = int(sim)
-        # Load data
-        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+    sim = int(sim)
+    # Load data
+    node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+    node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+    node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+    node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
 
-        first = True
-        for node in idx_nodes:
-            node = int(node)
-            if first == True:
-                plt.plot(T_sim, node_population_time[:, node - 1], color=grad_gray[node], label='Population')
-                plt.plot(T_sim, node_NS_time[:, node - 1], color=grad_blue[node], label='S')
-                plt.plot(T_sim, node_NI_time[:, node - 1], color=grad_red[node], label='I')
-                plt.plot(T_sim, node_NR_time[:, node - 1], color=grad_green[node], label='R')
-                # plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
-
-                first = False
-            else:
-                plt.plot(T_sim, node_population_time[:, node - 1], color=grad_gray[node])
-                plt.plot(T_sim, node_NS_time[:, node - 1], color=grad_blue[node])
-                plt.plot(T_sim, node_NI_time[:, node - 1], color=grad_red[node])
-                plt.plot(T_sim, node_NR_time[:, node - 1], color=grad_green[node])
-                # plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
-        plt.xlabel('Timestep')
-        plt.ylabel('Node population')
-
-        if choice_bool == 0:
-            plt.axhline(y=avg_pop_node, color='black', linestyle='--', label='Average population ')
-        elif choice_bool == 1:
-            plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
-            plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
+    first = True
+    for node in idx_nodes:
+        node = int(node)
+        if first:
+            plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node], label='Population')
+            plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node], label='S')
+            plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node], label='I')
+            plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node], label='R')
+            # plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
+            first = False
         else:
-            print('Wrong choice_bool')
-        plt.legend()
-        plt.show()
+            plt.plot(T_sim, node_population_time[:, node], color=grad_gray[node])
+            plt.plot(T_sim, node_NS_time[:, node], color=grad_blue[node])
+            plt.plot(T_sim, node_NI_time[:, node], color=grad_red[node])
+            plt.plot(T_sim, node_NR_time[:, node], color=grad_green[node])
+            # plt.plot(T_sim, node_NS_time[:, node-1] + node_NI_time[:, node-1] + node_NR_time[:, node-1])
+
+    if choice_bool == 0:
+        plt.axhline(y=avg_pop_node, color='black', linestyle='--', label='Average population ')
+    elif choice_bool == 1:
+        plt.axhline(y=avg_pop_Others, color='black', linestyle='--', label='Average population ')
+        plt.axhline(y=avg_pop_Nfix, color='black', linestyle='--')
+    else:
+        print('Wrong choice_bool')
+
+    plt.xlabel('Timestep')
+    plt.ylabel('Node population')
+    plt.legend()
+    plt.show()
 
 
 def plot_mean_std_singleNode(T_sim, meanS, meanI, meanR, stdDevS, stdDevI, stdDevR, detS, detI, detR, idx_node,
@@ -371,7 +493,7 @@ def animate(t, img, grid, dict_vals, dict_norm_vals):
     return img,
 
 
-def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
+def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
     """ Plot data in space of variables
 
     :param N_row: [scalar] number of rows of the lattice
@@ -416,30 +538,33 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim):
     max_densityI_time = np.array(max_densityI_time)
     max_densityI = max(max_densityI_time)
     print('max-densityI', max_densityI)
+    if bool_static == 0:
+        # Setup animation
+        Writer = animation.FFMpegWriter(fps=1)
 
-    # Setup animation
-    Writer = animation.FFMpegWriter(fps=1)
+        fig, ax = plt.subplots()
+        img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+        ax.invert_yaxis()
+        fig.colorbar(img, cmap='coolwarm')
+        ax.set_xlabel('Node index')
+        ax.set_ylabel('Node index')
+        ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+        ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
+                                      frames=dict_load.keys())
+        # converting to a html5 video
+        video = ani.to_html5_video()
 
-    fig, ax = plt.subplots()
-    img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
-    ax.invert_yaxis()
-    fig.colorbar(img, cmap='coolwarm')
-    ax.set_xlabel('Node index')
-    ax.set_ylabel('Node index')
-    ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
-    ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
-                                  frames=dict_load.keys())
-    # converting to a html5 video
-    video = ani.to_html5_video()
+        ani.save(folder_animations + f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+        # embedding for the video
+        html = display.HTML(video)
+        # draw the animation
+        display.display(html)
+        plt.close()
+        plt.show()
+        print('Done!')
+    elif bool_static == 1:
+        print('to implement')
 
-    ani.save(folder_animations + f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
-    # embedding for the video
-    html = display.HTML(video)
-    # draw the animation
-    display.display(html)
-    plt.close()
-    plt.show()
-    print('Done!')
 
 
 def plot_nullcline(nodeNS, nodeNI, x, y, u, v, lineStyle, beta):

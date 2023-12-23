@@ -29,9 +29,9 @@ datadir = os.getcwd()
 generator_HomLoops = 0
 plot_histogram = 0
 find_ends_barcodes = 0
-PE_beta_mu = 1
-trial = 0
-
+PE_beta_mu = 0
+PE_compare_c1 = 0
+PE_compare_c1_and_choice_bool = 1
 
 sim = 0
 
@@ -39,7 +39,7 @@ sim = 0
 #               = 1 -> standard scaler normalization
 #               = 2 -> normalization by hand
 normalization = 2
-id = 'XYSIR'
+id = ('XYSIR')
 columns = ['X', 'Y', 'S', 'I', 'R']
 nrm_entropy = [True]
 
@@ -52,7 +52,7 @@ N = row * col
 choice_bool_vals = [0]
 
 # Strength self loops
-c1_vals = [0]
+c1_vals = [0, 1]
 
 # Infection and recovery rate
 beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
@@ -61,9 +61,6 @@ mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.
 beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
 mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
-
-beta_vals_3_5_10 = [0.9]
-mu_vals_3_5_10 = [0.1]
 ########################################################################################################################
 # Fix configuration (dim, population, strength loops) and extract generators of homological loops.
 ########################################################################################################################
@@ -395,10 +392,169 @@ if PE_beta_mu == 1:
                     plt.show()
 
 
+########################################################################################################################
+# Fix configuration (dim, population, strength loops) and study PE as a function of beta and mu
+# Compare different c1 values
+########################################################################################################################
+if PE_compare_c1 == 1:
+
+    choice_bool = 0
+    c1 = [0,1]
+    if row == 3 or row == 5 or row == 10:
+        beta_vals = beta_vals_3_5_10
+        mu_vals = mu_vals_3_5_10
+    else:
+        beta_vals = beta_vals_30_50
+        mu_vals = mu_vals_30_50
+
+        folder_simulation_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Simulations/'
+        folder_simulation_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Simulations/'
+        if normalization == 0:
+            folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/No-normalized/{id}/'
+            folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/No-normalized/{id}/'
+        elif normalization == 1:
+            folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
+        elif normalization == 2:
+            folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
+            folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
+
+        for beta, mu in zip(beta_vals, mu_vals):
+            T_0 = np.load(folder_simulation_0 + f'mu-{mu}/beta-{beta}/T.npy')
+            T_1 = np.load(folder_simulation_1 + f'mu-{mu}/beta-{beta}/T.npy')
+
+            for normalize_entropy in nrm_entropy:
+                entropy_H0_0 = np.load(folder_entropy_0 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_0 = np.load(folder_entropy_0 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H0_1 = np.load(folder_entropy_1 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_1 = np.load(folder_entropy_1 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+                x_0 = range(0, len(entropy_H0_0))
+                x_1 = range(0, len(entropy_H0_1))
+                #min_yH0, t_min_yH0 = min_PE(entropy_H0, x)
+                #min_yH1, t_min_yH1 = min_PE(entropy_H1, x)
+
+                #print('min H0: ', min_yH0, 't min: ', t_min_yH0)
+                #print('min H1: ', min_yH1, 't min: ', t_min_yH1)
+
+                # Create subplots with 1 row and 2 columns
+                fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+
+                # Plot for the first subplot
+                axs[0].plot(x_0, entropy_H0_0, label = 'PE at H0', color = 'r')
+                axs[0].plot(x_0, entropy_H1_0, label = 'PE at H1', color = 'b')
+                axs[0].set_title(f'R0 = {beta/mu}, homogeneous, c1 = {c1[0]}')
+                axs[0].set_xlabel('Time')
+                axs[0].set_ylabel('PE')
+                axs[0].legend()
+
+                # Plot for the second subplot
+                axs[1].plot(x_1, entropy_H0_1 , label = 'PE at H0', color = 'red')
+                axs[1].plot(x_1, entropy_H1_1, label = 'PE at H1', color = 'blue')
+                axs[1].set_title(f'R0 = {beta/mu}, homogeneous, c1 = {c1[1]}')
+                axs[1].set_xlabel('Time')
+                axs[1].set_ylabel('PE')
+                axs[1].legend()
+                plt.show()
 
 
 
+########################################################################################################################
+# Fix configuration (dim, population, strength loops) and study PE as a function of beta and mu
+# Compare different c1 values and choice_bool values
+########################################################################################################################
+if PE_compare_c1_and_choice_bool == 1:
 
+    choice_bool = [0,1]
+    c1 = [0,1]
+    if row == 3 or row == 5 or row == 10:
+        beta_vals = beta_vals_3_5_10
+        mu_vals = mu_vals_3_5_10
+    else:
+        beta_vals = beta_vals_30_50
+        mu_vals = mu_vals_30_50
 
+        folder_simulation_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Simulations/'
+        folder_simulation_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Simulations/'
+        folder_simulation_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Simulations/'
+        folder_simulation_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Simulations/'
 
+        if normalization == 0:
+            folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/No-normalized/{id}/'
+            folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/No-normalized/{id}/'
+            folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/No-normalized/{id}/'
+            folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/No-normalized/{id}/'
+        elif normalization == 1:
+            folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
 
+        elif normalization == 2:
+            folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
+            folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
+            folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
+            folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
+
+        for beta, mu in zip(beta_vals, mu_vals):
+            T_hom_0 = np.load(folder_simulation_hom_0 + f'mu-{mu}/beta-{beta}/T.npy')
+            T_hom_1 = np.load(folder_simulation_hom_1 + f'mu-{mu}/beta-{beta}/T.npy')
+            T_het_0 = np.load(folder_simulation_het_0 + f'mu-{mu}/beta-{beta}/T.npy')
+            T_het_1 = np.load(folder_simulation_het_1 + f'mu-{mu}/beta-{beta}/T.npy')
+
+            for normalize_entropy in nrm_entropy:
+                entropy_H0_hom_0 = np.load(folder_entropy_hom_0 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_hom_0 = np.load(folder_entropy_hom_0 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H0_hom_1 = np.load(folder_entropy_hom_1 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_hom_1 = np.load(folder_entropy_hom_1 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+                entropy_H0_het_0 = np.load(folder_entropy_het_0 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_het_0 = np.load(folder_entropy_het_0 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H0_het_1 = np.load(folder_entropy_het_1 + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+                entropy_H1_het_1 = np.load(folder_entropy_het_1 + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+                x_hom_0 = range(0, len(entropy_H0_hom_0))
+                x_hom_1 = range(0, len(entropy_H0_hom_1))
+                x_het_0 = range(0, len(entropy_H0_het_0))
+                x_het_1 = range(0, len(entropy_H0_het_1))
+
+                # Create subplots with 2 rows and 2 columns
+                fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+
+                # Plot for the first subplot
+                axs[0, 0].plot(x_hom_0, entropy_H0_hom_0, label = 'PE at H0', color = 'r')
+                axs[0, 0].plot(x_hom_0, entropy_H1_hom_0, label = 'PE at H1', color = 'b')
+                axs[0, 0].set_title(f'R0 = {np.round(beta/mu, 2)}, homogeneous, c1 = {c1[0]}')
+                axs[0, 0].set_xlabel('time')
+                axs[0, 0].set_ylabel('PE')
+                axs[0, 0].legend()
+
+                # Plot for the second subplot
+                axs[0, 1].plot(x_hom_1, entropy_H0_hom_1, label='PE at H0', color='r')
+                axs[0, 1].plot(x_hom_1, entropy_H1_hom_1, label = 'PE at H1', color = 'b')
+                axs[0, 1].set_title(f'R0 = {np.round(beta/mu, 2)}, homogeneous, c1 = {c1[1]}')
+                axs[0, 1].set_xlabel('time')
+                axs[0, 1].set_ylabel('PE')
+                axs[0, 1].legend()
+
+                # Plot for the third subplot
+                axs[1, 0].plot(x_het_0, entropy_H0_het_0, label='PE at H0', color='r')
+                axs[1, 0].plot(x_het_0, entropy_H1_het_0, label='PE at H1', color='b')
+                axs[1, 0].set_title(f'R0 = {np.round(beta/mu, 2)}, heterogeneous, c1 = {c1[0]}')
+                axs[1, 0].set_xlabel('time')
+                axs[1, 0].set_ylabel('PE')
+                axs[1, 0].legend()
+
+                # Plot for the fourth subplot
+                axs[1, 1].plot(x_het_1, entropy_H0_het_1, label='PE at H0', color='r')
+                axs[1, 1].plot(x_het_1, entropy_H1_het_1, label='PE at H1', color='b')
+                axs[1, 1].set_title(f'R0 = {np.round(beta/mu, 2)}, heterogeneous, c1 = {c1[1]}')
+                axs[1, 1].set_xlabel('time')
+                axs[1, 1].set_ylabel('PE')
+                axs[1, 1].legend()
+
+                # Adjust layout for better spacing
+                plt.tight_layout()
+
+                # Show the plots
+                plt.show()

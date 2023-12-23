@@ -18,22 +18,25 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from scipy.optimize import curve_fit
-from scipy.stats import poisson, kstest
+from scipy.stats import poisson, kstest, probplot
 import scipy.linalg as linalg
 import seaborn as sns
+import statsmodels.api as sm
+
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 6))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = [3, 5, 10, 30]
-N_col = [3, 5, 10, 30]
+N_row = [30]
+N_col = [30]
 
 choice_bool_lst = [0]
 c1_lst = [0]
 
-beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
+beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6,
+                    0.9, 1.2]
 mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
 
 beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
@@ -41,20 +44,20 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 sim = 0
 
-population_analysis = 0
+population_analysis = 1
 degree_analysis = 0
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
 Rstar_def = 0
-outbreak = 1
+outbreak = 0
 
 write_file = 0
 
-
 plt.figure(figsize=(8, 6))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
+
 
 # --------------------------------------------------------------------------------------------------------------
 
@@ -62,9 +65,11 @@ def Poisson_funct(k, lamb):
     # poisson probability mass function
     return poisson.pmf(k, lamb)
 
-def nth_moment_v2(g,n):
+
+def nth_moment_v2(g, n):
     degree_np = np.array(list(dict(g.in_degree).values()))
-    return (sum(degree_np**n)/len(g))
+    return (sum(degree_np ** n) / len(g))
+
 
 ######################################################################################################################
 avg_distance_N = []
@@ -80,44 +85,54 @@ for row, col in zip(N_row, N_col):
             avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
             total_population = N * avg_population
 
-######################################################################################################################
+            ######################################################################################################################
 
             if population_analysis == 1:
                 # Node population
                 node_population_0 = nx.get_node_attributes(G, name='Npop')
                 node_population_0 = np.array(list(node_population_0.values()))
                 if choice_bool == 0:
-
                     # Mean and average from the multinomial distribution
-                    prob_sample1 = 1/N
+                    prob_sample1 = 1 / N
                     mean_population_multi1 = total_population * prob_sample1
-                    stdDev_population_multi1 = np.sqrt(total_population * prob_sample1 * (1-prob_sample1))
+                    stdDev_population_multi1 = np.sqrt(total_population * prob_sample1 * (1 - prob_sample1))
 
                     N_fix = 0
                     mean_population_multi2 = 0
                     stdDev_population_multi2 = 0
                     idx_Nfix = 0
+                    # Separate data in the two distributions
+                    data1 = node_population_0
+                    data2 = 0
                 elif choice_bool == 1:
+                    # Number of fixed nodes
                     N_fix = np.load(folder_topology + 'Nfix.npy')
+                    # Index of the fixed nodes
                     idx_Nfix = np.load(folder_topology + 'idxNfix.npy')
                     percentage_Nfix = np.load(folder_topology + 'percentage_FixNodes.npy')
-
-                    N_fix_population = total_population * percentage_Nfix/100
+                    # Population inside the fixed nodes (and other)
+                    N_fix_population = total_population * percentage_Nfix / 100
                     N_other_population = total_population - N_fix_population
 
                     prob_sample1 = 1 / N_fix
                     prob_sample2 = 1 / (N - N_fix)
 
-
-                    mean_population_multi1 =  N_fix_population * prob_sample1
+                    mean_population_multi1 = N_fix_population * prob_sample1
                     stdDev_population_multi1 = np.sqrt(N_fix_population * prob_sample1 * (1. - prob_sample1))
 
                     mean_population_multi2 = N_other_population * prob_sample2
                     stdDev_population_multi2 = np.sqrt(N_other_population * prob_sample2 * (1. - prob_sample2))
 
-                plot_node_population_0(N, N_fix, idx_Nfix,node_population_0, mean_population_multi1, stdDev_population_multi1, mean_population_multi2, stdDev_population_multi2, choice_bool)
+                    # Separate data in the two distributions
+                    data1 = node_population_0[node_population_0 > 13000]
+                    data2 = node_population_0[node_population_0 < 13000]
 
-                print('hello')
+                #plot_node_population_0(N, N_fix, idx_Nfix, node_population_0, mean_population_multi1,
+                #                       stdDev_population_multi1, mean_population_multi2, stdDev_population_multi2,
+                #                       choice_bool)
+
+                plot_population_distribution(data1, data2, mean_population_multi1, stdDev_population_multi1,
+                                             mean_population_multi2, stdDev_population_multi2, choice_bool)
             ######################################################################################################################
 
             if degree_analysis == 1:
@@ -130,8 +145,8 @@ for row, col in zip(N_row, N_col):
                 # Average input degree
                 avg_in_degree = L / N
                 second_moment = nth_moment_v2(G, 2)
-                print('avg1:', avg_in_degree)
-                print('second moment: ', second_moment)
+                # print('avg1:', avg_in_degree)
+                # print('second moment: ', second_moment)
                 # In-degree distribution
                 # No normalized
                 Pk_noNorm = np.unique(in_degrees, return_counts=True)
@@ -139,18 +154,18 @@ for row, col in zip(N_row, N_col):
                 k_vals = Pk_noNorm[0]
                 N_k = Pk_noNorm[1]
 
-                print('avg2:', nth_moment_v2(G, 1))
+                # print('avg2:', nth_moment_v2(G, 1))
                 # Normalization : the Pk divided by the total number of nodes st sum(pk) = 1
                 Pk_norm = N_k / N
                 # Fit with Poisson distribution
                 guess = avg_in_degree
-                param, cov_matrix = curve_fit(Poisson_funct, k_vals, Pk_norm, p0 = guess)
+                param, cov_matrix = curve_fit(Poisson_funct, k_vals, Pk_norm, p0=guess)
                 print('param:', param)
                 SE = np.sqrt(np.diag(cov_matrix))
                 SE_A = SE[0]
 
-                ### KS test
-                ks_statistic, ks_p_value = kstest(Pk_norm, 'poisson', N = len(k_vals), args=(param,))
+                ### KS test : better -> before I used the normalized Pk. Now I am using the non-normalized ones.
+                ks_statistic, ks_p_value = kstest(N_k, 'poisson', N=len(k_vals), args=(param,))
                 plot_degree_distribution(row, col, choice_bool, c1, k_vals, Pk_norm, avg_in_degree, Poisson_funct,
                                          param)
                 # Display the KS test results
@@ -165,11 +180,11 @@ for row, col in zip(N_row, N_col):
                     print("Fail to reject the null hypothesis: The sample follows a poisson distribution.")
 
                 # Matrix of connections: total number of edges between vertices of degree k and vertices of degree k′ N_kk'
-                print('k_vals:', k_vals)
-                ContactMatrix = np.zeros(shape = (max(k_vals) + 1, max(k_vals) + 1))
+
+                ContactMatrix = np.zeros(shape=(max(k_vals) + 1, max(k_vals) + 1))
 
                 for i in range(N):
-                    for j in range(N): # self-loops??
+                    for j in range(N):  # self-loops??
                         if TransitionMatrix[i, j] != 0:
                             k = G.in_degree(i)
                             k_prime = G.in_degree(j)
@@ -184,16 +199,16 @@ for row, col in zip(N_row, N_col):
                     if sum_row == 0 and sum_col == 0:
                         idx_delete.append(i)
 
-                ContactMatrix = np.delete(ContactMatrix, idx_delete, 0) # delete i-th row
-                ContactMatrix = np.delete(ContactMatrix, idx_delete, 1) # delete i-th col
+                ContactMatrix = np.delete(ContactMatrix, idx_delete, 0)  # delete i-th row
+                ContactMatrix = np.delete(ContactMatrix, idx_delete, 1)  # delete i-th col
 
                 # Joint probability P(k, k')
-                P_joint = ContactMatrix/(avg_in_degree * N)
+                P_joint = ContactMatrix / (avg_in_degree * N)
 
                 # Conditional probability P(k|k')
-                P_cond = np.zeros(shape = (len(k_vals), len(k_vals)))
+                P_cond = np.zeros(shape=(len(k_vals), len(k_vals)))
                 for k in range(len(k_vals)):
-                        P_cond[k, :] = ContactMatrix[k, :] / (k_vals[k] * N_k[k])
+                    P_cond[k, :] = ContactMatrix[k, :] / (k_vals[k] * N_k[k])
 
                 # ANND k_barn_nn
                 k_bar_nn = []
@@ -203,32 +218,48 @@ for row, col in zip(N_row, N_col):
                         sum_k = sum_k + k_vals[k_prime] * P_cond[k, k_prime]
                     k_bar_nn.append(sum_k)
 
-
                 k_bar_nn_non_corr = second_moment / avg_in_degree
-                plt.plot(k_vals, k_bar_nn, marker = 'o')
-                plt.axhline(y = k_bar_nn_non_corr, linestyle = '--', color = 'k')
+                plt.plot(k_vals, k_bar_nn, marker='o')
+                plt.axhline(y=k_bar_nn_non_corr, linestyle='--', color='k')
                 plt.xlabel('k')
                 plt.ylabel(r'$\bar{k}_{nn}(k)$')
 
                 plt.show()
-                #print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
+                # print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
                 #      L_max, 'Perc. link: ', np.round(L / L_max * 100, 2), '%')
 
-
                 # Attempt to find an epidemic threshold by diagonalization of the C_matrix (ref. Epidemic spreading in complex netwokrs)
-                C_matrix = np.zeros(shape = (len(k_vals), len(k_vals)))
+                C_matrix = np.zeros(shape=(len(k_vals), len(k_vals)))
                 for k in range(len(k_vals)):
                     for k_prime in range(len(k_vals)):
-                        C_matrix[k, k_prime] = k_vals[k] * (k_vals[k_prime] - 1.)/k_vals[k_prime] * P_cond[k, k_prime]
+                        C_matrix[k, k_prime] = k_vals[k] * (k_vals[k_prime] - 1.) / k_vals[k_prime] * P_cond[k, k_prime]
                 eigval, eigvect = linalg.eig(C_matrix, left=False, right=True)
                 max_eigval = max(eigval)
                 print('eigval:', eigval)
                 print('max eigval: ', max_eigval)
-                beta_threshold = 1./max_eigval
+                beta_threshold = 1. / max_eigval
 
                 print('beta_threshold:', beta_threshold)
                 print('hello')
-######################################################################################################################
+
+                ## QQ plot
+
+                # Generate theoretical quantiles for a Poisson distribution with the same mean
+                theoretical_quantiles = poisson.ppf(np.linspace(0.01, 0.99, 100), mu=param)
+
+                probplot(N_k, dist=poisson, sparams=(param,), plot=plt)
+                # Add a line representing the theoretical quantiles
+                plt.plot(theoretical_quantiles, theoretical_quantiles, color='red', linestyle='--')
+
+                # Customize the plot
+                plt.title('QQ Plot of Sampled Poisson Data')
+                plt.xlabel('Theoretical Quantiles')
+                plt.ylabel('Sample Quantiles')
+
+
+                print('Pk-norm:', Pk_norm)
+                plt.show()
+            ######################################################################################################################
 
             if distance_analysis == 1:
                 # [Paths and distances] (referred to the number of edges composing a path not to the Euclidan distance)
@@ -241,16 +272,16 @@ for row, col in zip(N_row, N_col):
                 avg_distance_N.append(avg_distance)
                 N_vals.append(N)
 
-######################################################################################################################
+            ######################################################################################################################
 
             if clustering_analysis == 1:
                 # [Clustering coefficient]
                 print('TO DO')
 
-######################################################################################################################
+            ######################################################################################################################
 
             if PF_convergence == 1:
-                idx_node = np.linspace(0, N-1, N)
+                idx_node = np.linspace(0, N - 1, N)
 
                 folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
                 avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
@@ -284,7 +315,7 @@ for row, col in zip(N_row, N_col):
 
                     diff_density = node_density_final - rho0
 
-                    plt.scatter(idx_node, diff_density, color = 'k')
+                    plt.scatter(idx_node, diff_density, color='k')
                     plt.axhline(y=0, linestyle='--', color='k')
                     plt.xlabel('Index node')
                     plt.ylabel(r'$\rho_{\infty} - \rho_0$')
@@ -295,16 +326,16 @@ for row, col in zip(N_row, N_col):
             if weight_analysis == 1:
                 TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
                 TM_ravel = TransitionMatrix.ravel()
-                TM_round = np.round(TM_ravel, 2) # keep 2 decimals for plot
+                TM_round = np.round(TM_ravel, 2)  # keep 2 decimals for plot
                 TM_removed = TM_round[TM_round != 0.00]
 
-                plt.hist(TM_removed,  color='#0504aa', alpha=0.7, align = 'mid', bins = 100 )
+                plt.hist(TM_removed, color='#0504aa', alpha=0.7, align='mid', bins=100)
                 plt.yscale('log')
                 plt.xlabel('weight')
                 plt.ylabel('Frequency')
                 plt.title(f'dim = {row}x{col}, choice_bool = {choice_bool}, c1 = {c1}')
                 plt.show()
-######################################################################################################################
+            ######################################################################################################################
 
             if Rstar_def == 1:
                 if row == 3 or row == 5 or row == 10:
@@ -329,13 +360,15 @@ for row, col in zip(N_row, N_col):
                 # avg_population = avg_population / total_population
                 for beta, mu in zip(beta_vals, mu_vals):
                     R0 = beta / mu
-                    alpha = 2. * (R0 - 1.)/ R0**2
+                    alpha = 2. * (R0 - 1.) / R0 ** 2
                     # Global invasion threshold (don't really understand the meaning)
-                    R_star = (R0 - 1.) * (second_moment - avg_in_degree)/avg_in_degree**2. * avg_transmission * avg_population * alpha / mu
-                    print('row: ', row, 'col: ', col, 'choice-bool: ', choice_bool, 'c1: ', c1, 'beta: ', beta, 'mu: ', mu,
+                    R_star = (R0 - 1.) * (
+                                second_moment - avg_in_degree) / avg_in_degree ** 2. * avg_transmission * avg_population * alpha / mu
+                    print('row: ', row, 'col: ', col, 'choice-bool: ', choice_bool, 'c1: ', c1, 'beta: ', beta, 'mu: ',
+                          mu,
                           'R0: ', R0, 'R_star: ', R_star, 'avg_transmisison: ', avg_transmission)
 
-######################################################################################################################
+            ######################################################################################################################
             if outbreak == 1:
 
                 # Plot the difference between rho0 and the density of people in the final time
@@ -352,11 +385,11 @@ for row, col in zip(N_row, N_col):
                     new_I_time = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
                     print('--------- outbreak trial 1 ---------')
                     # Calculate the cumulative number of NEW infected individuals per node over the whole period of time
-                    cumulat_newI_perNode = np.zeros(shape=(T , N))
+                    cumulat_newI_perNode = np.zeros(shape=(T, N))
                     for i in range(N):
                         cumulat_newI_perNode[:, i] = np.cumsum(new_I_time[:, i])
                     # Cumulative new infected in the whole network per time step
-                    cumulat_newI = cumulat_newI_perNode.sum(axis = 1)
+                    cumulat_newI = cumulat_newI_perNode.sum(axis=1)
                     # The last number is the cumulative number of new infected in the whole network that is the
                     # number of individuals who got infected in the whole network during the total duration of the epidemics
                     total_newI = cumulat_newI[-1]
@@ -364,13 +397,13 @@ for row, col in zip(N_row, N_col):
                     print('N: ', N, 'choice_bool: ', choice_bool, 'c1: ', c1, 'beta: ', beta, 'mu:', mu)
                     print('percentage new I: ', perc_newI, '%')
                     # Threshold outbreak : lim_t->infinity R_N(t) > N^1/4
-                    threshold_outbreak = pow(total_population, 1./4.)
+                    threshold_outbreak = pow(total_population, 1. / 4.)
                     print('total newI: ', total_newI, 'threshold_outbreak: ', threshold_outbreak)
                     print('--------- outbreak trial 2 ---------')
-                    threshold_outbreak = pow(total_population, 7./8.)
+                    threshold_outbreak = pow(total_population, 7. / 8.)
                     print('total newI: ', total_newI, 'threshold_outbreak: ', threshold_outbreak)
                     # + done eigenvalue on the degree_analysis part
-######################################################################################################################
+            ######################################################################################################################
 
             if write_file == 1:
                 write_network_file(row, col, choice_bool, c1, in_degrees, avg_in_degree, L, L_max,

@@ -24,7 +24,7 @@ datadir = os.getcwd()
 plt.figure(figsize=(8, 6))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
-repeat_trials = 1
+mean_std_repeated_trials = 1
 SIR_time = 0
 
 # ------------------------------------------------ Colors  -------------------------------------------------
@@ -41,9 +41,9 @@ for x in range(3):
     grad_green.append(colorFader('#0A8E1A', '#DAF7A6', x / 3))
 
 ######################################################################################################################
-if repeat_trials == 1:
-    row = 10
-    col = 10
+if mean_std_repeated_trials == 1:
+    row = 30
+    col = 30
     N = row * col
 
     choice_bool = 0
@@ -68,9 +68,9 @@ if repeat_trials == 1:
         idx_sim_not_start = np.load(folder_simulation + 'idx_sim_not_start.npy')
         idx_sim_start = list((set(idx_repetitions) - set(idx_sim_not_start)))
         nbr_sim_start = len(idx_sim_start)
-        print('nbr sim start: ', nbr_sim_start)
         T = np.load(folder_simulation + 'T.npy')
         print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
+        print('nbr sim start: ', nbr_sim_start)
         T_sim = np.linspace(0, T - 1, T)
         # Change with index simulation started
         y_mean_std = mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density, idx_sim_start)
@@ -123,7 +123,8 @@ if SIR_time == 1:
     bool_density = 1
     bool_network = 0
 
-    idx_nodes = [0]#np.linspace(0, N, N - 1)
+    bool_multiple_nodes = 0
+    bool_multiple_sims = 1
 
     # Infection and recovery rate
     beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
@@ -134,12 +135,13 @@ if SIR_time == 1:
         folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
         T = np.load(folder_simulation + f'T.npy')
-        print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
+        # print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
         T_sim = np.linspace(0, T - 1, T)
         nbr_repetitions = np.load(folder_simulation + f'nbr_repetitions.npy')
         idx_repetitions = np.linspace(0, nbr_repetitions - 1, nbr_repetitions)
         idx_sim_not_start = np.load(folder_simulation + 'idx_sim_not_start.npy')
         idx_sim_start = list((set(idx_repetitions) - set(idx_sim_not_start)))
+        # print('idx_sim_started: ', idx_sim_start)
         avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
         if choice_bool == 1:
             avg_pop_Nfix = np.load(folder_topology + 'avg_pop_Nfix.npy')
@@ -149,9 +151,14 @@ if SIR_time == 1:
             avg_pop_Others = 0
 
         if bool_network == 0:
-            plot_SIR_repeated_timeseries(row, col, choice_bool, c1, beta, mu, idx_sim_start, idx_nodes, T_sim,
-                                         avg_popPerNode,
-                                         avg_pop_Nfix, avg_pop_Others)
+            if bool_multiple_sims == 1 and bool_multiple_nodes == 0:
+                idx_node = 0
+                plot_SIR_repeated_timeseries_single_node(row, col, choice_bool, c1, beta, mu, idx_sim_start, idx_node, T_sim,
+                                                         avg_popPerNode, avg_pop_Nfix, avg_pop_Others)
 
-
+            elif bool_multiple_sims == 0 and bool_multiple_nodes == 1:
+                sim = 0
+                idx_nodes = np.linspace(0, N-1, N-2)
+                plot_SIR_repeated_timeseries_single_sim(row, col, choice_bool, c1, beta, mu, sim, idx_nodes, T_sim,
+                                                        avg_popPerNode, avg_pop_Nfix, avg_pop_Others)
 

@@ -27,11 +27,12 @@ SIR_time = 0
 fixedR0 = 0
 fixed_mu = 0
 duration_analysis = 0
-heatmap = 0
-outbreak_analysis = 1
+heatmap = 1
+outbreak_analysis = 0
 final_size_analysis = 0
-network_infected = 1
+network_infected = 0
 phase_space = 0
+phase_transition = 0
 
 lineStyle = ['-', '--', ':']
 
@@ -51,8 +52,6 @@ for x in range(3):
 ######################################################################################################################
 ### SIR time_series at network level or node level
 
-
-
 if SIR_time == 1:
     row = 30
     col = 30
@@ -66,7 +65,7 @@ if SIR_time == 1:
     idx_node = 0
 
     # Infection and recovery rate
-    beta_vals = [0.115]
+    beta_vals = [0.9]
     mu_vals = [0.1]
 
     bool_density = 1
@@ -107,20 +106,20 @@ if SIR_time == 1:
                 vals_NI_time = node_NI_time.sum(axis=1) / (N * avg_popPerNode)
                 vals_NR_time = node_NR_time.sum(axis=1) / (N * avg_popPerNode)
 
-
+        print('t-max: ', np.argmax(vals_NI_time))
         if first == True:
             # plt.plot(T_sim, vals_population, color='gray', label='Population')
             plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
-            plt.xlim(0, 1000)
+            #plt.xlim(0, 1000)
             first = False
         else:
             # plt.plot(T_sim, vals_population, color='gray', label='Population')
             plt.plot(T_sim, vals_NS_time, color='#261bf7', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NI_time, color='#ff0000', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NR_time, color='#05b032', linestyle=lineStyle[i])
-            plt.xlim(0, 1000)
+            #plt.xlim(0, 1000)
         i = i + 1
     plt.xlabel('t')
     if bool_network == 0:
@@ -304,13 +303,17 @@ if heatmap == 1:
 
     sim = 0
 
+    bool_static = 1
+
     folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
 
     T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
     print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
     T_sim = np.linspace(0, T - 1, T)
 
-    heatmap_time(row, col, choice_bool, c1, beta, mu, sim)
+    heatmap_time(row, col, choice_bool, c1, beta, mu, sim, bool_static)
+######################################################################################################################
+
 
 ######################################################################################################################
 
@@ -523,6 +526,78 @@ if phase_space == 1:
     plt.text(0.7, 0.3, r'$\mu =$' + str(0.1), fontsize=10)
     plt.legend()
     plt.show()
+
+######################################################################################################################
+if phase_transition == 1:
+    row = 30
+    col = 30
+    N = row * col
+    choice_bool = 0
+    c1 = 0
+
+    sim = 0
+
+    beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+    mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+    bool_network = 1
+    # If bool_network = 1 : I sum the S, I, R in all the nodes of the network and plot the phase space at the network level
+
+    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+    avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
+    total_population = avg_popPerNode * N
+    folder_analysis = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Analysis/'
+
+    final_size_beta = np.load(folder_analysis + f'final_size_beta_sim{sim}.npy')
+
+    i = 0
+    plt.figure(figsize=(8, 5))
+
+    def theta(x):
+        if x < 0.5:
+            return 0
+        else:
+            return 1
+
+    theta_vals = []
+    eta_vals = []
+    for beta, mu in zip(beta_vals, mu_vals):
+        TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+        weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if
+                         TransitionMatrix[i, j] != 0]
+
+        weightNonZero_noSelfLoops = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if
+                         TransitionMatrix[i, j] != 0 and i!=j]
+
+        # Since the transmission rate is not constant, I take the average value
+        avg_mobility_rate = np.mean(weightNonZero)
+        print('avg-mobility rate:', avg_mobility_rate)
+        avg_mobility_rate_noSelfLoop = np.mean(weightNonZero_noSelfLoops)
+        print('avg-mobility rate no selfLoops:', avg_mobility_rate_noSelfLoop)
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+        T = np.load(folder_simulation + f'T.npy')
+        T_sim = np.linspace(0, T - 1, T)
+
+        NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+        NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+        NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+        # Definition of the "control parameter"
+        eta = (beta - mu) / avg_mobility_rate_noSelfLoop
+        eta_vals.append(eta)
+
+        perc_final_size_network = final_size_beta[i]/total_population
+        theta_vals.append(theta(perc_final_size_network))
+
+        i = i + 1
+        #print(perc_final_size_network)
+
+    print('avg_mobility: ', avg_mobility_rate)
+    plt.plot(eta_vals, theta_vals, 'o', color = 'red')
+    plt.xlabel(r'$\eta$')
+    plt.ylabel(r'$\theta(\eta)$')
+    plt.show()
+
 
 
 
