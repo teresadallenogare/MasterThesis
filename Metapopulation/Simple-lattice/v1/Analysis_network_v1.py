@@ -17,12 +17,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+import scipy
 from scipy.optimize import curve_fit
 from scipy.stats import poisson, kstest, probplot
 import scipy.linalg as linalg
 import seaborn as sns
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 import statsmodels.api as sm
-
+from scipy.stats import linregress
 
 datadir = os.getcwd()
 plt.figure(figsize=(8, 6))
@@ -44,14 +46,16 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 sim = 0
 
-population_analysis = 1
-degree_analysis = 0
+population_analysis = 0
+degree_analysis = 1
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
 PF_convergence = 0
 Rstar_def = 0
 outbreak = 0
+
+log_dependence = 1
 
 write_file = 0
 
@@ -80,17 +84,26 @@ for row, col in zip(N_row, N_col):
         for c1 in c1_lst:
             folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
             folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+            folder_analysis = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Analysis/'
+
             G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+            dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
             TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+            AdjacencyMatrix = np.load(folder_topology + 'AdjacencyMatrix.npy')
+            D = np.load(folder_topology + 'DistanceMatrix.npy')
             avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
             total_population = N * avg_population
+            weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
 
+            plt.show()
             ######################################################################################################################
 
             if population_analysis == 1:
                 # Node population
                 node_population_0 = nx.get_node_attributes(G, name='Npop')
                 node_population_0 = np.array(list(node_population_0.values()))
+
+                #plot_static_network(G, node_population_0, dict_nodes, weightNonZero, N_row, N_col, choice_bool, c1)
                 if choice_bool == 0:
                     # Mean and average from the multinomial distribution
                     prob_sample1 = 1 / N
@@ -136,6 +149,28 @@ for row, col in zip(N_row, N_col):
             ######################################################################################################################
 
             if degree_analysis == 1:
+
+                # Node population
+                node_population_0 = nx.get_node_attributes(G, name='Npop')
+                node_population_0 = np.array(list(node_population_0.values()))
+                ########################################################################################################
+                density_population_0 = node_population_0/avg_population
+                a = 0.2
+                c = a / max(density_population_0)
+                # matrix of probabilities
+                P = np.zeros(shape=(N, N))
+                for i in range(N):
+                    for j in range(N):
+                        if j > i:
+                            # Probability to establish both the direct and forward edge in a pair of nodes
+                            prob = max(c * density_population_0[i] / D[i, j], c * density_population_0[j] / D[i, j])
+
+                            P[i, j] = prob
+                            P[j, i] = prob
+                P_unique = np.unique(P)
+                P_sum = P_unique.sum()
+                ########################################################################################################
+
                 # [Degree properties]
                 # Input degrees
                 in_degrees = np.array([G.in_degree(n) for n in G.nodes()])
@@ -150,19 +185,18 @@ for row, col in zip(N_row, N_col):
                 # In-degree distribution
                 # No normalized
                 Pk_noNorm = np.unique(in_degrees, return_counts=True)
-
                 k_vals = Pk_noNorm[0]
                 N_k = Pk_noNorm[1]
-
-                # print('avg2:', nth_moment_v2(G, 1))
                 # Normalization : the Pk divided by the total number of nodes st sum(pk) = 1
                 Pk_norm = N_k / N
+
                 # Fit with Poisson distribution
                 guess = avg_in_degree
                 param, cov_matrix = curve_fit(Poisson_funct, k_vals, Pk_norm, p0=guess)
                 print('param:', param)
                 SE = np.sqrt(np.diag(cov_matrix))
-                SE_A = SE[0]
+                print('SE: ', SE)
+
 
                 ### KS test : better -> before I used the normalized Pk. Now I am using the non-normalized ones.
                 ks_statistic, ks_p_value = kstest(N_k, 'poisson', N=len(k_vals), args=(param,))
@@ -219,12 +253,10 @@ for row, col in zip(N_row, N_col):
                     k_bar_nn.append(sum_k)
 
                 k_bar_nn_non_corr = second_moment / avg_in_degree
-                plt.plot(k_vals, k_bar_nn, marker='o')
-                plt.axhline(y=k_bar_nn_non_corr, linestyle='--', color='k')
-                plt.xlabel('k')
-                plt.ylabel(r'$\bar{k}_{nn}(k)$')
+                np.save(folder_analysis + 'k_vals', k_vals)
+                np.save(folder_analysis + f'k_bar_nn', k_bar_nn)
+                np.save(folder_analysis + f'k_bar_nn_non_corr', k_bar_nn_non_corr)
 
-                plt.show()
                 # print(f'ch_bool: {choice_bool}, c1: {c1}, {row}x{col}, avg_k:', avg_in_degree, 'L_in: ', L, 'L_max: ',
                 #      L_max, 'Perc. link: ', np.round(L / L_max * 100, 2), '%')
 
@@ -259,18 +291,7 @@ for row, col in zip(N_row, N_col):
 
                 print('Pk-norm:', Pk_norm)
                 plt.show()
-            ######################################################################################################################
 
-            if distance_analysis == 1:
-                # [Paths and distances] (referred to the number of edges composing a path not to the Euclidan distance)
-                max_dist = 10
-                d_vals = np.linspace(0, max_dist, max_dist + 1)
-                diameter, avg_distance, pd_norm = path_analysis(G, max_dist)
-                print('sum pd: ', pd_norm.sum())
-                # plot_distance_distribution(row, col, choice_bool, c1, d_vals, pd_norm, avg_distance)
-                print('diameter:', diameter, 'avg_distance', np.round(avg_distance, 3))
-                avg_distance_N.append(avg_distance)
-                N_vals.append(N)
 
             ######################################################################################################################
 
@@ -281,22 +302,73 @@ for row, col in zip(N_row, N_col):
             ######################################################################################################################
 
             if PF_convergence == 1:
-                idx_node = np.linspace(0, N - 1, N)
-
+                # Error as the average over repeated generations of the topology, reported with the associated standard deviation
+                nbr_repetitions = 10
                 folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-                avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
-                rho0 = np.load(folder_topology + '/rho0.npy')
-                rho0 = rho0 * N
-                # [PF convergence]
-                # Plot the error as a function of the dimension
-                k_list = np.load(folder_topology + 'k_list.npy')
-                diff_list = np.load(folder_topology + 'diff_list.npy')
+                k_list = np.load(folder_topology + f'k_list.npy')
 
-                plt.plot(k_list, diff_list, '-o')
+                diff_list_repeat = np.zeros(shape=(nbr_repetitions, int(len(k_list))))
+                avg_diff_list = []
+                stdDev_diff_list = []
+
+                for repeat in range(nbr_repetitions):
+                    idx_node = np.linspace(0, N - 1, N)
+                    folder_topology_repeat = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+                    # [PF convergence]
+                    # Plot the error as a function of the dimension
+                    diff_list = np.load(folder_topology_repeat + f'diff_list_rep{repeat}.npy')
+                    diff_list_repeat[repeat, :] = diff_list
+                avg_diff_list = np.mean(diff_list_repeat, axis=0)
+                stdDev_diff_list = np.std(diff_list_repeat, axis=0, ddof=1)
+                fig, ax = plt.subplots(figsize = (8, 6))
+                ax.errorbar(k_list, avg_diff_list, stdDev_diff_list,
+                            linestyle='-', fmt='o',
+                            ecolor='darkgreen' if choice_bool == 0 else 'orangered',
+                            elinewidth=1,
+                            capsize=1.4,
+                            color='g' if choice_bool == 0 else 'darkorange')
+                #ax.fill_between(k_list, avg_diff_list - stdDev_diff_list,
+                #                   avg_diff_list + stdDev_diff_list,
+                #                   facecolor='green' if choice_bool == 0 else 'darkorange', alpha=0.25)
+                axins = inset_axes(ax, width='40%', height='40%', loc='upper right')
+                axins.errorbar(k_list, avg_diff_list, stdDev_diff_list,
+                               linestyle='-', fmt = 'o',
+                               ecolor = 'darkgreen' if choice_bool == 0 else 'orangered',
+                               elinewidth = 1,
+                               capsize = 1.4,
+                               color='g' if choice_bool == 0 else 'darkorange')
+                #axins.fill_between(k_list, avg_diff_list - stdDev_diff_list,
+                #                avg_diff_list + stdDev_diff_list,
+                #                facecolor= 'green' if choice_bool == 0 else 'darkorange', alpha=0.25)
+                if choice_bool == 0:
+                    xlim1 = k_list[3]-10
+                    xlim2 = k_list[5]+50
+                    ylim1 = avg_diff_list[5]-0.5
+                    ylim2 = avg_diff_list[3]+0.75
+                else:
+                    xlim1 = k_list[3] - 10
+                    xlim2 = k_list[6] + 50
+                    ylim1 = avg_diff_list[6]-0.5
+                    ylim2 = avg_diff_list[3]+0.8
+                axins.set_xlim(xlim1, xlim2)
+                axins.set_ylim(ylim1, ylim2)
+                # Set white background for the inset plot
+                axins.set_facecolor('white')
+
+                # Mark the region in the main plot
+                # Mark the region in the main plot and draw connecting lines
+                mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", lw = 0.5)
+                #mark_inset(ax, axins, loc1=3, loc2=1, fc="none", ec="0.5")
+                ax.indicate_inset_zoom(axins)
+                #axins.set_xticklabels('')
+                #axins.set_yticklabels('')
                 # add labels and plot multiple dimensions in one to see how the decay of the error to zero changes as
                 # a function of the network dimension.
-                plt.xlabel('Power law')
-                plt.ylabel('Error')
+                ax.tick_params(axis='both', which='major', labelsize=14)
+                ax.tick_params(axis='both', which='minor', labelsize=12)
+                ax.set_xlabel('Timestep', fontsize = 14)
+                ax.set_ylabel('Error', fontsize = 14)
+
                 plt.show()
 
                 # Plot the difference between rho0 and the density of people in the final time
@@ -306,35 +378,42 @@ for row, col in zip(N_row, N_col):
                 else:
                     beta_vals = beta_vals_30_50
                     mu_vals = mu_vals_30_50
-
+                # Consider the simulation done on my selected topology
                 for beta, mu in zip(beta_vals, mu_vals):
                     folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+                    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+                    avg_population = np.load(folder_topology + f'avg_popPerNode_rep{repeat}.npy')
+
+                    rho0 = np.load(folder_topology + f'/rho0.npy')
+                    rho0 = rho0 * N
                     node_population_time = np.load(folder_simulation + 'sim_0_node_population_time.npy')
                     node_population_final = node_population_time[-1, :]
                     node_density_final = node_population_final / avg_population
 
                     diff_density = node_density_final - rho0
 
-                    plt.scatter(idx_node, diff_density, color='k')
-                    plt.axhline(y=0, linestyle='--', color='k')
-                    plt.xlabel('Index node')
-                    plt.ylabel(r'$\rho_{\infty} - \rho_0$')
+                    sns.histplot(node_density_final, bins = int(np.sqrt(len(node_density_final))))
+                    sns.histplot(rho0, bins = int(np.sqrt(len(rho0))))
+                    #plt.scatter(idx_node, diff_density, color='k')
+                    #plt.axhline(y=0, linestyle='--', color='k')
+                    #plt.xlabel('Index node')
+                    #plt.ylabel(r'$\rho_{\infty} - \rho_0$')
                     plt.show()
                     print('hello')
-            ######################################################################################################################
+                ######################################################################################################################
 
-            if weight_analysis == 1:
-                TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
-                TM_ravel = TransitionMatrix.ravel()
-                TM_round = np.round(TM_ravel, 2)  # keep 2 decimals for plot
-                TM_removed = TM_round[TM_round != 0.00]
+                if weight_analysis == 1:
+                    TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+                    TM_ravel = TransitionMatrix.ravel()
+                    TM_round = np.round(TM_ravel, 2)  # keep 2 decimals for plot
+                    TM_removed = TM_round[TM_round != 0.00]
 
-                plt.hist(TM_removed, color='#0504aa', alpha=0.7, align='mid', bins=100)
-                plt.yscale('log')
-                plt.xlabel('weight')
-                plt.ylabel('Frequency')
-                plt.title(f'dim = {row}x{col}, choice_bool = {choice_bool}, c1 = {c1}')
-                plt.show()
+                    plt.hist(TM_removed, color='#0504aa', alpha=0.7, align='mid', bins=100)
+                    plt.yscale('log')
+                    plt.xlabel('weight')
+                    plt.ylabel('Frequency')
+                    plt.title(f'dim = {row}x{col}, choice_bool = {choice_bool}, c1 = {c1}')
+                    plt.show()
             ######################################################################################################################
 
             if Rstar_def == 1:
@@ -409,3 +488,170 @@ for row, col in zip(N_row, N_col):
                 write_network_file(row, col, choice_bool, c1, in_degrees, avg_in_degree, L, L_max,
                                    np.round(L / L_max * 100, 2),
                                    k_vals, Pk_norm, Pk_noNorm, diameter, avg_distance, param)
+
+if log_dependence == 1:
+    N_row_L = [3, 5, 10, 30, 50]
+    N_col_L = [3, 5, 10, 30, 50]
+    choice_bool_lst_L = [0, 1]
+
+    dim_network = [9, 25, 100, 900, 2500]
+    nbr_repetitions_L = 10
+    perc_L_dim_homo = np.zeros(shape=(nbr_repetitions_L, len(N_row_L)))
+    perc_L_dim_hetero = np.zeros(shape=(nbr_repetitions_L, len(N_row_L)))
+    for choice_bool in choice_bool_lst_L:
+
+        for rep in range(nbr_repetitions_L):
+            i = 0
+            for row, col in zip(N_row_L, N_col_L):
+                N = row * col
+                folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
+                folder_topology_repeat = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+                G = pickle.load(open(folder_topology_repeat + f'G_rep{rep}.pickle', 'rb'))
+                in_degrees = np.array([G.in_degree(n) for n in G.nodes()])
+                # Total number of links
+                L = in_degrees.sum()
+                L_max = N * (N - 1) / 2
+                if choice_bool == 0:
+                    perc_L_dim_homo[rep, i] = L/L_max * 100
+                else:
+                    perc_L_dim_hetero[rep, i] = L/L_max * 100
+
+                i = i + 1
+
+    avg_perc_L_dim_homo = np.mean(perc_L_dim_homo, axis=0)
+    avg_perc_L_dim_hetero = np.mean(perc_L_dim_hetero, axis = 0)
+
+    stdDev_L_dim_homo = np.std(perc_L_dim_homo, axis=0, ddof = 1)
+    stdDev_L_dim__hetero = np.std(perc_L_dim_hetero, axis = 0, ddof = 1)
+    logx = np.log10(dim_network)
+    logy_homo = np.log10(avg_perc_L_dim_homo)
+    logy_hetero = np.log10(avg_perc_L_dim_hetero)
+    # Perform linear regression on the log-transformed data
+    slope_homo, intercept_homo, r_value_homo, p_value_homo, std_err_homo = linregress(logx, logy_homo)
+    slope_hetero, intercept_hetero, r_value_hetero, p_value_hetero, std_err_hetero = linregress(logx, logy_hetero)
+    # Plot the linear fit in log-log space
+    x_fit = np.linspace(1, dim_network[-1]+100, 1000)
+    y_fit_homo = 10**(intercept_homo + slope_homo * np.log10(x_fit))
+    y_fit_hetero = 10**(intercept_hetero + slope_hetero * np.log10(x_fit))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.errorbar(dim_network, avg_perc_L_dim_homo, stdDev_L_dim_homo,
+                color = 'g', label = r'$RN_{HOM}$',
+                #linestyle = '-',
+                fmt = 'o',
+                ecolor = 'darkgreen',
+                elinewidth = 1,
+                capsize = 1.6)
+    ax.errorbar(dim_network, avg_perc_L_dim_hetero, stdDev_L_dim__hetero,
+                color = 'orange', label = r'$RN_{HET}$',
+                #linestyle = '-',
+                fmt = 'o',
+                ecolor = 'orangered',
+                elinewidth = 1,
+                capsize = 1.6)
+    plt.loglog(x_fit, y_fit_homo, label=f'Linear Fit (Slope={slope_homo:.2f})', color='darkgreen')
+    plt.loglog(x_fit, y_fit_hetero, label=f'Linear Fit (Slope={slope_hetero:.2f})', color='darkorange')
+    plt.legend(fontsize=12)
+    plt.xlabel('Network size', fontsize = 14)
+    plt.ylabel(r'$L/L_{max}$%', fontsize = 14)
+    axins = inset_axes(ax, width='40%', height='40%', loc='lower left')
+    axins.errorbar(dim_network, avg_perc_L_dim_hetero, stdDev_L_dim__hetero,
+                   fmt='o',
+                   ecolor='orangered',
+                   color = 'orange',
+                   elinewidth=1,
+                   capsize=1.4)
+
+    xlim1 = dim_network[0]
+    xlim2 = dim_network[0]
+    ylim1 = avg_perc_L_dim_hetero[0]
+    ylim2 = avg_perc_L_dim_hetero[0]
+
+    axins.set_xlim(xlim1, xlim2)
+    axins.set_ylim(ylim1, ylim2)
+    # Set white background for the inset plot
+    axins.set_facecolor('white')
+
+    # Mark the region in the main plot
+    # Mark the region in the main plot and draw connecting lines
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", lw=0.5)
+    # mark_inset(ax, axins, loc1=3, loc2=1, fc="none", ec="0.5")
+    ax.indicate_inset_zoom(axins)
+    axins.set_xticklabels('')
+    axins.set_yticklabels('')
+    # add labels and plot multiple dimensions in one to see how the decay of the error to zero changes as
+    # a function of the network dimension.
+    ax.tick_params(axis='both', which='major', labelsize=14)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+
+
+
+    plt.show()
+
+
+
+######################################################################################################################
+row = 30
+col = 30
+choice_bool_lst_d = [0, 1]
+c1 = 0
+
+if distance_analysis == 1:
+    for choice_bool in choice_bool_lst_d:
+        folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+
+        G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+
+        # [Paths and distances] (referred to the number of edges composing a path not to the Euclidan distance)
+        max_dist = 10
+        d_vals = np.linspace(0, max_dist, max_dist + 1)
+        if choice_bool == 0:
+            diameter_hom, avg_distance_hom, d_dist_hom = path_analysis(G, max_dist)
+        else:
+            diameter_het, avg_distance_het, d_dist_het = path_analysis(G, max_dist)
+
+        # plot_distance_distribution(row, col, choice_bool, c1, d_vals, pd_norm, avg_distance)
+        print('diameter:', diameter_hom, 'avg_distance', np.round(avg_distance_hom, 3))
+        print('d_dist_hom_sum:', d_dist_hom.sum())
+        #print('Expected value', (d_dist_hom * d_vals).sum())
+    fig, ax = plt.subplots(figsize = (8,6))
+    ax.tick_params(axis='both', which='major', labelsize=14)
+    plt.plot(d_vals, d_dist_hom, 'o-', color='g', label = r'$RN_{HOM}$')
+    plt.plot(d_vals, d_dist_het, 'o-', color='darkorange', label = r'$RN_{HET}$')
+    plt.axvline(x=avg_distance_hom, color='darkgreen', label=r'$\langle d_{HOM} \rangle$', linestyle='--')
+    plt.axvline(x=avg_distance_het, color='orangered', label=r'$\langle d_{HET} \rangle$', linestyle='--')
+    plt.xlabel('$d$', fontsize = 14)
+    plt.ylabel('$P(d)$', fontsize = 14)
+    # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
+    plt.legend(fontsize=12)
+    plt.show()
+
+
+
+if degree_analysis == 1:
+    for choice_bool in choice_bool_lst_d:
+        folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+        folder_analysis = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Analysis/'
+        if choice_bool == 0:
+            k_vals_hom = np.load(folder_analysis + 'k_vals.npy')
+            k_bar_nn_hom = np.load(folder_analysis + 'k_bar_nn.npy')
+            k_bar_nn_non_corr_hom = np.load(folder_analysis + 'k_bar_nn_non_corr.npy')
+        else:
+            k_vals_het = np.load(folder_analysis + 'k_vals.npy')
+            k_bar_nn_het = np.load(folder_analysis + 'k_bar_nn.npy')
+            k_bar_nn_non_corr_het = np.load(folder_analysis + 'k_bar_nn_non_corr.npy')
+    fig, ax = plt.subplots(figsize = (8,6))
+
+    ax.tick_params(axis='both', which='major', labelsize=14)
+    plt.plot(k_vals_hom, k_bar_nn_hom, 'o-', color='g', label=r'$RN_{HOM}$')
+    plt.plot(k_vals_het, k_bar_nn_het, 'o-', color='darkorange', label=r'$RN_{HET}$')
+    plt.axhline(y=k_bar_nn_non_corr_hom, color='darkgreen', label=r'$\bar{k}_{nn, nc}^{HOM}$', linestyle='--')
+    plt.axhline(y=k_bar_nn_non_corr_het, color='orangered', label=r'$\bar{k}_{nn, nc }^{HET}$', linestyle='--')
+    plt.xlabel('$k$', fontsize=14)
+    plt.ylabel(r'$\bar{k}_{nn}(k)$', fontsize=14)
+    # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
+    plt.legend(fontsize=12)
+    plt.show()

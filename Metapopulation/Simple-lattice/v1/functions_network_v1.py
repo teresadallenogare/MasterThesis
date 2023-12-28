@@ -268,7 +268,8 @@ def path_analysis(G, max_dist):
 
     max_dist_sources = []
     distance_sum_sources = []
-    pd = np.zeros(shape = ( max_dist +1, 1))
+    pd = np.zeros(shape = (max_dist + 1, 1))
+    distance_distribution_source = np.zeros(shape = (N, len(d_vals)))
     for source in range(N):
         # Cycle over the sources to find the diameter
         empty = False
@@ -276,27 +277,33 @@ def path_analysis(G, max_dist):
         for distance in d_vals:
             # At fixed source, cycle over the distances and find the maximum
             idx_nodes_at_d = nx.descendants_at_distance(G, source, distance)
+            # Number of nodes at different distances done taking every node as a source and normalized by the total number
+            # of nodes since I also consider self loops.
+
+            distance_distribution_source[int(source), int(distance)] = len(idx_nodes_at_d)/N
             if not idx_nodes_at_d and empty == False:
                 max_distance = distance - 1
                 empty = True
             # Calculate the sum of distances excluding the self loop
             if distance != 0:
                 distance_sum = distance_sum + distance * len(idx_nodes_at_d)
-
-            pd[ int(distance)] = pd[ int(distance)] + len(idx_nodes_at_d)
+            # pd[ int(distance)] = pd[ int(distance)] + len(idx_nodes_at_d)
         max_dist_sources.append(max_distance)
         # Sum of distances at fixed source
         distance_sum_sources.append(distance_sum)
     max_dist_sources = np.array(max_dist_sources)
     diameter = max(max_dist_sources)
-    pd_norm = pd / (N**2)
+    #pd_norm = pd / (N**2)
 
     # Sum of distances among sources
     distance_sum_sources = np.array(distance_sum_sources)
     sum_distances = distance_sum_sources.sum()
     avg_distance = 1/(N * (N-1)) * sum_distances
 
-    return diameter, avg_distance, pd_norm
+    # Distance distribution
+    distance_distribution = distance_distribution_source.sum(axis = 0)/ N
+
+    return diameter, avg_distance, distance_distribution
 
 
 

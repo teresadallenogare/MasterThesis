@@ -15,12 +15,12 @@ import os
 from datetime import datetime
 
 def write_topology_file(N_row, N_col, N, pos_nodes, avg_pop_node, populationTot, choice_bool, Nfix, idxNfix, percentPopNfix, c1,
-                        node_pop0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees):
+                        node_pop0, strongConnection, a, b, rho0, k_list, diff_list, in_degrees, repeat):
 
     datadir = os.getcwd()
 
-    folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    f = open(folder_topology + f'topologyFile.txt', 'w')
+    folder_topology = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+    f = open(folder_topology + f'topologyFile_rep{repeat}.txt', 'w')
     f.write(' ---------------------------------------------\n\n')
     f.write('              TOPOLOGY FILE - v1      \n\n')
     f.write('      Author : Teresa Dalle Nogare\n')

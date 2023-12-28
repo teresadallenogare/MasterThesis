@@ -60,16 +60,19 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     :param weight: [list] weight to attribute to edges
     :param state_nodes: [list] state of the node
     """
-
+    plt.figure(figsize=(10, 9))
+    sns.set(style="white")
     datadir = os.getcwd()
     # G1 = copy(G)
-    size_map = [pop_nodes[i] / 10. for i in G.nodes]
+
+    size_map = [pop_nodes[i] / 5 for i in G.nodes]
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_color='#B7C8C4', edgecolors='#374845', linewidths=1.5,
                            node_size=size_map)
-    nx.draw_networkx_edges(G, pos=dict_nodes, width=weight, arrows=True, min_source_margin=20,
+    nx.draw_networkx_edges(G, pos=dict_nodes, width=0.7, arrows=True, min_source_margin=20,
                            min_target_margin=20, connectionstyle="arc3,rad=0.1")
-    nx.draw_networkx_labels(G, pos=dict_nodes, font_size=10)
+    nx.draw_networkx_labels(G, pos=dict_nodes, font_size=15)
     # plt.savefig(folder_topology + f'net-topol.pdf')
+    plt.axis('off')
     plt.show()
 
 
@@ -155,7 +158,6 @@ def plot_population_distribution( data1, data2,  avg_data1, stdDev_data1, avg_da
         plt.show()
 
 
-
 def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisson_funct, param):
     """ Plot degree distribution with Poisson fit
 
@@ -172,11 +174,17 @@ def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisso
 
     datadir = os.getcwd()
     folder_topology = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-    plt.bar(k, pk, color='#6F918A', label='Data')
-    plt.axvline(x=avg_k, color='k', label=r'$\langle k_{in} \rangle$', linestyle='--')
-    plt.plot(k, Poisson_funct(k, *param), marker='o', color='red', label='Poisson pmf')
-    plt.xlabel('$k_{in}$')
-    plt.ylabel('$p_k$')
+    if choice_bool == 0:
+        color = 'g'
+    else:
+        color = 'darkorange'
+    plt.bar(k, pk, color=color, label='Data', alpha = 0.65)
+    plt.axvline(x=avg_k, color='k', label=r'$\langle k \rangle$', linestyle='--')
+    plt.plot(k, Poisson_funct(k, *param), marker='o', color='red', label='Poisson fit')
+    plt.xlabel('$k$', fontsize = 14)
+    plt.ylabel('$P(k)$', fontsize = 14)
+    plt.tick_params(axis='both', which='major', labelsize=14)
+
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
     plt.legend(fontsize=12)
     plt.savefig(folder_topology + f'degree_distribution_poisson.pdf')
