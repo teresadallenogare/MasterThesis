@@ -76,16 +76,16 @@ def deterministic_SIR_continuous_time(variables, t, params):
 
 
 def deterministic_Reed_Frost(p, nbr_It, nbr_St, nbr_Rt):
-    nbr_It_plus_1 = nbr_St * (1. - (1 - p)**nbr_It)
+    nbr_It_plus_1 = nbr_St * (1. - (1 - p) ** nbr_It)
     nbr_St_plus_1 = nbr_St - nbr_It_plus_1
     nbr_Rt_plus_1 = nbr_Rt + nbr_It
 
     return nbr_St_plus_1, nbr_It_plus_1, nbr_Rt_plus_1
 
-def stochastic_Reed_Frost(p, nbr_It, nbr_St, nbr_Rt):
 
+def stochastic_Reed_Frost(p, nbr_It, nbr_St, nbr_Rt):
     # Probability of S -> I
-    p_SI = 1. - (1 - p)**nbr_It
+    p_SI = 1. - (1 - p) ** nbr_It
 
     # Sample from binomial distribution (number of infected at t+1)
     nbr_It_plus_1 = np.random.binomial(nbr_St, p_SI)
@@ -102,39 +102,41 @@ def stochastic_SIR_discrete_time(total_population, nbr_I0, nbr_R0, T, nbr_steps,
     nbr_It = np.zeros(nbr_steps)
     nbr_Rt = np.zeros(nbr_steps)
 
-    dt = T / nbr_steps
-
     # set initial conditions (t = 0)
     nbr_St[0] = total_population - nbr_I0 - nbr_R0
     nbr_It[0] = nbr_I0
     nbr_Rt[0] = nbr_R0
 
-    for t in range(1, nbr_steps):
-        rnd_SI = np.random.uniform(0, 1)
-        rnd_IR = np.random.uniform(0, 1)
+    dt = T/nbr_steps
 
-        norm = beta * nbr_St[t - 1] / total_population + mu
+    for t in range(1, nbr_steps):
+        U = np.random.uniform(0, 1)
+
+        norm = beta * nbr_St[t - 1] * nbr_It[t - 1] / total_population + mu * nbr_It[t - 1]
 
         # Probability of S->I over the probability of having any transition
-        prob_SI = beta * nbr_St[t - 1] /(beta * nbr_St[t-1] + mu * total_population)
+        prob_SI = beta * nbr_St[t - 1] * nbr_It[t - 1] / total_population * dt
         # Probability of I->R over the probability of having any transition
-        prob_IR = mu / norm
+        prob_IR = mu * nbr_It[t - 1] * dt
 
+        prob_noChange = 1 - (prob_SI + prob_IR)
 
-        if rnd_SI <= prob_SI and nbr_St[t]>0:
+        print('pb_SI:', prob_SI)
+        print('pb_IR:', prob_IR)
+
+        print('U:', U)
+        if U <= prob_SI: # and nbr_St[t-1] > 0:
+            print('ENTRAAAA SI')
             nbr_St[t] = nbr_St[t - 1] - 1
             nbr_It[t] = nbr_It[t - 1] + 1
             nbr_Rt[t] = nbr_Rt[t - 1]
-        else:
+        elif U <= (prob_SI + prob_IR) and U > prob_SI: # and nbr_It[t-1] > 0:
+            print('ENTRAAAA IR')
             nbr_St[t] = nbr_St[t - 1]
-            nbr_Rt[t] = nbr_Rt[t - 1]
-            nbr_It[t] = nbr_It[t - 1]
-
-        if rnd_IR <= prob_IR and nbr_It[t] > 0:
-            nbr_St[t] = nbr_St[t - 1]
-            nbr_It[t] = nbr_It[t - 1] - 1
             nbr_Rt[t] = nbr_Rt[t - 1] + 1
-        else:
+            nbr_It[t] = nbr_It[t - 1] - 1
+        elif U > (prob_SI + prob_IR) and U < 1:
+            print('NON ENTRAAAA ')
             nbr_St[t] = nbr_St[t - 1]
             nbr_Rt[t] = nbr_Rt[t - 1]
             nbr_It[t] = nbr_It[t - 1]
