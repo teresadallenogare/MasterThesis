@@ -18,9 +18,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+from scipy.integrate import odeint
+
 
 datadir = os.getcwd()
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(10, 8))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
 SIR_time = 0
@@ -35,6 +37,9 @@ phase_space = 0
 phase_transition = 0
 
 lineStyle = ['-', '--', ':']
+
+bool_density = 1
+bool_network = 1
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -65,11 +70,8 @@ if SIR_time == 1:
     idx_node = 0
 
     # Infection and recovery rate
-    beta_vals = [0.9]
+    beta_vals = [0.3]
     mu_vals = [0.1]
-
-    bool_density = 1
-    bool_network = 1
 
     folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
@@ -96,39 +98,59 @@ if SIR_time == 1:
                 vals_NR_time = node_NR_time.sum(axis=1)
         elif bool_density == 1:
             if bool_network == 0:
-                vals_population_time = node_population_time[:, idx_node] / avg_popPerNode
-                vals_NS_time = node_NS_time[:, idx_node] / avg_popPerNode
-                vals_NI_time = node_NI_time[:, idx_node] / avg_popPerNode
-                vals_NR_time = node_NR_time[:, idx_node] / avg_popPerNode
+                vals_population_time = node_population_time[:, idx_node] / (N*avg_popPerNode)
+                vals_NS_time = node_NS_time[:, idx_node] / (N*avg_popPerNode)
+                vals_NI_time = node_NI_time[:, idx_node] / (N*avg_popPerNode)
+                vals_NR_time = node_NR_time[:, idx_node] / (N*avg_popPerNode)
+                # plot for all nodes if density and node
+                y_init = [(node_population_time[0,:].sum()-5)/( N**2*avg_popPerNode), 5/(N**2*avg_popPerNode), 0]
+                params = [beta, mu]
+                y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
+                plot_SIR_time_node(N, T_sim, node_population_time/(N*avg_popPerNode), node_NS_time/(N*avg_popPerNode), node_NI_time/(N*avg_popPerNode), node_NR_time/(N*avg_popPerNode), y[:,0], y[:,1], y[:,2], beta, mu)
             elif bool_network == 1:
-                vals_population_time = node_population_time.sum(axis=1) / (N * avg_popPerNode)
-                vals_NS_time = node_NS_time.sum(axis=1) / (N * avg_popPerNode)
-                vals_NI_time = node_NI_time.sum(axis=1) / (N * avg_popPerNode)
-                vals_NR_time = node_NR_time.sum(axis=1) / (N * avg_popPerNode)
+                vals_population_time = node_population_time.sum(axis=1) / (N*avg_popPerNode)
+                vals_NS_time = node_NS_time.sum(axis=1) / (N*avg_popPerNode)
+                vals_NI_time = node_NI_time.sum(axis=1) / (N*avg_popPerNode)
+                vals_NR_time = node_NR_time.sum(axis=1) / (N*avg_popPerNode)
 
         print('t-max: ', np.argmax(vals_NI_time))
         if first == True:
-            # plt.plot(T_sim, vals_population, color='gray', label='Population')
+            vals_population_0 = vals_population_time[0]
+            y_init = [vals_population_0-5/(N*avg_popPerNode), 5/(N*avg_popPerNode), 0]
+            print('y_init:', y_init)
+            params = [beta, mu]
+            y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
+            f, ax = plt.subplots(figsize=(10, 8))
+            #plt.plot(T_sim, vals_population_time, color='gray', label='Population density', linestyle=lineStyle[i])
+            ax.tick_params(axis='both', which='major', labelsize=16)
             plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
             plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
+            plt.plot(T_sim, y[:, 0], linestyle=':', color='k', label='Deterministic')
+            plt.plot(T_sim, y[:, 1], linestyle=':', color='k')
+            plt.plot(T_sim, y[:, 2], linestyle=':', color='k')
+
+
             #plt.xlim(0, 1000)
             first = False
         else:
             # plt.plot(T_sim, vals_population, color='gray', label='Population')
-            plt.plot(T_sim, vals_NS_time, color='#261bf7', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NI_time, color='#ff0000', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NR_time, color='#05b032', linestyle=lineStyle[i])
+            plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
+            plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
+            plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
+
             #plt.xlim(0, 1000)
         i = i + 1
-    plt.xlabel('t')
+    plt.xlabel('Time', fontsize = 16)
     if bool_network == 0:
-        plt.ylabel('Node population' if bool_density == 0 else 'Node density')
+        plt.ylabel('Node population' if bool_density == 0 else 'Node density', fontsize = 16)
     else:
-        plt.ylabel('Network population' if bool_density == 0 else 'Network density')
-    plt.text(100, 0.7, r'$R_0 =$' + str(np.round(beta_vals[0] / mu_vals[0], 2)), fontsize=10)
+        plt.ylabel('Network population' if bool_density == 0 else 'Network density', fontsize = 16)
+    plt.text(100, 400, r'$R_0 =$' + str(np.round(beta_vals[0] / mu_vals[0], 2)), fontsize=16)
     #plt.text(30, 0.7, r'$R_0 =$' + str(np.round(beta_vals[1] / mu_vals[1], 2)), fontsize=10)
     plt.legend(fontsize=14)
+
+
     plt.show()
 
 ######################################################################################################################
@@ -140,8 +162,8 @@ plt.figure(figsize=(8, 6))
 
 if fixedR0 == 1:
 
-    row = 10
-    col = 10
+    row = 30
+    col = 30
     N = row * col
 
     choice_bool = 0
@@ -160,6 +182,8 @@ if fixedR0 == 1:
     mu_vals_R0 = [0.1, 0.2, 0.3]
 
     i = 0
+    f, ax = plt.subplots(figsize=(8, 6))
+    ax.tick_params(axis='both', which='major', labelsize=16)
     for beta, mu in zip(beta_vals_R0, mu_vals_R0):
         T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
         print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
@@ -172,19 +196,19 @@ if fixedR0 == 1:
         NI_time = node_NI_time.sum(axis=1)
 
         density_node_NI_time = node_NI_time / avg_popPerNode
-        density_NI_time = NI_time / (N * avg_popPerNode)
+        density_NI_time = NI_time / avg_popPerNode
 
-        # Node level
-        #plt.plot(T_sim[:120], density_node_NI_time[:120, idx_node], color=grad_red[i],
-        #         label=f'beta = {beta}, mu = {mu}')
-
-        # Network level
-        plt.plot(T_sim[:120], density_NI_time[:120], color = grad_red[i], label = f'beta = {beta}, mu = {mu}')
-
+        if bool_network == 0:
+            # Node level
+            plt.plot(T_sim[:120], density_node_NI_time[:120, idx_node], color=grad_red[i],
+                    label=fr'$\beta$ = {beta}, $\mu$ = {mu}')
+        elif bool_network == 1:
+            # Network leve
+            plt.plot(T_sim[:120], density_NI_time[:120], color = grad_red[i], label = fr'$\beta$ = {beta}, $\mu$ = {mu}')
         i = i + 1
-    plt.xlabel('t')
-    plt.ylabel(r'$\rho_{I}(t)$', rotation=0)
-    plt.legend(fontsize=12)
+    plt.xlabel('Time', fontsize = 16)
+    plt.ylabel(r'$\rho^{I,0}(t)$', rotation=0, fontsize = 16)
+    plt.legend(fontsize=14)
     plt.show()
 
 ######################################################################################################################
@@ -210,6 +234,9 @@ if fixed_mu == 1:
     beta_vals_mu = [0.2, 0.3, 0.4]
     mu_vals_mu = [0.1, 0.1, 0.1]
 
+    f, ax = plt.subplots(figsize=(8, 6))
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    #ax.set_label_coords(-0.2, 5, transform=None)
     i = 0
     for beta, mu in zip(beta_vals_mu, mu_vals_mu):
         T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
@@ -223,17 +250,19 @@ if fixed_mu == 1:
         NI_time = node_NI_time.sum(axis=1)
 
         density_node_NI_time = node_NI_time / avg_popPerNode
-        density_NI_time = NI_time / (N * avg_popPerNode)
+        density_NI_time = NI_time / avg_popPerNode
 
-        # Node level
-        # plt.plot(T_sim, density_node_NI_time[:, idx_node], color=grad_red[i], label=f'R0 = {np.round(beta / mu, 2)}')
-        # Network level
-        plt.plot(T_sim, density_NI_time, color=grad_red[i], label=f'R0 = {np.round(beta/mu, 2)}')
+        if bool_network == 0:
+            # Node level
+            plt.plot(T_sim, density_node_NI_time[:, idx_node], color=grad_red[i], label=f'R0 = {np.round(beta / mu, 2)}')
+        else:
+            # Network level
+            plt.plot(T_sim, density_NI_time, color=grad_red[i], label=f'R0 = {np.round(beta/mu, 2)}')
 
         i = i + 1
-    plt.xlabel('t')
-    plt.ylabel(r'$\rho_{I}(t)$', rotation=0)
-    plt.legend()
+    plt.xlabel('Time', fontsize = 16)
+    plt.ylabel(r'$\rho^{I,0}(t)$', rotation=0, fontsize = 16)
+    plt.legend(fontsize = 14)
     plt.show()
 
 ######################################################################################################################
@@ -292,18 +321,18 @@ if duration_analysis == 1:
 ### Heatmap
 
 if heatmap == 1:
-    row = 10
-    col = 10
+    row = 30
+    col = 30
 
-    choice_bool = 0
+    choice_bool = 1
     c1 = 0
 
-    beta = 0.9
+    beta = 0.3
     mu = 0.1
 
     sim = 0
 
-    bool_static = 1
+    bool_static = 0
 
     folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
 

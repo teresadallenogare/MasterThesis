@@ -61,18 +61,24 @@ if mean_std_repeated_trials == 1:
 
     for beta, mu in zip(beta_vals, mu_vals):
         x = np.linspace(0, 10, 100)
-        folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
         nbr_repetitions = np.load(folder_simulation + f'nbr_repetitions.npy')
         idx_repetitions = np.linspace(0, nbr_repetitions - 1, nbr_repetitions)
         idx_sim_not_start = np.load(folder_simulation + 'idx_sim_not_start.npy')
         idx_sim_start = list((set(idx_repetitions) - set(idx_sim_not_start)))
         nbr_sim_start = len(idx_sim_start)
-        T = np.load(folder_simulation + 'T.npy')
+
+        if beta == 0.115 or beta == 0.12:
+            T = 1000
+        else:
+            T = np.load(folder_simulation + 'T.npy')
+
         print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
         print('nbr sim start: ', nbr_sim_start)
         T_sim = np.linspace(0, T - 1, T)
         # Change with index simulation started
+
         y_mean_std = mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density, idx_sim_start)
         mean_S_time = y_mean_std[0]
         mean_I_time = y_mean_std[1]
@@ -94,7 +100,8 @@ if mean_std_repeated_trials == 1:
             print('y_init: ', y_init)
             params = [beta, mu]
             # Sole equation for densities
-            y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,))
+            bool_network = 1
+            y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params, bool_network))
 
             # Deterministic densities in time: solutions of SIR deterministic ODEs
             det_s = y[:, 0]
@@ -132,9 +139,9 @@ if SIR_time == 1:
 
     for beta, mu in zip(beta_vals, mu_vals):
         folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-        folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
-        T = np.load(folder_simulation + f'T.npy')
+        T = np.load(folder_simulation + 'T.npy')
         # print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
         T_sim = np.linspace(0, T - 1, T)
         nbr_repetitions = np.load(folder_simulation + f'nbr_repetitions.npy')

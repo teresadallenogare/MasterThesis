@@ -268,7 +268,7 @@ def mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density
     N = row * col
     datadir = os.getcwd()
 
-    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
     folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     nbr_repetitions = len(idx_sim_start)
     node_population_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
@@ -293,10 +293,10 @@ def mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density
         avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
 
         #  Store data in 3D matrix
-        node_population_time_repeat[:, :, sim_idx] = node_population_time
-        node_NS_time_repeat[:, :, sim_idx] = node_NS_time
-        node_NI_time_repeat[:, :, sim_idx] = node_NI_time
-        node_NR_time_repeat[:, :, sim_idx] = node_NR_time
+        node_population_time_repeat[:, :, sim_idx] = node_population_time[:T]
+        node_NS_time_repeat[:, :, sim_idx] = node_NS_time[:T]
+        node_NI_time_repeat[:, :, sim_idx] = node_NI_time[:T]
+        node_NR_time_repeat[:, :, sim_idx] = node_NR_time[:T]
 
     vals_population_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
     vals_NS_time_repeat = np.zeros(shape=(T, N, nbr_repetitions))
@@ -314,10 +314,10 @@ def mean_stdDev_repetitions(row, col, choice_bool, c1, T, beta, mu, bool_density
             vals_NR_time_repeat = node_NR_time_repeat
 
         elif bool_density == 1:
-            vals_NS_time_repeat[:, :, sim_idx] = node_NS_time_repeat[:, :, sim_idx] / avg_popPerNode
+            vals_NS_time_repeat[:, :, sim_idx] = node_NS_time_repeat[:, :, sim_idx] / (N*avg_popPerNode)
             print('sim idx,', sim_idx)
-            vals_NI_time_repeat[:, :, sim_idx] = node_NI_time_repeat[:, :, sim_idx] / avg_popPerNode
-            vals_NR_time_repeat[:, :, sim_idx] = node_NR_time_repeat[:, :, sim_idx] / avg_popPerNode
+            vals_NI_time_repeat[:, :, sim_idx] = node_NI_time_repeat[:, :, sim_idx] / (N*avg_popPerNode)
+            vals_NR_time_repeat[:, :, sim_idx] = node_NR_time_repeat[:, :, sim_idx] / (N*avg_popPerNode)
 
     # Mean value and stdDeviation over repetitions
     mean_vals_S_time = np.mean(vals_NS_time_repeat, axis=2)
@@ -369,8 +369,31 @@ def phase_space_flux(row, col, bool_network, NS_time, NI_time, beta, avg_popPerN
 
 
 # ---------------------------------- Deterministic SIR  ----------------------------------------------
+def deterministic_SIR_discrete_time(total_population, nbr_I0, nbr_R0, T, nbr_steps, beta, mu):
+    nbr_St = np.zeros(nbr_steps)
+    nbr_It = np.zeros(nbr_steps)
+    nbr_Rt = np.zeros(nbr_steps)
+    alpha_t = np.zeros(nbr_steps)
 
-def SIRDeterministic_equations(variables, t, params):
+    dt = T / nbr_steps
+
+    # set initial conditions (t = 0)
+    nbr_St[0] = total_population - nbr_I0 - nbr_R0
+    nbr_It[0] = nbr_I0
+    nbr_Rt[0] = nbr_R0
+
+    # force of infection
+    alpha_t[0] = beta * nbr_I0 / total_population
+
+    # Here assuming dt = 1
+    for t in range(1, nbr_steps):
+        alpha_t[t] = beta * nbr_It[t - 1] / total_population
+        nbr_St[t] = nbr_St[t - 1] * (1. - alpha_t[t - 1] * dt)
+        nbr_It[t] = nbr_It[t - 1] * (1. - mu * dt) + alpha_t[t - 1] * nbr_St[t - 1] * dt
+        nbr_Rt[t] = nbr_Rt[t - 1] + mu * nbr_It[t - 1] * dt
+
+    return nbr_St, nbr_It, nbr_Rt
+def SIRDeterministic_equations(variables, t, params, bool_network):
   """ Determinisitc ODE for the SIR model. I consider equaitons for densities:
   ds/dt = - beta * i * s = - alpha * s
   di/dt = beta * i * s - mu * i = alpha * s - mu * i
@@ -387,7 +410,10 @@ def SIRDeterministic_equations(variables, t, params):
   beta = params[0]
   mu = params[1]
 
-  alpha = beta * i
+  if bool_network == 1:
+    alpha = beta * i
+  else:
+    alpha = beta * i *900
 
   dsdt = - alpha * s
   didt = alpha * s - mu * i

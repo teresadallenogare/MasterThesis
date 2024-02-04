@@ -18,8 +18,8 @@ import numpy as np
 
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
-N_row = [50]
-N_col = [50]
+N_row = [30]
+N_col = [30]
 
 choice_bool_lst = [0]
 c1_lst = [0]
@@ -36,8 +36,9 @@ sim = 0
 # normalization = 0 -> no normalized data
 #               = 1 -> standard scaler normalization
 #               = 2 -> normalization by hand
-normalization_data_vals = [0, 1, 2]
+normalization_data_vals = [2] # [0, 1, 2]
 
+# columns and id need to match
 columns = ['X', 'Y', 'S', 'I', 'R']
 id = 'XYSIR'
 datadir = os.getcwd()

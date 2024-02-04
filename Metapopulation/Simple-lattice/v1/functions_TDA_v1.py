@@ -98,3 +98,36 @@ def min_PE(pe, time):
     t_min_pe = time[idx_min_pe]
 
     return [min_pe, t_min_pe]
+
+
+def topological_features(dgms_sorted, PE_sorted, birth):
+    n = len(dgms_sorted)
+
+    PEi_prime_lst = []  # H_L' for H0
+    PEi_prime_lst.append(PE_sorted)  # H_L'(0) = H_L
+    for i in range(1, n):
+        # Li = {li,...,ln} with li = end_i - birth_i
+        dgms_sorted_i = dgms_sorted[i - 1:n, :]
+        Li = dgms_sorted_i[:, 1] - dgms_sorted_i[:, 0]
+        Si = np.sum(Li)
+        PEi = persistent_entropy(dgms_sorted_i, normalize=False)
+
+        Li_prime = [float(Si / np.exp(PEi))] * i  # .extend(Li_0[i:])
+        # print(Li_prime_0)
+        Li_prime.extend(Li[1:])
+        # (birth, end)
+        dgms_prime_sorted_i = np.vstack((birth, np.array(Li_prime + birth))).transpose()
+        PEi_prime = persistent_entropy(dgms_prime_sorted_i, normalize=False)
+        PEi_prime_lst.append(PEi_prime)
+    PE_rel_lst = []
+    for i in range(1, n):
+        PE_rel = (PEi_prime_lst[i] - PEi_prime_lst[i - 1]) / (np.log(n) - PE_sorted)
+        PE_rel_lst.append(PE_rel)
+
+    topological_feature_0 = []
+    for i in range(0, n - 1):
+        if PE_rel_lst[i] > (i - 1) / n:
+            topological_feature_0.append(dgms_sorted[i])
+    topological_feature_0 = np.array(topological_feature_0)
+
+    return topological_feature_0

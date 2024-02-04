@@ -46,16 +46,16 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 sim = 0
 
-population_analysis = 0
-degree_analysis = 1
+population_analysis = 1
+degree_analysis = 0
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
-PF_convergence = 0
+PF_convergence = 1
 Rstar_def = 0
 outbreak = 0
 
-log_dependence = 1
+log_dependence = 0
 
 write_file = 0
 
@@ -144,7 +144,7 @@ for row, col in zip(N_row, N_col):
                 #                       stdDev_population_multi1, mean_population_multi2, stdDev_population_multi2,
                 #                       choice_bool)
 
-                plot_population_distribution(data1, data2, mean_population_multi1, stdDev_population_multi1,
+                plot_population_distribution(total_population, 1/N, data1, data2, node_population_0, mean_population_multi1, stdDev_population_multi1,
                                              mean_population_multi2, stdDev_population_multi2, choice_bool)
             ######################################################################################################################
 
@@ -169,6 +169,7 @@ for row, col in zip(N_row, N_col):
                             P[j, i] = prob
                 P_unique = np.unique(P)
                 P_sum = P_unique.sum()
+                print('P_sum:', P.sum() )
                 ########################################################################################################
 
                 # [Degree properties]
@@ -288,119 +289,9 @@ for row, col in zip(N_row, N_col):
                 plt.xlabel('Theoretical Quantiles')
                 plt.ylabel('Sample Quantiles')
 
-
                 print('Pk-norm:', Pk_norm)
                 plt.show()
-
-
             ######################################################################################################################
-
-            if clustering_analysis == 1:
-                # [Clustering coefficient]
-                print('TO DO')
-
-            ######################################################################################################################
-
-            if PF_convergence == 1:
-                # Error as the average over repeated generations of the topology, reported with the associated standard deviation
-                nbr_repetitions = 10
-                folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-                k_list = np.load(folder_topology + f'k_list.npy')
-
-                diff_list_repeat = np.zeros(shape=(nbr_repetitions, int(len(k_list))))
-                avg_diff_list = []
-                stdDev_diff_list = []
-
-                for repeat in range(nbr_repetitions):
-                    idx_node = np.linspace(0, N - 1, N)
-                    folder_topology_repeat = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-                    # [PF convergence]
-                    # Plot the error as a function of the dimension
-                    diff_list = np.load(folder_topology_repeat + f'diff_list_rep{repeat}.npy')
-                    diff_list_repeat[repeat, :] = diff_list
-                avg_diff_list = np.mean(diff_list_repeat, axis=0)
-                stdDev_diff_list = np.std(diff_list_repeat, axis=0, ddof=1)
-                fig, ax = plt.subplots(figsize = (8, 6))
-                ax.errorbar(k_list, avg_diff_list, stdDev_diff_list,
-                            linestyle='-', fmt='o',
-                            ecolor='darkgreen' if choice_bool == 0 else 'orangered',
-                            elinewidth=1,
-                            capsize=1.4,
-                            color='g' if choice_bool == 0 else 'darkorange')
-                #ax.fill_between(k_list, avg_diff_list - stdDev_diff_list,
-                #                   avg_diff_list + stdDev_diff_list,
-                #                   facecolor='green' if choice_bool == 0 else 'darkorange', alpha=0.25)
-                axins = inset_axes(ax, width='40%', height='40%', loc='upper right')
-                axins.errorbar(k_list, avg_diff_list, stdDev_diff_list,
-                               linestyle='-', fmt = 'o',
-                               ecolor = 'darkgreen' if choice_bool == 0 else 'orangered',
-                               elinewidth = 1,
-                               capsize = 1.4,
-                               color='g' if choice_bool == 0 else 'darkorange')
-                #axins.fill_between(k_list, avg_diff_list - stdDev_diff_list,
-                #                avg_diff_list + stdDev_diff_list,
-                #                facecolor= 'green' if choice_bool == 0 else 'darkorange', alpha=0.25)
-                if choice_bool == 0:
-                    xlim1 = k_list[3]-10
-                    xlim2 = k_list[5]+50
-                    ylim1 = avg_diff_list[5]-0.5
-                    ylim2 = avg_diff_list[3]+0.75
-                else:
-                    xlim1 = k_list[3] - 10
-                    xlim2 = k_list[6] + 50
-                    ylim1 = avg_diff_list[6]-0.5
-                    ylim2 = avg_diff_list[3]+0.8
-                axins.set_xlim(xlim1, xlim2)
-                axins.set_ylim(ylim1, ylim2)
-                # Set white background for the inset plot
-                axins.set_facecolor('white')
-
-                # Mark the region in the main plot
-                # Mark the region in the main plot and draw connecting lines
-                mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", lw = 0.5)
-                #mark_inset(ax, axins, loc1=3, loc2=1, fc="none", ec="0.5")
-                ax.indicate_inset_zoom(axins)
-                #axins.set_xticklabels('')
-                #axins.set_yticklabels('')
-                # add labels and plot multiple dimensions in one to see how the decay of the error to zero changes as
-                # a function of the network dimension.
-                ax.tick_params(axis='both', which='major', labelsize=14)
-                ax.tick_params(axis='both', which='minor', labelsize=12)
-                ax.set_xlabel('Timestep', fontsize = 14)
-                ax.set_ylabel('Error', fontsize = 14)
-
-                plt.show()
-
-                # Plot the difference between rho0 and the density of people in the final time
-                if row == 3 or row == 5 or row == 10:
-                    beta_vals = beta_vals_3_5_10
-                    mu_vals = mu_vals_3_5_10
-                else:
-                    beta_vals = beta_vals_30_50
-                    mu_vals = mu_vals_30_50
-                # Consider the simulation done on my selected topology
-                for beta, mu in zip(beta_vals, mu_vals):
-                    folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
-                    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-                    avg_population = np.load(folder_topology + f'avg_popPerNode_rep{repeat}.npy')
-
-                    rho0 = np.load(folder_topology + f'/rho0.npy')
-                    rho0 = rho0 * N
-                    node_population_time = np.load(folder_simulation + 'sim_0_node_population_time.npy')
-                    node_population_final = node_population_time[-1, :]
-                    node_density_final = node_population_final / avg_population
-
-                    diff_density = node_density_final - rho0
-
-                    sns.histplot(node_density_final, bins = int(np.sqrt(len(node_density_final))))
-                    sns.histplot(rho0, bins = int(np.sqrt(len(rho0))))
-                    #plt.scatter(idx_node, diff_density, color='k')
-                    #plt.axhline(y=0, linestyle='--', color='k')
-                    #plt.xlabel('Index node')
-                    #plt.ylabel(r'$\rho_{\infty} - \rho_0$')
-                    plt.show()
-                    print('hello')
-                ######################################################################################################################
 
                 if weight_analysis == 1:
                     TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
@@ -619,14 +510,14 @@ if distance_analysis == 1:
         #print('Expected value', (d_dist_hom * d_vals).sum())
     fig, ax = plt.subplots(figsize = (8,6))
     ax.tick_params(axis='both', which='major', labelsize=14)
-    plt.plot(d_vals, d_dist_hom, 'o-', color='g', label = r'$RN_{HOM}$')
-    plt.plot(d_vals, d_dist_het, 'o-', color='darkorange', label = r'$RN_{HET}$')
+    plt.plot(d_vals, d_dist_hom, 'o-', color='g', label = r'$HOM$')
+    plt.plot(d_vals, d_dist_het, 'o-', color='darkorange', label = r'$HET$')
     plt.axvline(x=avg_distance_hom, color='darkgreen', label=r'$\langle d_{HOM} \rangle$', linestyle='--')
     plt.axvline(x=avg_distance_het, color='orangered', label=r'$\langle d_{HET} \rangle$', linestyle='--')
-    plt.xlabel('$d$', fontsize = 14)
-    plt.ylabel('$P(d)$', fontsize = 14)
+    plt.xlabel('$d$', fontsize = 16)
+    plt.ylabel('$P(d)$', fontsize = 16)
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=14)
     plt.show()
 
 
@@ -646,12 +537,213 @@ if degree_analysis == 1:
     fig, ax = plt.subplots(figsize = (8,6))
 
     ax.tick_params(axis='both', which='major', labelsize=14)
-    plt.plot(k_vals_hom, k_bar_nn_hom, 'o-', color='g', label=r'$RN_{HOM}$')
-    plt.plot(k_vals_het, k_bar_nn_het, 'o-', color='darkorange', label=r'$RN_{HET}$')
+    plt.plot(k_vals_hom, k_bar_nn_hom, 'o-', color='g', label=r'$HOM$')
+    plt.plot(k_vals_het, k_bar_nn_het, 'o-', color='darkorange', label=r'$HET$')
     plt.axhline(y=k_bar_nn_non_corr_hom, color='darkgreen', label=r'$\bar{k}_{nn, nc}^{HOM}$', linestyle='--')
     plt.axhline(y=k_bar_nn_non_corr_het, color='orangered', label=r'$\bar{k}_{nn, nc }^{HET}$', linestyle='--')
-    plt.xlabel('$k$', fontsize=14)
-    plt.ylabel(r'$\bar{k}_{nn}(k)$', fontsize=14)
+    plt.xlabel('$k^{in}$', fontsize=16)
+    plt.ylabel(r'$\bar{k}_{nn}(k^{in})$', fontsize=16)
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
+    plt.legend(fontsize=14)
+    plt.show()
+
+
+row = 30
+col = 30
+N = row * col
+choice_bool = 0
+fig, ax = plt.subplots(figsize = (8, 6))
+
+
+if PF_convergence == 1:
+    # Error as the average over repeated generations of the topology, reported with the associated standard deviation
+    nbr_repetitions = 10
+    folder_topology0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{0}/Topology/'
+    folder_topology1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{1}/Topology/'
+    k_list0 = np.load(folder_topology0 + f'k_list.npy')
+    k_list1 = np.load(folder_topology1 + f'k_list.npy')
+
+    diff_list_repeat0 = np.zeros(shape=(nbr_repetitions, int(len(k_list0))))
+    diff_list_repeat1 = np.zeros(shape=(nbr_repetitions, int(len(k_list1))))
+    avg_diff_list = []
+    stdDev_diff_list = []
+
+    for repeat in range(nbr_repetitions):
+        idx_node = np.linspace(0, N - 1, N)
+        folder_topology_repeat0 = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{row}x{col}/choice_bool-{choice_bool}/c1-{0}/Topology/'
+        folder_topology_repeat1 = datadir + f'/Data_simpleLattice_v1/Repeated_topologies/{row}x{col}/choice_bool-{choice_bool}/c1-{1}/Topology/'
+        # [PF convergence]
+        # Plot the error as a function of the dimension
+        diff_list0 = np.load(folder_topology_repeat0 + f'diff_list_rep{repeat}.npy')
+        diff_list1 = np.load(folder_topology_repeat1 + f'diff_list_rep{repeat}.npy')
+        diff_list_repeat0[repeat, :] = diff_list0
+        diff_list_repeat1[repeat, :] = diff_list1
+    avg_diff_list0 = np.mean(diff_list_repeat0, axis=0)
+    avg_diff_list1 = np.mean(diff_list_repeat1, axis=0)
+    stdDev_diff_list0 = np.std(diff_list_repeat0, axis=0, ddof=1)
+    stdDev_diff_list1 = np.std(diff_list_repeat1, axis=0, ddof=1)
+
+    ax.errorbar(k_list0, avg_diff_list0, stdDev_diff_list0,
+                linestyle='-', fmt='o',
+                linewidth = 0.8,
+                ecolor='darkgreen' if choice_bool == 0 else 'orangered',
+                elinewidth=1,
+                capsize=1.8,
+                color='#2ca02c' if choice_bool == 0 else 'darkorange',
+                label = 'Non confined case')
+
+    ax.errorbar(k_list1, avg_diff_list1, stdDev_diff_list1,
+                linestyle='--', fmt='o',
+                linewidth = 0.8,
+                ecolor='darkgreen' if choice_bool == 0 else 'orangered',
+                elinewidth=1,
+                capsize=1.8,
+                color='#165016' if choice_bool == 0 else 'darkorange',
+                label = 'Confined case')
+    #ax.fill_between(k_list, avg_diff_list - stdDev_diff_list,
+    #                   avg_diff_list + stdDev_diff_list,
+    #                   facecolor='green' if choice_bool == 0 else 'darkorange', alpha=0.25)
+
+    #axins.fill_between(k_list, avg_diff_list - stdDev_diff_list,
+    #                avg_diff_list + stdDev_diff_list,
+    #                facecolor= 'green' if choice_bool == 0 else 'darkorange', alpha=0.25)
+
+    if choice_bool == 0:
+        if c1 == 0:
+            # This is ok
+            xlim1 = k_list0[2]-10
+            xlim2 = k_list0[5]+50
+            ylim1 = avg_diff_list0[5]-0.5
+            ylim2 = avg_diff_list0[2]+0.75
+    else:
+        # This has to review
+        xlim1 = k_list0[3] - 10
+        xlim2 = k_list0[6] + 50
+        ylim1 = avg_diff_list0[6]-0.5
+        ylim2 = avg_diff_list0[3]+0.8
+
+
+    axins = inset_axes(ax, width='40%', height='40%', loc='upper right')
+
+    axins.errorbar(k_list0, avg_diff_list0, stdDev_diff_list0,
+                   linestyle='-', fmt = 'o',
+                   linewidth = 0.8,
+                   ecolor = 'darkgreen' if choice_bool == 0 else 'orangered',
+                   elinewidth = 1,
+                   capsize = 1.8,
+                   color='#2ca02c' if choice_bool == 0 else 'darkorange')
+
+    axins.errorbar(k_list1, avg_diff_list1, stdDev_diff_list1,
+                   linestyle='--', fmt = 'o',
+                   linewidth = 0.8,
+                   ecolor = 'darkgreen' if choice_bool == 0 else 'orangered',
+                   elinewidth = 1,
+                   capsize = 1.8,
+                   color='#165016' if choice_bool == 0 else 'darkorange')
+
+    axins.set_xlim(xlim1, xlim2)
+    axins.set_ylim(ylim1, ylim2)
+    # Set white background for the inset plot
+    axins.set_facecolor('white')
+
+    # Mark the region in the main plot
+    # Mark the region in the main plot and draw connecting lines
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", lw = 0.5)
+    #mark_inset(ax, axins, loc1=3, loc2=1, fc="none", ec="0.5")
+    ax.indicate_inset_zoom(axins)
+    #axins.set_xticklabels('')
+    #axins.set_yticklabels('')
+    # add labels and plot multiple dimensions in one to see how the decay of the error to zero changes as
+    # a function of the network dimension.
+    ax.tick_params(axis='both', which='major', labelsize=14)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+    ax.set_xlabel('t', fontsize = 14)
+    ax.set_ylabel('Error', fontsize = 14)
+    ax.legend(fontsize = 12, bbox_to_anchor=(0.65,0.3))
+
+    plt.show()
+
+c1_lst = [0, 1]
+
+if PF_convergence == 1:
+
+    choice_bool = 0
+    beta = 0.115
+    mu = 0.1
+
+    folder_simulation0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{0}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_simulation1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{1}/Simulations/mu-{mu}/beta-{beta}/'
+
+    folder_topology0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{0}/Topology/'
+    folder_topology1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{1}/Topology/'
+    avg_population0 = np.load(folder_topology0 + f'avg_popPerNode.npy')
+    avg_population1 = np.load(folder_topology1 + f'avg_popPerNode.npy')
+
+    rho0_0 = np.load(folder_topology0 + f'/rho0.npy')
+    rho0_0 = rho0_0 * N
+
+    rho0_1 = np.load(folder_topology1 + f'/rho0.npy')
+    rho0_1 = rho0_1 * N
+
+    node_population_time0 = np.load(folder_simulation0 + 'sim_0_node_population_time.npy')
+    node_population_time1 = np.load(folder_simulation1 + 'sim_0_node_population_time.npy')
+
+    node_population_final0 = node_population_time0[-1, :]
+    node_population_final1 = node_population_time1[-1, :]
+
+    node_density_final0 = node_population_final0 / avg_population0
+    node_density_final1 = node_population_final1 / avg_population1
+
+    diff_density0 = node_density_final0 - rho0_0
+    diff_density1 = node_density_final1 - rho0_1
+    plt.figure(figsize=(12, 6))
+    ax = plt.subplot()
+    # sns.histplot(node_density_final, bins = int(np.sqrt(len(node_density_final))))
+    # sns.histplot(diff_density, bins = int(np.sqrt(len(rho0))))
+    plt.plot(idx_node, diff_density0.T, color = '#2ca02c', marker = 'o', markersize = 1.2, linewidth = 0.8, alpha = 0.6, label = 'Non confined case')
+    plt.plot(idx_node, diff_density1.T, color='#165016', marker='o',  markersize = 1.2, linewidth = 0.8, alpha = 0.6, label = 'Confined case')
+    #plt.scatter(idx_node, diff_density, color='k', s=1.5)
+    plt.axhline(y=0, linestyle='--', color='r')
+    plt.xlabel('Index node', fontsize=14)
+    plt.ylabel(r'$\mathbf{\rho}^{(\infty)} - \mathbf{\pi}^T$', fontsize=14)
+    ax.tick_params(axis='both', which='major', labelsize=14)
     plt.legend(fontsize=12)
     plt.show()
+    print('hello')
+
+    for c1 in c1_lst:
+        # Plot the difference between rho0 and the density of people in the final time
+        if row == 3 or row == 5 or row == 10:
+            beta_vals = beta_vals_3_5_10
+            mu_vals = mu_vals_3_5_10
+        else:
+            beta_vals = beta_vals_30_50
+            mu_vals = mu_vals_30_50
+        # Consider the simulation done on my selected topology
+        beta_vals = [0.115]
+        mu_vals = [0.1]
+        for beta, mu in zip(beta_vals, mu_vals):
+            folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+            folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+            avg_population = np.load(folder_topology + f'avg_popPerNode.npy')
+
+            rho0 = np.load(folder_topology + f'/rho0.npy')
+            rho0 = rho0 * N
+            node_population_time = np.load(folder_simulation + 'sim_0_node_population_time.npy')
+            node_population_final = node_population_time[-1, :]
+            node_density_final = node_population_final / avg_population
+
+            diff_density = node_density_final - rho0
+
+            plt.figure(figsize = (12, 6))
+            ax = plt.subplot()
+            #sns.histplot(node_density_final, bins = int(np.sqrt(len(node_density_final))))
+            #sns.histplot(diff_density, bins = int(np.sqrt(len(rho0))))
+            plt.scatter(idx_node, diff_density, color = 'k', s = 1.5)
+            plt.axhline(y=0, linestyle='--', color='r')
+            plt.xlabel('Index node', fontsize = 14)
+            plt.ylabel(r'$\mathbf{\rho}^{(\infty)} - \mathbf{\pi}^T$', fontsize = 14)
+            ax.tick_params(axis='both', which='major', labelsize=14)
+            plt.show()
+            print('hello')
+

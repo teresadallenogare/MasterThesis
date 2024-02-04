@@ -19,13 +19,14 @@ import pickle
 datadir = os.getcwd()
 # ------------------------------------------------ Parameters  -------------------------------------------------
 
-N_row = [50]
-N_col = [50]
+N_row = [30]
+N_col = [30]
 
 choice_bool_lst = [0, 1]
 c1_lst = [0, 1]
 
-# Normalization by hand
+# Normalization by hand = 1
+# No normalization = 0
 normalization = 1
 
 # Infection and recovery rate
@@ -56,75 +57,81 @@ for row, col in zip(N_row, N_col):
             x_nodes = [pos_nodes[i][0] for i in range(N)]
             y_nodes = [pos_nodes[i][1] for i in range(N)]
 
-            sim = 0
+            idx_sims = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             for beta, mu in zip(beta_vals, mu_vals):
                 folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
                 T = np.load(folder_simulation + 'T.npy')
-                T_sim = np.linspace(0, T - 1, T)
-                node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-                node_population_time0 = node_population_time[0,:]
-                node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-                node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-                node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+                if beta == 0.115 or beta == 0.12:
+                    T = 1000
+                else:
+                    T = np.load(folder_simulation + 'T.npy')
+                for sim in idx_sims:
+                    node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+                    node_population_time0 = node_population_time[0,:]
+                    node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+                    node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+                    node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+                    node_NI_new = np.load(folder_simulation + f'sim_{sim}_new_I_time.npy')
 
-                # No normalized dictionary
-                if normalization == 0:
-                    # -------------------------------------- CREATE DICTIONARY WITH TIME IN KEY --------------------------------------------
-                    # dict :
-                    # - <key> = timestep
-                    # - <value> = matrix with a node for row. Each row has (x_node, y_node, #S, #I, #R)
-                    dict_5d_nodes = {}
-                    for t in range(T):
-                        for i in range(N):
-                            if i == 0:
-                                array_0 = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
-                                                    node_NR_time[t, i]])
-                            elif i == 1:
-                                array_1 = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
-                                                    node_NR_time[t, i]])
-                                mtrx_node_t = np.vstack((array_0, array_1))
-                            else:
-                                array_t = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
-                                                    node_NR_time[t, i]])
-                                mtrx_node_t = np.vstack((mtrx_node_t, array_t))
-                        dict_5d_nodes[t] = mtrx_node_t
+                    # No normalized dictionary
+                    if normalization == 0:
+                        # -------------------------------------- CREATE DICTIONARY WITH TIME IN KEY --------------------------------------------
+                        # dict :
+                        # - <key> = timestep
+                        # - <value> = matrix with a node for row. Each row has (x_node, y_node, #S, #I, #R)
+                        dict_5d_nodes = {}
+                        for t in range(T):
+                            for i in range(N):
+                                if i == 0:
+                                    array_0 = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
+                                                        node_NR_time[t, i]])
+                                elif i == 1:
+                                    array_1 = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
+                                                        node_NR_time[t, i]])
+                                    mtrx_node_t = np.vstack((array_0, array_1))
+                                else:
+                                    array_t = np.array([x_nodes[i], y_nodes[i], node_NS_time[t, i], node_NI_time[t, i],
+                                                        node_NR_time[t, i]])
+                                    mtrx_node_t = np.vstack((mtrx_node_t, array_t))
+                            dict_5d_nodes[t] = mtrx_node_t
+
+                            # Save dictionary. It goes in the folder of the corresponding beta and mu
+                            pickle.dump(dict_5d_nodes,
+                                        open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
+
+                    # Normalized by hand
+                    elif normalization == 1:
+                        # 1. Normalization position nodes : divide by the number of rows
+                        x_nodes_normalized = [pos_nodes[i][0] / row for i in range(N)]
+                        y_nodes_normalized = [pos_nodes[i][1] / col for i in range(N)]
+
+                        # 2. Normalization density
+                        # density calculated dividing by the average over time of the population in each fixed node
+                        density_population_time = node_population_time / avg_popPerNode
+                        density_NS_time = node_NS_time / avg_popPerNode
+                        density_NI_time = node_NI_time / avg_popPerNode
+                        density_NR_time = node_NR_time / avg_popPerNode
+                        density_NI_new_time = node_NI_new / avg_popPerNode
+
+                        dict_5d_densities = {}
+                        for t in range(T):
+                            for i in range(N):
+                                if i == 0:
+                                    array_0 = np.array(
+                                        [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
+                                         density_NI_time[t, i], density_NR_time[t, i], density_NI_new_time[t, i]])
+                                elif i == 1:
+                                    array_1 = np.array(
+                                        [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
+                                         density_NI_time[t, i], density_NR_time[t, i], density_NI_new_time[t, i]])
+                                    mtrx_node_t = np.vstack((array_0, array_1))
+                                else:
+                                    array_t = np.array(
+                                        [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
+                                         density_NI_time[t, i], density_NR_time[t, i], density_NI_new_time[t, i]])
+                                    mtrx_node_t = np.vstack((mtrx_node_t, array_t))
+                            dict_5d_densities[t] = mtrx_node_t
 
                         # Save dictionary. It goes in the folder of the corresponding beta and mu
-                        pickle.dump(dict_5d_nodes,
-                                    open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
-
-                # Normalized by hand
-                elif normalization == 1:
-                    # 1. Normalization position nodes : divide by the number of rows
-                    x_nodes_normalized = [pos_nodes[i][0] / row for i in range(N)]
-                    y_nodes_normalized = [pos_nodes[i][1] / col for i in range(N)]
-
-                    # 2. Normalization density
-                    # density calculated dividing by the average over time of the population in each fixed node
-                    density_population_time = node_population_time / avg_popPerNode
-                    density_NS_time = node_NS_time / avg_popPerNode
-                    density_NI_time = node_NI_time / avg_popPerNode
-                    density_NR_time = node_NR_time / avg_popPerNode
-
-                    dict_5d_densities = {}
-                    for t in range(T):
-                        for i in range(N):
-                            if i == 0:
-                                array_0 = np.array(
-                                    [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
-                                     density_NI_time[t, i], density_NR_time[t, i]])
-                            elif i == 1:
-                                array_1 = np.array(
-                                    [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
-                                     density_NI_time[t, i], density_NR_time[t, i]])
-                                mtrx_node_t = np.vstack((array_0, array_1))
-                            else:
-                                array_t = np.array(
-                                    [x_nodes_normalized[i], y_nodes_normalized[i], density_NS_time[t, i],
-                                     density_NI_time[t, i], density_NR_time[t, i]])
-                                mtrx_node_t = np.vstack((mtrx_node_t, array_t))
-                        dict_5d_densities[t] = mtrx_node_t
-
-                    # Save dictionary. It goes in the folder of the corresponding beta and mu
-                    pickle.dump(dict_5d_densities,
-                                open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
+                        pickle.dump(dict_5d_densities,
+                                    open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))

@@ -31,14 +31,14 @@ N_row = 30
 N_col = 30
 
 choice_bool = 0
-c1 = 1
+c1 = 0
 
 # Infection and recovery rate
-beta = 0.115
-mu = 0.1
+beta = 1.2
+mu = 0.3
 
 # Total simulation length
-T = 1200
+T = 140
 T_sim = np.linspace(0, T-1, T)
 
 # Number of infected individuals in one node

@@ -22,8 +22,12 @@ from IPython import display
 import matplotlib.animation as animation
 import pickle
 import random
+import matplotlib.gridspec as gridspec
+import math
 from scipy import interpolate
 from brokenaxes import brokenaxes
+from scipy.stats import norm
+import matplotlib.ticker as ticker
 
 # Set Seaborn style with custom background and grid color
 #sns.set_style("darkgrid", {"axes.facecolor": ".9", "grid.color": "white"})
@@ -105,52 +109,93 @@ def plot_TransitionMatrix(T, N_row, N_col, choice_bool, c1):
         plt.show()
 
 
-def plot_population_distribution( data1, data2,  avg_data1, stdDev_data1, avg_data2,
+
+
+def fx(total_pop, data, data1, data2, p):
+    total_pop_fact = math.factorial(int(total_pop))
+    dim_data = int(len(data))
+    prod = 1
+    prod_p = 1
+    f = []
+    for i in range(dim_data):
+        data_fact = math.factorial(int(data[i]))
+        prod = prod * data_fact
+
+    for i in range(dim_data):
+        f_prod = total_pop_fact / prod * p**data[i]
+
+        f.append(f_prod)
+
+    return f
+
+
+def plot_population_distribution(total_pop, p, data1, data2, data, avg_data1, stdDev_data1, avg_data2,
                                  stdDev_data2, choice_bool):
 
+    x = np.linspace(min(data1), max(data1), 1000)
+    mean = avg_data1
+    var = stdDev_data1**2 * p #(I do * p because p is 1/N)
 
+    gaussian_vals = norm.pdf(x, loc = mean, scale = np.sqrt(var))
     if choice_bool == 0:
+        #f = fx(total_pop, data, data1, data2, p)
         plt.figure(figsize = (8, 6))
 
         num_bins = int(np.sqrt(len(data1)))  # int(1 + (len(node_population_0) // 2.0 ** 0.5))
 
-        sns.histplot(data1, bins=num_bins, kde=True, color='g', label=r'Population in $V$')
+        sns.histplot(data1, bins=num_bins, kde=False, color='g', stat = 'density', label=r'Population in $V$')
+
+        #plt.plot(data, f)
         plt.axvline(x = avg_data1, color = 'k', linestyle = '--', label = 'Average subpopulation')
         plt.axvline(x=avg_data1 + stdDev_data1, color='red', linestyle=':', label='Std deviation')
-        plt.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
 
+        plt.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
+        plt.plot(x, gaussian_vals, color = 'r', linestyle = '-')
         plt.xlabel('Subpopulations', fontsize = 14)
-        plt.ylabel('Frequency', fontsize = 14)
+        plt.ylabel('Counts', fontsize = 14)
 
         plt.legend(fontsize = 12)
         plt.show()
     elif choice_bool == 1:
-        f, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, sharey=False, figsize=((12, 6)))
+        # Create 2x2 sub plots
+        gs = gridspec.GridSpec(2, 2)
+
+        #f, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, sharey=False, figsize=((12, 6)))
+        #fig = plt.subplots( figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1, 1]})
+        plt.figure(figsize=(10, 8))
+
         num_bins1 = int(np.sqrt(len(data1)))
         num_bins2 = int(np.sqrt(len(data2)))
+        num_bins = int(np.sqrt(len(data))) + 200
 
         # Plot histograms
-        sns.histplot(data2, bins=num_bins2, kde=True, color='g', label=r'Population in $V-V_{fix}$', ax = ax1)
-        sns.histplot(data1, bins=num_bins1, kde=True, color='orange', label=r'Population in $V_{fix}$', ax = ax2)
+        axs = plt.subplot(gs[0, :])
+        sns.histplot(data, bins=num_bins, kde=False, color = 'orange',ax = axs, label = r'Population in $V$', linewidth = 0.5)
+        axs.set_xlabel('Subpopulations', fontsize=14)
+        axs.set_ylabel('Counts', fontsize=14)
+        axs.legend(fontsize=10)
 
-        ax1.axvline(x = avg_data2, color = 'k', linestyle = '--', label = 'Average subpopulation')
-        ax1.axvline(x=avg_data2 + stdDev_data2, color='red', linestyle=':', label='Std deviation')
-        ax1.axvline(x=avg_data2 - stdDev_data2, color='red', linestyle=':')
+        # Plot histograms
+        axs = plt.subplot(gs[1, 0])
+        sns.histplot(data2, bins=num_bins2, kde=False, color='peru', label=r'Population in $V-V_{fix}$', ax = axs)
+        axs.axvline(x = avg_data2, color = 'k', linestyle = '--', label = 'Average subpopulation')
+        axs.axvline(x=avg_data2 + stdDev_data2, color='red', linestyle=':', label='Std deviation')
+        axs.axvline(x=avg_data2 - stdDev_data2, color='red', linestyle=':')
+        axs.set_xlim(min(data2) - 20, max(data2) + 20)
+        axs.set_xlabel('Subpopulations', fontsize=14)
+        axs.set_ylabel('Counts', fontsize=14)
+        axs.legend(fontsize=10)
 
-        ax2.axvline(x=avg_data1, color='k', linestyle='--', label='Average subpopulation')
-        ax2.axvline(x=avg_data1 + stdDev_data1, color='red', linestyle=':', label='Std deviation')
-        ax2.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
 
-        ax1.set_xlim(min(data2)-20, max(data2)+20)
-        ax2.set_xlim(min(data1) - 20, max(data1) + 20)
-
-        ax1.set_xlabel('Subpopulations', fontsize=14)
-        ax2.set_xlabel('Subpopulations', fontsize=14)
-        ax1.set_ylabel('Frequency', fontsize=14)
-        ax2.set_ylabel('Frequency', fontsize=14)
-
-        ax1.legend(fontsize=12)
-        ax2.legend(fontsize=12)
+        axs = plt.subplot(gs[1, 1])
+        sns.histplot(data1, bins=num_bins1, kde=False, color='goldenrod', label=r'Population in $V_{fix}$', ax = axs)
+        axs.axvline(x=avg_data1, color='k', linestyle='--', label='Average subpopulation')
+        axs.axvline(x=avg_data1 + stdDev_data1, color='red', linestyle=':', label='Std deviation')
+        axs.axvline(x=avg_data1 - stdDev_data1, color='red', linestyle=':')
+        axs.set_xlim(min(data1) - 20, max(data1) + 20)
+        axs.set_xlabel('Subpopulations', fontsize=14)
+        axs.set_ylabel('Counts', fontsize=14)
+        axs.legend(fontsize=10)
 
         # Adjust layout for better spacing
         plt.tight_layout()
@@ -179,10 +224,10 @@ def plot_degree_distribution(N_row, N_col, choice_bool, c1, k, pk, avg_k, Poisso
     else:
         color = 'darkorange'
     plt.bar(k, pk, color=color, label='Data', alpha = 0.65)
-    plt.axvline(x=avg_k, color='k', label=r'$\langle k \rangle$', linestyle='--')
+    plt.axvline(x=avg_k, color='k', label=r'$\langle k^{in} \rangle$', linestyle='--')
     plt.plot(k, Poisson_funct(k, *param), marker='o', color='red', label='Poisson fit')
-    plt.xlabel('$k$', fontsize = 14)
-    plt.ylabel('$P(k)$', fontsize = 14)
+    plt.xlabel('$k^{in}$', fontsize = 14)
+    plt.ylabel('$P(k^{in})$', fontsize = 14)
     plt.tick_params(axis='both', which='major', labelsize=14)
 
     # plt.title(f'Degree distribution of {row}x{col} network with choice_bool: {choice_bool}, c1: {c1}')
@@ -338,7 +383,7 @@ def plot_SIR_repeated_timeseries_single_node(N_row, N_col, choice_bool, c1, beta
 
     datadir = os.getcwd()
     # Folder
-    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
     i = 0
     first = True
     for sim in idx_sims:
@@ -413,7 +458,7 @@ def plot_SIR_repeated_timeseries_single_sim(N_row, N_col, choice_bool, c1, beta,
 
     datadir = os.getcwd()
     # Folder
-    folder_simulation = datadir + f'/Data_simpleLattice_v1/Repeated_trials/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+    folder_simulation = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
 
     sim = int(sim)
     # Load data
@@ -557,6 +602,7 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
         ax.set_xlabel('Node index')
         ax.set_ylabel('Node index')
         ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+        ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='gray')
         ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
                                       frames=dict_load.keys())
         # converting to a html5 video
@@ -624,4 +670,84 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
     ax.set_zlabel('R')
     ax.set_title(f'Network {N_row}x{N_col}, beta: {beta}, mu: {mu}')
 
+    plt.show()
+
+#######################################################################################################################
+#                                                                                                                     #
+#                                                    SIR                                                              #
+#                                                                                                                     #
+#######################################################################################################################
+
+def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I, det_R, beta, mu):
+    f, ax = plt.subplots(figsize=(10, 8))
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1e'))
+    avg_vals_S = np.mean(vals_S, axis = 1)
+    avg_vals_I = np.mean(vals_I, axis = 1)
+    avg_vals_R = np.mean(vals_R, axis = 1)
+    for i in range(N):
+        if i == 0:
+            plt.plot(T_sim, vals_S[:, i], color = '#6488ea', label = 'S')
+            plt.plot(T_sim, vals_I[:, i], color = '#fc5a50', label = 'I')
+            plt.plot(T_sim, vals_R[:, i], color = '#54ac68', label = 'R')
+        else:
+            plt.plot(T_sim, vals_S[:, i], color='#6488ea', alpha=0.2)
+            plt.plot(T_sim, vals_I[:, i], color='#fc5a50', alpha=0.2)
+            plt.plot(T_sim, vals_R[:, i], color='#54ac68', alpha=0.2)
+    plt.plot(T_sim, avg_vals_S, color='k', linewidth = 0.9, label = 'Average')
+    plt.plot(T_sim, avg_vals_I, color='k',  linewidth = 0.9)
+    plt.plot(T_sim, avg_vals_R, color='k', linewidth = 0.9)
+
+    plt.plot(T_sim, det_S, linestyle = ':', color = 'k', label = 'Deterministic')
+    plt.plot(T_sim, det_I, linestyle=':', color='k')
+    plt.plot(T_sim, det_R, linestyle=':', color='k')
+    plt.text(110, 0.7, r'$R_0 =$' + str(np.round(beta / mu, 2)), fontsize=16)
+    plt.xlabel('Time', fontsize = 16)
+    plt.ylabel('Node density', fontsize = 16)
+    plt.legend(fontsize = 16)
+    plt.show()
+
+#######################################################################################################################
+#                                                                                                                     #
+#                                                    Barcodes                                                         #
+#                                                                                                                     #
+#######################################################################################################################
+
+def plot_barcodes(birth0, end0, birth1, end1, y0, y1):
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=(13, 8))
+
+    # Draw horizontal lines between elements of list1 and list2
+    ax1 = plt.subplot(2, 1, 1)
+    i = 0
+    for x1, x2 in zip(birth0, end0):
+        ax1.plot([x1, x2], [y0[i], y0[i]], linestyle='-', marker=None)
+        i = i + 1
+    # Set labels and title
+    ax1.set_xlabel('Persistence', fontsize=14)
+    ax1.set_ylabel('Feature', fontsize=14)
+    ax1.set_title(r'Persistence barcode $\mathcal{H}_0$', fontsize=16)
+
+    ax2 = plt.subplot(2, 1, 2)
+    i = 0
+    for x1, x2 in zip(birth1, end1):
+        ax2.plot([x1, x2], [y1[i], y1[i]], linestyle='-')
+        i = i + 1
+    ax2.set_xlabel('Persistence', fontsize=16)
+    ax2.set_ylabel('Feature', fontsize=16)
+    ax2.set_title(r'Persistence barcode $\mathcal{H}_1$', fontsize=16)
+    plt.tight_layout()
+    plt.show()
+
+def plot_cc1_vs_time(time, pers, N_cc):
+    # Plot how does the death time of the most important cc (after infty) variesas a function of time
+
+    f, ax = plt.subplots(figsize = (13, 8))
+    for cc in range(N_cc):
+        plt.plot(time, pers[cc], label = f'c.c. {cc+1}')
+
+    plt.xlabel('Time', fontsize = 16)
+    plt.ylabel('Persistence', fontsize = 16)
+
+    plt.legend(fontsize = 14)
     plt.show()

@@ -29,9 +29,9 @@ datadir = os.getcwd()
 generator_HomLoops = 0
 plot_histogram = 0
 find_ends_barcodes = 0
-PE_beta_mu = 0
+PE_beta_mu = 1
 PE_compare_c1 = 0
-PE_compare_c1_and_choice_bool = 1
+PE_compare_c1_and_choice_bool = 0
 
 sim = 0
 
@@ -39,8 +39,8 @@ sim = 0
 #               = 1 -> standard scaler normalization
 #               = 2 -> normalization by hand
 normalization = 2
-id = ('XYSIR')
-columns = ['X', 'Y', 'S', 'I', 'R']
+id = ('XYSI')
+columns = ['X', 'Y', 'S', 'I']
 nrm_entropy = [True]
 
 # Dimension
@@ -52,7 +52,7 @@ N = row * col
 choice_bool_vals = [0]
 
 # Strength self loops
-c1_vals = [0, 1]
+c1_vals = [0]
 
 # Infection and recovery rate
 beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
@@ -361,9 +361,9 @@ if PE_beta_mu == 1:
             if normalization == 0:
                 folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/No-normalized/{id}/'
             elif normalization == 1:
-                folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{id}/'
-            elif normalization == 2:
                 folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-scaler/{id}/'
+            elif normalization == 2:
+                folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{id}/'
             for beta, mu in zip(beta_vals, mu_vals):
                 T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
                 print('row: ', row, 'col: ', col, 'choice_bool: ', choice_bool, 'c1: ', c1)
@@ -413,11 +413,11 @@ if PE_compare_c1 == 1:
             folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/No-normalized/{id}/'
             folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/No-normalized/{id}/'
         elif normalization == 1:
-            folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
-            folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
-        elif normalization == 2:
             folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
             folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
+        elif normalization == 2:
+            folder_entropy_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
 
         for beta, mu in zip(beta_vals, mu_vals):
             T_0 = np.load(folder_simulation_0 + f'mu-{mu}/beta-{beta}/T.npy')
@@ -485,16 +485,15 @@ if PE_compare_c1_and_choice_bool == 1:
             folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/No-normalized/{id}/'
             folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/No-normalized/{id}/'
         elif normalization == 1:
-            folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
-            folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
-            folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
-            folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
-
-        elif normalization == 2:
             folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
             folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
             folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/Normalized-scaler/{id}/'
             folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/Normalized-scaler/{id}/'
+        elif normalization == 2:
+            folder_entropy_hom_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_hom_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[0]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_het_0 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[0]}/Entropy/Normalized-hand/{id}/'
+            folder_entropy_het_1 = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool[1]}/c1-{c1[1]}/Entropy/Normalized-hand/{id}/'
 
         for beta, mu in zip(beta_vals, mu_vals):
             T_hom_0 = np.load(folder_simulation_hom_0 + f'mu-{mu}/beta-{beta}/T.npy')
