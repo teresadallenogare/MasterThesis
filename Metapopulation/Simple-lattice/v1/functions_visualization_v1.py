@@ -28,11 +28,12 @@ from scipy import interpolate
 from brokenaxes import brokenaxes
 from scipy.stats import norm
 import matplotlib.ticker as ticker
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Set Seaborn style with custom background and grid color
 #sns.set_style("darkgrid", {"axes.facecolor": ".9", "grid.color": "white"})
-
-sns.set(rc={"axes.labelsize": 14, "xtick.labelsize": 12, "ytick.labelsize": 12})
+#sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
+#sns.set(rc={"axes.labelsize": 16, "xtick.labelsize": 14, "ytick.labelsize": 14})
 
 def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
     """ Color gradient between c1 - darker - and c2 - lighter.
@@ -64,12 +65,11 @@ def plot_static_network(G, pop_nodes, dict_nodes, weight, N_row, N_col, choice_b
     :param weight: [list] weight to attribute to edges
     :param state_nodes: [list] state of the node
     """
-    plt.figure(figsize=(10, 9))
-    sns.set(style="white")
+    plt.figure(figsize=(13, 11))
+    #sns.set(style="white")
     datadir = os.getcwd()
-    # G1 = copy(G)
 
-    size_map = [pop_nodes[i] / 5 for i in G.nodes]
+    size_map = [pop_nodes[i] / 2 for i in G.nodes]
     nx.draw_networkx_nodes(G, pos=dict_nodes, node_color='#B7C8C4', edgecolors='#374845', linewidths=1.5,
                            node_size=size_map)
     nx.draw_networkx_edges(G, pos=dict_nodes, width=0.7, arrows=True, min_source_margin=20,
@@ -527,7 +527,7 @@ def plot_mean_std_singleNode(T_sim, meanS, meanI, meanR, stdDevS, stdDevI, stdDe
     plt.show()
 
 
-def animate(t, img, grid, dict_vals, dict_norm_vals):
+def animate_infecteds(t, img, grid, dict_vals, dict_norm_vals):
     mtrx_t = dict_vals[t]
     mtrx_norm_t = dict_norm_vals[t]
     # Extract node positions from the non-normalized dictionary
@@ -545,8 +545,26 @@ def animate(t, img, grid, dict_vals, dict_norm_vals):
     img.set_data(grid)
     return img,
 
+def animate_new_infecteds(t, img, grid, dict_vals, dict_norm_vals):
+    mtrx_t = dict_vals[t]
+    mtrx_norm_t = dict_norm_vals[t]
+    # Extract node positions from the non-normalized dictionary
+    x_nodes = mtrx_t[:, 0]
+    y_nodes = mtrx_t[:, 1]
+    # Extract the density of infected from the normalized dictionary
+    density_I_nodes = mtrx_norm_t[:, 5]
+    # print('t: ', t)
+    # print('dI: ', density_I_nodes)
+    idx_row = 0
+    for i, j in zip(x_nodes, y_nodes):
+        # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
+        grid[int(i), int(j)] = density_I_nodes[idx_row]
+        idx_row += 1
+    img.set_data(grid)
+    return img,
 
-def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
+
+def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static, bool_Inew, time):
     """ Plot data in space of variables
 
     :param N_row: [scalar] number of rows of the lattice
@@ -580,35 +598,166 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
     dict_load_normalized_values = list(dict_load_normalized.values())
     # Brute force : maximum value of density of I in whole dictionary
     max_densityI_time = []
-
+    max_densityInew_time = []
     # Determination of the maximum density of infected
     for t in dict_load.keys():
         mtrx_t_normalized = dict_load_normalized[t]
-        density_S = mtrx_t_normalized[:, 2]
         density_I = mtrx_t_normalized[:, 3]
-        density_R = mtrx_t_normalized[:, 4]
+        density_Inew = mtrx_t_normalized[:, 5]
         max_densityI_time.append(max(density_I))
+        max_densityInew_time.append(max(density_Inew))
     max_densityI_time = np.array(max_densityI_time)
+    max_densityInew_time = np.array(max_densityInew_time)
     max_densityI = max(max_densityI_time)
+    max_densityInew = max(max_densityInew_time)
     print('max-densityI', max_densityI)
     if bool_static == 0:
         # Setup animation
         Writer = animation.FFMpegWriter(fps=1)
 
         fig, ax = plt.subplots()
-        img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+        if bool_Inew == 0:
+            img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+        else:
+            img = ax.imshow(grid, vmin=0, vmax=max_densityInew, cmap='coolwarm')
         ax.invert_yaxis()
         fig.colorbar(img, cmap='coolwarm')
         ax.set_xlabel('Node index')
         ax.set_ylabel('Node index')
         ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
         ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='gray')
-        ani = animation.FuncAnimation(fig, animate, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
+        if bool_Inew == 0:
+            ani = animation.FuncAnimation(fig, animate_infecteds, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
+                                        frames=dict_load.keys())
+        else:
+            ani = animation.FuncAnimation(fig, animate_new_infecteds, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
+                                        frames=dict_load.keys())
+        # converting to a html5 video
+        video = ani.to_html5_video()
+        if bool_Inew == 0:
+            ani.save(folder_animations + f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+        else:
+            ani.save(folder_animations + f'animation-Inew-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+        # embedding for the video
+        html = display.HTML(video)
+        # draw the animation
+        display.display(html)
+        plt.close()
+        plt.show()
+        print('Done!')
+    elif bool_static == 1:
+        t = time
+        mtrx_t_normalized = dict_load_normalized[t]
+        density_I = mtrx_t_normalized[:, 3]
+        density_Inew = mtrx_t_normalized[:, 5]
+        density_I_grid = density_I.reshape((30,30))
+        density_Inew_grid = density_Inew.reshape((30,30))
+        fig, ax = plt.subplots(figsize = (9,7))
+        if bool_Inew == 0:
+            img = ax.imshow(density_I_grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+        else:
+            img = ax.imshow(density_Inew_grid, vmin=0, vmax=max_densityInew, cmap='coolwarm')
+        ax.invert_yaxis()
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cbar = fig.colorbar(img, cmap='coolwarm', cax=cax)
+        cbar.set_label(r'$I/\langle n\rangle$', fontsize = 20)
+        cbar.ax.tick_params(labelsize=20)
+        ax.set_xlabel('Node index', fontsize = 20)
+        ax.set_ylabel('Node index', fontsize = 20)
+        #ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+        ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='white')
+        # Minor ticks
+        ax.set_xticks(np.arange(-0.5, 29.5, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, 29.5, 1), minor=True)
+        ax.grid(which='minor', color='whitesmoke', linestyle='-', linewidth=0.4)
+
+        ax.tick_params(axis='both', which='major', labelsize=20)
+
+        plt.tight_layout()
+        plt.show()
+
+
+def animate_recovered(t, img, grid, dict_vals, dict_norm_vals):
+    mtrx_t = dict_vals[t]
+    mtrx_norm_t = dict_norm_vals[t]
+    # Extract node positions from the non-normalized dictionary
+    x_nodes = mtrx_t[:, 0]
+    y_nodes = mtrx_t[:, 1]
+    # Extract the density of infected from the normalized dictionary
+    density_R_nodes = mtrx_norm_t[:, 4]
+    # print('t: ', t)
+    # print('dI: ', density_I_nodes)
+    idx_row = 0
+    for i, j in zip(x_nodes, y_nodes):
+        # grid[int(i), int(j)] = nbr_I_nodes[idx_row]
+        grid[int(i), int(j)] = density_R_nodes[idx_row]
+        idx_row += 1
+    img.set_data(grid)
+    return img,
+def heatmap_time_recovered(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
+    """ Plot data in space of variables
+
+    :param N_row: [scalar] number of rows of the lattice
+    :param N_col: [scalar] number of columns of the lattice
+    :param choice_bool: [bool] if 0: lattice is uniform populated
+                               if 1: lattice has hubs of people in certain nodes
+    :param c1: [scalar] accounts for the importance of self loops
+    :param T: [scalar] length of the simulation
+    :param beta: [scalar] infection rate
+    :param mu: [scalar] recovery rate
+    :param sim: [scalar] index of the simulation
+
+    :return: plot of the node's states in the space of variables
+    """
+
+    datadir = os.getcwd()
+    folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
+    folder_dict_normHand = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
+
+    folder_animations = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Animations/'
+
+    # I extract the position of nodes in the non-normalized dictionary and the value of density in the normalized one
+    # Initialize grid for later visualization at the beginning of every new simulation! That is my initial state
+    grid = np.zeros(shape=(N_row, N_col))
+    # Load dictionary that contains the information of every node (x_node, y_node, #S, #I, #R) at each timestep
+    dict_load = pickle.load(open(folder_dict_noNorm + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_values = list(dict_load.values())
+    # Load normalized dictionary to have the density of individuals
+    dict_load_normalized = pickle.load(
+        open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized_values = list(dict_load_normalized.values())
+    # Brute force : maximum value of density of I in whole dictionary
+    max_densityR_time = []
+    # Determination of the maximum density of infected
+    for t in dict_load.keys():
+        mtrx_t_normalized = dict_load_normalized[t]
+        density_R = mtrx_t_normalized[:, 4]
+        max_densityR_time.append(max(density_R))
+    max_densityR_time = np.array(max_densityR_time)
+    max_densityR = max(max_densityR_time)
+    print('max-densityR', max_densityR)
+    if bool_static == 0:
+        # Setup animation
+        Writer = animation.FFMpegWriter(fps=1)
+
+        fig, ax = plt.subplots()
+
+        img = ax.imshow(grid, vmin=0, vmax=max_densityR, cmap='RdYlGn')
+
+        ax.invert_yaxis()
+        fig.colorbar(img, cmap='RYlGn')
+        ax.set_xlabel('Node index')
+        ax.set_ylabel('Node index')
+        ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+        ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='gray')
+        ani = animation.FuncAnimation(fig, animate_recovered, fargs=(img, grid, dict_load_values, dict_load_normalized_values,),
                                       frames=dict_load.keys())
         # converting to a html5 video
         video = ani.to_html5_video()
 
-        ani.save(folder_animations + f'animation-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+        ani.save(folder_animations + f'animation-R-beta{beta}-mu{mu}-sim{sim}.mp4', writer=Writer)
+
         # embedding for the video
         html = display.HTML(video)
         # draw the animation
@@ -618,8 +767,6 @@ def heatmap_time(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
         print('Done!')
     elif bool_static == 1:
         print('to implement')
-
-
 
 def plot_nullcline(nodeNS, nodeNI, x, y, u, v, lineStyle, beta):
     plt.quiver(x, y, u, v, linewidth=0.5, color='k', capstyle='round',
@@ -679,8 +826,8 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
 #######################################################################################################################
 
 def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I, det_R, beta, mu):
-    f, ax = plt.subplots(figsize=(10, 8))
-    ax.tick_params(axis='both', which='major', labelsize=16)
+    f, ax = plt.subplots(figsize=(12, 10))
+    ax.tick_params(axis='both', which='major', labelsize=18)
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1e'))
     avg_vals_S = np.mean(vals_S, axis = 1)
     avg_vals_I = np.mean(vals_I, axis = 1)
@@ -698,13 +845,13 @@ def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I,
     plt.plot(T_sim, avg_vals_I, color='k',  linewidth = 0.9)
     plt.plot(T_sim, avg_vals_R, color='k', linewidth = 0.9)
 
-    plt.plot(T_sim, det_S, linestyle = ':', color = 'k', label = 'Deterministic')
-    plt.plot(T_sim, det_I, linestyle=':', color='k')
-    plt.plot(T_sim, det_R, linestyle=':', color='k')
-    plt.text(110, 0.7, r'$R_0 =$' + str(np.round(beta / mu, 2)), fontsize=16)
-    plt.xlabel('Time', fontsize = 16)
-    plt.ylabel('Node density', fontsize = 16)
-    plt.legend(fontsize = 16)
+    #plt.plot(T_sim, det_S, linestyle = ':', color = 'k', label = 'Deterministic')
+    #plt.plot(T_sim, det_I, linestyle=':', color='k')
+    #plt.plot(T_sim, det_R, linestyle=':', color='k')
+    plt.text(110, 0.7, r'$R_0 =$' + str(np.round(beta / mu, 2)), fontsize=20)
+    plt.xlabel('Time', fontsize = 20)
+    plt.ylabel('Node density', fontsize = 20)
+    plt.legend(fontsize = 18)
     plt.show()
 
 #######################################################################################################################
@@ -715,39 +862,77 @@ def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I,
 
 def plot_barcodes(birth0, end0, birth1, end1, y0, y1):
     # Create a figure and axis
-    fig, ax = plt.subplots(figsize=(13, 8))
+    #sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
+    fig = plt.figure(figsize=(14, 8))
 
     # Draw horizontal lines between elements of list1 and list2
-    ax1 = plt.subplot(2, 1, 1)
+    ax1 = plt.subplot(1, 2, 1)
     i = 0
     for x1, x2 in zip(birth0, end0):
-        ax1.plot([x1, x2], [y0[i], y0[i]], linestyle='-', marker=None)
+
+        ax1.plot([x1, x2], [y0[i], y0[i]], color='r', linestyle='-', linewidth=2, markerfacecolor='white', markersize=8,
+                 markeredgewidth=2)
+
+
         i = i + 1
     # Set labels and title
-    ax1.set_xlabel('Persistence', fontsize=14)
-    ax1.set_ylabel('Feature', fontsize=14)
-    ax1.set_title(r'Persistence barcode $\mathcal{H}_0$', fontsize=16)
+    ax1.set_xlabel('Persistence', fontsize=32)
+    ax1.set_ylabel('Feature', fontsize=32)
+    ax1.set_title(r'Persistence barcode $\mathcal{H}_0$', fontsize=32)
+    ax1.tick_params(axis='both', which='major', labelsize=30)
 
-    ax2 = plt.subplot(2, 1, 2)
+    ax2 = plt.subplot(1, 2, 2)
     i = 0
     for x1, x2 in zip(birth1, end1):
-        ax2.plot([x1, x2], [y1[i], y1[i]], linestyle='-')
+        ax2.plot([x1, x2], [y1[i], y1[i]],  color='b', linestyle='-', linewidth=2, markerfacecolor='white', markersize=8,
+                 markeredgewidth=2)
+
         i = i + 1
-    ax2.set_xlabel('Persistence', fontsize=16)
-    ax2.set_ylabel('Feature', fontsize=16)
-    ax2.set_title(r'Persistence barcode $\mathcal{H}_1$', fontsize=16)
+    ax2.set_xlabel('Persistence', fontsize=32)
+    ax2.set_ylabel('Feature', fontsize=32)
+    ax2.set_title(r'Persistence barcode $\mathcal{H}_1$', fontsize=32)
+    ax2.tick_params(axis='both', which='major', labelsize=30)
     plt.tight_layout()
     plt.show()
 
-def plot_cc1_vs_time(time, pers, N_cc):
+def plot_persistence_diagram(birth0, end0, birth1, end1):
+    def diagonal(x):
+        return x
+    f, ax = plt.subplots(figsize = (10, 8))
+    x = np.linspace(0, 0.25, 100)
+    plt.scatter(birth0, end0, color = 'r', s = 8, label = r'$\mathcal{H}_0$')
+    plt.scatter(birth1, end1, color = 'b', s = 8, label = r'$\mathcal{H}_1$')
+    plt.plot(x, diagonal(x), color = 'k', linewidth = 1)
+    plt.xlabel('Birth', fontsize = 16)
+    plt.ylabel('Death', fontsize = 16)
+    ax.tick_params(axis='both', which='major', labelsize=14)
+
+    plt.legend(fontsize = 14)
+    plt.show()
+
+def plot_cc1_vs_time(time, pers0, pers1, N_cc0, N_cc1):
     # Plot how does the death time of the most important cc (after infty) variesas a function of time
 
     f, ax = plt.subplots(figsize = (13, 8))
-    for cc in range(N_cc):
-        plt.plot(time, pers[cc], label = f'c.c. {cc+1}')
 
-    plt.xlabel('Time', fontsize = 16)
-    plt.ylabel('Persistence', fontsize = 16)
+    # Draw horizontal lines between elements of list1 and list2
+    ax1 = plt.subplot(2, 1, 1)
+    for cc in range(N_cc0):
+        ax1.plot(time, pers0[cc], linewidth = 0.95, label=f'c.c. {cc + 1}')
+    ax1.set_xlabel('Time', fontsize = 16)
+    ax1.set_ylabel('Persistence', fontsize = 16)
+    ax1.set_title(r'Persistence features $\mathcal{H}_0$', fontsize=16)
 
-    plt.legend(fontsize = 14)
+    ax1.legend()
+
+    ax2 = plt.subplot(2, 1, 2)
+    for cc in range(N_cc1):
+        ax2.plot(time, pers1[cc], linewidth = 0.95, label=f'c.c. {cc + 1}')
+    ax2.set_xlabel('Time', fontsize=16)
+    ax2.set_ylabel('Persistence', fontsize=16)
+    ax2.set_title(r'Persistence features $\mathcal{H}_1$', fontsize=16)
+
+    ax2.legend()
+
+    plt.tight_layout()
     plt.show()

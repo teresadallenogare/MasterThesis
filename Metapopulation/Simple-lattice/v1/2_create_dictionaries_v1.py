@@ -22,16 +22,16 @@ datadir = os.getcwd()
 N_row = [30]
 N_col = [30]
 
-choice_bool_lst = [0, 1]
-c1_lst = [0, 1]
+choice_bool_lst = [1]
+c1_lst = [0,1]
 
 # Normalization by hand = 1
 # No normalization = 0
 normalization = 1
 
 # Infection and recovery rate
-beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
-mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+beta_vals_3_5_10 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]#, 0.23, 0.24, 0.3, 0.4, 0.6, 0.8, 0.345, 0.36, 0.45, 0.6, 0.9, 1.2]
+mu_vals_3_5_10 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]#, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
 
 beta_vals_30_50 = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
 mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
@@ -47,9 +47,9 @@ for row, col in zip(N_row, N_col):
 
     for choice_bool in choice_bool_lst:
         for c1 in c1_lst:
-            folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
-            folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
-            folder_dict_normHand = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
+            folder_topology = datadir + f'/Data_simpleLattice_v1_circular/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+            folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1_circular/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
+            folder_dict_normHand = datadir + f'/Data_simpleLattice_v1_circular/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
 
             avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
             pos_nodes = np.load(folder_topology + 'pos_nodes.npy')
@@ -57,14 +57,14 @@ for row, col in zip(N_row, N_col):
             x_nodes = [pos_nodes[i][0] for i in range(N)]
             y_nodes = [pos_nodes[i][1] for i in range(N)]
 
-            idx_sims = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            idx_sims = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
             for beta, mu in zip(beta_vals, mu_vals):
-                folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+                folder_simulation = datadir + f'/Data_simpleLattice_v1_circular/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
                 T = np.load(folder_simulation + 'T.npy')
-                if beta == 0.115 or beta == 0.12:
-                    T = 1000
-                else:
-                    T = np.load(folder_simulation + 'T.npy')
+                #if beta == 0.115 or beta == 0.12:
+                #    T = 1000
+                #else:
+                T = np.load(folder_simulation + 'T.npy')
                 for sim in idx_sims:
                     node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
                     node_population_time0 = node_population_time[0,:]

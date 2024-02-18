@@ -9,6 +9,7 @@ Version : 15 December 2023
 
 Analysis of SIR data from simulations
 
+
 """
 
 from functions_SIR_metapop_v1 import *
@@ -19,17 +20,19 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from scipy.integrate import odeint
-
-
+import seaborn as sns
+from matplotlib.animation import FuncAnimation
 datadir = os.getcwd()
-plt.figure(figsize=(10, 8))
+#plt.figure(figsize=(10, 8))
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
-SIR_time = 0
+
+analysis_Rnew = 0
+SIR_time = 1
 fixedR0 = 0
 fixed_mu = 0
 duration_analysis = 0
-heatmap = 1
+heatmap = 0
 outbreak_analysis = 0
 final_size_analysis = 0
 network_infected = 0
@@ -39,7 +42,7 @@ phase_transition = 0
 lineStyle = ['-', '--', ':']
 
 bool_density = 1
-bool_network = 1
+bool_network = 0
 
 # ------------------------------------------------ Colors  -------------------------------------------------
 grad_gray = []
@@ -70,88 +73,109 @@ if SIR_time == 1:
     idx_node = 0
 
     # Infection and recovery rate
-    beta_vals = [0.3]
-    mu_vals = [0.1]
+    beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+    mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
 
     folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
     avg_popPerNode = np.load(folder_topology + 'avg_popPerNode.npy')
     i = 0
     first = True
+
     for beta, mu in zip(beta_vals, mu_vals):
-        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
-        node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
-        node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
-        node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
-        node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
-        T = np.load(folder_simulation + f'T.npy')
-        T_sim = np.linspace(0, T - 1, T)
-        if bool_density == 0:
+        nbr_simulations = 1
+        for sim in range(nbr_simulations):
+            folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+            node_population_time = np.load(folder_simulation + f'sim_{sim}_node_population_time.npy')
+            node_NS_time = np.load(folder_simulation + f'sim_{sim}_node_NS_time.npy')
+            node_NI_time = np.load(folder_simulation + f'sim_{sim}_node_NI_time.npy')
+            node_NR_time = np.load(folder_simulation + f'sim_{sim}_node_NR_time.npy')
+
+            T = np.load(folder_simulation + f'T.npy')
+            if row == 30:
+                if beta == 0.115 or beta == 0.12:
+                    T = 1000
+            T_sim = np.linspace(0, T - 1, T)
+
+            if analysis_Rnew == 1:
+                for t in range(T):
+                    if t == 0:
+                        node_NRnew_time0 = np.zeros(N)
+                    else:
+                        newR = node_NR_time[t, :] - node_NR_time[t-1, :]
+                        if t == 1:
+                            node_NRnew_time = np.vstack((node_NRnew_time0, newR))
+                        else:
+                            node_NRnew_time = np.vstack((node_NRnew_time, newR))
+                NR_time = node_NRnew_time.sum(axis = 1)
+                np.save(folder_simulation + f'sim_{sim}_new_R_time', node_NRnew_time)
+                print('hello')
+            else:
+                if bool_density == 0:
+                    if bool_network == 0:
+                        vals_population_time = node_population_time[:, idx_node]
+                        vals_NS_time = node_NS_time[:, idx_node]
+                        vals_NI_time = node_NI_time[:, idx_node]
+                        vals_NR_time = node_NR_time[:, idx_node]
+                    elif bool_network == 1:
+                        vals_population_time = node_population_time.sum(axis=1)
+                        vals_NS_time = node_NS_time.sum(axis=1)
+                        vals_NI_time = node_NI_time.sum(axis=1)
+                        vals_NR_time = node_NR_time.sum(axis=1)
+                elif bool_density == 1:
+                    if bool_network == 0:
+                        vals_population_time = node_population_time[:, idx_node] / (N*avg_popPerNode)
+                        vals_NS_time = node_NS_time[:, idx_node] / (N*avg_popPerNode)
+                        vals_NI_time = node_NI_time[:, idx_node] / (N*avg_popPerNode)
+                        vals_NR_time = node_NR_time[:, idx_node] / (N*avg_popPerNode)
+                        # plot for all nodes if density and node
+                        y_init = [(node_population_time[0,:].sum()-5)/(N**2*avg_popPerNode), 5/(N**2*avg_popPerNode), 0]
+                        params = [beta, mu]
+                        y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
+                        plot_SIR_time_node(N, T_sim, node_population_time/(N*avg_popPerNode), node_NS_time/(N*avg_popPerNode), node_NI_time/(N*avg_popPerNode), node_NR_time/(N*avg_popPerNode), y[:,0], y[:,1], y[:,2], beta, mu)
+                    elif bool_network == 1:
+                        vals_population_time = node_population_time.sum(axis=1) / (N*avg_popPerNode)
+                        vals_NS_time = node_NS_time.sum(axis=1) / (N*avg_popPerNode)
+                        vals_NI_time = node_NI_time.sum(axis=1) / (N*avg_popPerNode)
+                        vals_NR_time = node_NR_time.sum(axis=1) / (N*avg_popPerNode)
+
+                print('t-max: ', np.argmax(vals_NI_time))
+                if first == True:
+                    vals_population_0 = vals_population_time[0]
+                    y_init = [vals_population_0-5/(N*avg_popPerNode), 5/(N*avg_popPerNode), 0]
+                    print('y_init:', y_init)
+                    params = [beta, mu]
+                    y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
+                    f, ax = plt.subplots(figsize=(10, 8))
+                    #plt.plot(T_sim, vals_population_time, color='gray', label='Population density', linestyle=lineStyle[i])
+                    ax.tick_params(axis='both', which='major', labelsize=20)
+                    plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[0])
+                    plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[0])
+                    plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[0])
+                    #plt.plot(T_sim, y[:, 0], linestyle=':', color='k', label='Deterministic')
+                    #plt.plot(T_sim, y[:, 1], linestyle=':', color='k')
+                    #plt.plot(T_sim, y[:, 2], linestyle=':', color='k')
+                    #plt.xlim(0, 1000)
+                    first = False
+                else:
+                    # plt.plot(T_sim, vals_population, color='gray', label='Population')
+                    plt.plot(T_sim, vals_NS_time, color='#261bf7', linestyle=lineStyle[0])
+                    plt.plot(T_sim, vals_NI_time, color='#ff0000', linestyle=lineStyle[0])
+                    plt.plot(T_sim, vals_NR_time, color='#05b032', linestyle=lineStyle[0])
+
+                    #plt.xlim(0, 1000)
+                i = i + 1
+            plt.xlabel('Time', fontsize = 20)
             if bool_network == 0:
-                vals_population_time = node_population_time[:, idx_node]
-                vals_NS_time = node_NS_time[:, idx_node]
-                vals_NI_time = node_NI_time[:, idx_node]
-                vals_NR_time = node_NR_time[:, idx_node]
-            elif bool_network == 1:
-                vals_population_time = node_population_time.sum(axis=1)
-                vals_NS_time = node_NS_time.sum(axis=1)
-                vals_NI_time = node_NI_time.sum(axis=1)
-                vals_NR_time = node_NR_time.sum(axis=1)
-        elif bool_density == 1:
-            if bool_network == 0:
-                vals_population_time = node_population_time[:, idx_node] / (N*avg_popPerNode)
-                vals_NS_time = node_NS_time[:, idx_node] / (N*avg_popPerNode)
-                vals_NI_time = node_NI_time[:, idx_node] / (N*avg_popPerNode)
-                vals_NR_time = node_NR_time[:, idx_node] / (N*avg_popPerNode)
-                # plot for all nodes if density and node
-                y_init = [(node_population_time[0,:].sum()-5)/( N**2*avg_popPerNode), 5/(N**2*avg_popPerNode), 0]
-                params = [beta, mu]
-                y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
-                plot_SIR_time_node(N, T_sim, node_population_time/(N*avg_popPerNode), node_NS_time/(N*avg_popPerNode), node_NI_time/(N*avg_popPerNode), node_NR_time/(N*avg_popPerNode), y[:,0], y[:,1], y[:,2], beta, mu)
-            elif bool_network == 1:
-                vals_population_time = node_population_time.sum(axis=1) / (N*avg_popPerNode)
-                vals_NS_time = node_NS_time.sum(axis=1) / (N*avg_popPerNode)
-                vals_NI_time = node_NI_time.sum(axis=1) / (N*avg_popPerNode)
-                vals_NR_time = node_NR_time.sum(axis=1) / (N*avg_popPerNode)
-
-        print('t-max: ', np.argmax(vals_NI_time))
-        if first == True:
-            vals_population_0 = vals_population_time[0]
-            y_init = [vals_population_0-5/(N*avg_popPerNode), 5/(N*avg_popPerNode), 0]
-            print('y_init:', y_init)
-            params = [beta, mu]
-            y = odeint(SIRDeterministic_equations, y_init, T_sim, args=(params,bool_network))
-            f, ax = plt.subplots(figsize=(10, 8))
-            #plt.plot(T_sim, vals_population_time, color='gray', label='Population density', linestyle=lineStyle[i])
-            ax.tick_params(axis='both', which='major', labelsize=16)
-            plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
-            plt.plot(T_sim, y[:, 0], linestyle=':', color='k', label='Deterministic')
-            plt.plot(T_sim, y[:, 1], linestyle=':', color='k')
-            plt.plot(T_sim, y[:, 2], linestyle=':', color='k')
+                plt.ylabel('Node population' if bool_density == 0 else 'Node density', fontsize = 20)
+            else:
+                plt.ylabel('Network population' if bool_density == 0 else 'Network density', fontsize = 20)
+            plt.text(100, 400, r'$R_0 =$' + str(np.round(beta_vals[0] / mu_vals[0], 2)), fontsize=20)
+            #plt.text(30, 0.7, r'$R_0 =$' + str(np.round(beta_vals[1] / mu_vals[1], 2)), fontsize=10)
+            plt.legend(fontsize=18)
 
 
-            #plt.xlim(0, 1000)
-            first = False
-        else:
-            # plt.plot(T_sim, vals_population, color='gray', label='Population')
-            plt.plot(T_sim, vals_NS_time, color='#261bf7', label='S', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NI_time, color='#ff0000', label='I', linestyle=lineStyle[i])
-            plt.plot(T_sim, vals_NR_time, color='#05b032', label='R', linestyle=lineStyle[i])
-
-            #plt.xlim(0, 1000)
-        i = i + 1
-    plt.xlabel('Time', fontsize = 16)
-    if bool_network == 0:
-        plt.ylabel('Node population' if bool_density == 0 else 'Node density', fontsize = 16)
-    else:
-        plt.ylabel('Network population' if bool_density == 0 else 'Network density', fontsize = 16)
-    plt.text(100, 400, r'$R_0 =$' + str(np.round(beta_vals[0] / mu_vals[0], 2)), fontsize=16)
-    #plt.text(30, 0.7, r'$R_0 =$' + str(np.round(beta_vals[1] / mu_vals[1], 2)), fontsize=10)
-    plt.legend(fontsize=14)
-
-
-    plt.show()
+            plt.show()
 
 ######################################################################################################################
 ### Fixed R0
@@ -324,15 +348,18 @@ if heatmap == 1:
     row = 30
     col = 30
 
-    choice_bool = 1
-    c1 = 0
+    choice_bool = 0
+    c1 = 1
 
-    beta = 0.3
+    beta = 1.2
     mu = 0.1
 
     sim = 0
 
-    bool_static = 0
+    bool_static = 1
+    bool_Inew = 0
+
+    time = 21
 
     folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
 
@@ -340,9 +367,68 @@ if heatmap == 1:
     print('row:', row, 'col:', col, 'choice_bool:', choice_bool, 'c1:', c1, 'beta:', beta, 'mu:', mu, 'T:', T)
     T_sim = np.linspace(0, T - 1, T)
 
-    heatmap_time(row, col, choice_bool, c1, beta, mu, sim, bool_static)
+
+    heatmap_time_infecteds(row, col, choice_bool, c1, beta, mu, sim, bool_static, bool_Inew, time)
+    #heatmap_time_recovered(row, col, choice_bool, c1, beta, mu, sim, bool_static)
 ######################################################################################################################
 
+
+
+
+
+
+
+tred_plot = 1
+
+if tred_plot == 1:
+    row = 10
+    col = 10
+
+    N = row * col
+    choice_bool = 0
+    c1 = 1
+
+    sim = 0
+    beta = 0.9
+    mu = 0.1
+
+    datadir = os.getcwd()
+
+    folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
+    folder_dict_normHand = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/Normalized-hand/'
+
+    folder_animations = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Animations/'
+
+    # Load normalized dictionary to have the density of individuals
+    dict_load_normalized = pickle.load(
+        open(folder_dict_normHand + f'dict_data_beta{beta}-mu{mu}-sim{sim}.pickle', 'rb'))
+    dict_load_normalized_values = list(dict_load_normalized.values())
+    # Brute force : maximum value of density of I in whole dictionary
+    max_densityI_time = []
+    max_densityInew_time = []
+    # Determination of the maximum density of infected
+
+    fig = plt.figure(figsize=(12,8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    t = 24
+
+    mtrx_t_normalized = dict_load_normalized[t]
+    x_nodes = mtrx_t_normalized[:, 0]
+    y_nodes = mtrx_t_normalized[:, 1]
+    density_Inew = mtrx_t_normalized[:, 3]
+    # Scatter plot
+    sc = ax.scatter(x_nodes, y_nodes, density_Inew, c=density_Inew, cmap='gnuplot', marker='o')
+    # Add color bar
+    cbar = fig.colorbar(sc, ax=ax, shrink=0.6, aspect=10)
+    cbar.set_label(r'Values $I/\langle n \rangle$')
+    ax.set_xlabel('X node')
+    ax.set_ylabel('Y node')
+    #ax.set_zlabel(r'$\Delta I$')
+    ax.set_zlabel(r'$I/\langle n \rangle$')
+
+    plt.tight_layout()
+    plt.show()
 
 ######################################################################################################################
 
@@ -626,10 +712,4 @@ if phase_transition == 1:
     plt.xlabel(r'$\eta$')
     plt.ylabel(r'$\theta(\eta)$')
     plt.show()
-
-
-
-
-
-
 

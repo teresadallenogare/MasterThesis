@@ -23,16 +23,12 @@ from scipy.stats import poisson, kstest, probplot
 import scipy.linalg as linalg
 import seaborn as sns
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
-import statsmodels.api as sm
 from scipy.stats import linregress
 
 datadir = os.getcwd()
-plt.figure(figsize=(8, 6))
-sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
-
 # ------------------------------------------------ Parameters  -------------------------------------------------
-N_row = [30]
-N_col = [30]
+N_row = [10]
+N_col = [10]
 
 choice_bool_lst = [0]
 c1_lst = [0]
@@ -46,25 +42,24 @@ mu_vals_30_50 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 sim = 0
 
-population_analysis = 1
+population_analysis = 0
 degree_analysis = 0
 distance_analysis = 0
 clustering_analysis = 0
 weight_analysis = 0
-PF_convergence = 1
+PF_convergence = 0
 Rstar_def = 0
 outbreak = 0
-
+plot_network = 1
 log_dependence = 0
-
 write_file = 0
 
-plt.figure(figsize=(8, 6))
-sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
+
+#sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
 
-# --------------------------------------------------------------------------------------------------------------
-
+######################################################################################################################
+### Functions
 def Poisson_funct(k, lamb):
     # poisson probability mass function
     return poisson.pmf(k, lamb)
@@ -745,5 +740,59 @@ if PF_convergence == 1:
             plt.ylabel(r'$\mathbf{\rho}^{(\infty)} - \mathbf{\pi}^T$', fontsize = 14)
             ax.tick_params(axis='both', which='major', labelsize=14)
             plt.show()
-            print('hello')
+
+
+if plot_network == 1:
+    row = 10
+    col = 10
+
+    N = row * col
+
+    choice_bool = 0
+    c1 = 0
+
+    datadir = os.getcwd()
+
+    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+
+    G = pickle.load(open(folder_topology + 'G.pickle', 'rb'))
+    dict_nodes = pickle.load(open(folder_topology + 'dict_nodes.pickle', 'rb'))
+    TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+    AdjacencyMatrix = np.load(folder_topology + 'AdjacencyMatrix.npy')
+    D = np.load(folder_topology + 'DistanceMatrix.npy')
+    avg_population = np.load(folder_topology + 'avg_popPerNode.npy')
+    total_population = N * avg_population
+
+    node_population_0 = nx.get_node_attributes(G, name='Npop')
+    node_population_0 = np.array(list(node_population_0.values()))
+    weightNonZero = [TransitionMatrix[i, j] for i in range(N) for j in range(N) if TransitionMatrix[i, j] != 0]
+
+    # Size of nodes
+    size_map = [140 for i in G.nodes]
+
+    color_map = ['#B7C8C4'] * N
+    ax = plt.Axes(plt.gcf(), [0., 0., 1., 1.], )
+    ax.set_axis_off()
+    ax.set_facecolor('white')
+    #plt.gcf().add_axes(ax)
+    #sns.set(style="white")
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos=dict_nodes, node_size=size_map, node_color=color_map, edgecolors='#374845', linewidths=0.7)
+
+    if row == 10 or row == 30 or row == 50:
+        random.seed(42)  # You can use any integer as the seed
+        if row == 10:
+            nbr_edges = 200
+        else:
+            nbr_edges = 1000
+        selected_nodes = [random.randint(0, N) for _ in range(nbr_edges)]
+        # Create a subgraph containing only the selected nodes and their edges
+        edges_to_draw = [(u, v) for u, v in G.edges() if u in selected_nodes and v in selected_nodes and u != v]
+        nx.draw_networkx_edges(G, pos=dict_nodes, edgelist=edges_to_draw, edge_color='black', width=0.2, arrows=False,
+                               min_source_margin=5,
+                               min_target_margin=5, alpha=0.2)
+        sns.despine(left=True, right=True, top=True, bottom=True)
+        plt.tight_layout()
+        plt.show()
+
 
