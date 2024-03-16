@@ -563,7 +563,7 @@ def animate_new_infecteds(t, img, grid, dict_vals, dict_norm_vals):
     img.set_data(grid)
     return img,
 
-
+from matplotlib.colors import LogNorm
 def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static, bool_Inew, time):
     """ Plot data in space of variables
 
@@ -579,6 +579,8 @@ def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
 
     :return: plot of the node's states in the space of variables
     """
+    folder_images = '/Users/teresa/Desktop/Thesis/Images/Maps/'
+
 
     datadir = os.getcwd()
     folder_dict_noNorm = datadir + f'/Data_simpleLattice_v1/{N_row}x{N_col}/choice_bool-{choice_bool}/c1-{c1}/Dictionaries/No-normalized/'
@@ -600,6 +602,7 @@ def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
     max_densityI_time = []
     max_densityInew_time = []
     # Determination of the maximum density of infected
+
     for t in dict_load.keys():
         mtrx_t_normalized = dict_load_normalized[t]
         density_I = mtrx_t_normalized[:, 3]
@@ -618,8 +621,10 @@ def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
         fig, ax = plt.subplots()
         if bool_Inew == 0:
             img = ax.imshow(grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+            #img = ax.imshow(grid, cmap='coolwarm', norm=LogNorm(vmin=0.001, vmax=1))
         else:
             img = ax.imshow(grid, vmin=0, vmax=max_densityInew, cmap='coolwarm')
+            #img = ax.imshow(grid, cmap='coolwarm', norm=LogNorm(vmin=0.001, vmax=1))
         ax.invert_yaxis()
         fig.colorbar(img, cmap='coolwarm')
         ax.set_xlabel('Node index')
@@ -652,19 +657,21 @@ def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
         density_Inew = mtrx_t_normalized[:, 5]
         density_I_grid = density_I.reshape((30,30))
         density_Inew_grid = density_Inew.reshape((30,30))
-        fig, ax = plt.subplots(figsize = (9,7))
+        fig, ax = plt.subplots(figsize = (10,8))
         if bool_Inew == 0:
             img = ax.imshow(density_I_grid, vmin=0, vmax=max_densityI, cmap='coolwarm')
+            #img = ax.imshow(grid, cmap='coolwarm', norm=LogNorm(vmin=0.001, vmax=1))
         else:
             img = ax.imshow(density_Inew_grid, vmin=0, vmax=max_densityInew, cmap='coolwarm')
+            #img = ax.imshow(grid, cmap='coolwarm', norm=LogNorm(vmin=0.001, vmax=1))
         ax.invert_yaxis()
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(img, cmap='coolwarm', cax=cax)
-        cbar.set_label(r'$I/\langle n\rangle$', fontsize = 20)
-        cbar.ax.tick_params(labelsize=20)
-        ax.set_xlabel('Node index', fontsize = 20)
-        ax.set_ylabel('Node index', fontsize = 20)
+        cbar.set_label(r'$I/\langle n\rangle$', fontsize = 36)
+        cbar.ax.tick_params(labelsize=36)
+        ax.set_xlabel('Node index', fontsize = 36)
+        ax.set_ylabel('Node index', fontsize = 36)
         #ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
         ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='white')
         # Minor ticks
@@ -672,9 +679,11 @@ def heatmap_time_infecteds(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
         ax.set_yticks(np.arange(-0.5, 29.5, 1), minor=True)
         ax.grid(which='minor', color='whitesmoke', linestyle='-', linewidth=0.4)
 
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=36)
 
         plt.tight_layout()
+        plt.savefig(folder_images + f'map-t{t}-R0{beta/mu}-sim{sim}.png')
+
         plt.show()
 
 
@@ -695,7 +704,7 @@ def animate_recovered(t, img, grid, dict_vals, dict_norm_vals):
         idx_row += 1
     img.set_data(grid)
     return img,
-def heatmap_time_recovered(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static):
+def heatmap_time_recovered(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_static, time):
     """ Plot data in space of variables
 
     :param N_row: [scalar] number of rows of the lattice
@@ -766,7 +775,33 @@ def heatmap_time_recovered(N_row, N_col, choice_bool, c1, beta, mu, sim, bool_st
         plt.show()
         print('Done!')
     elif bool_static == 1:
-        print('to implement')
+        t = time
+        mtrx_t_normalized = dict_load_normalized[t]
+        density_R = mtrx_t_normalized[:, 4]
+        density_R_grid = density_R.reshape((30, 30))
+        fig, ax = plt.subplots(figsize=(9, 7))
+
+        img = ax.imshow(density_R_grid, vmin=0, vmax=max_densityR, cmap='RdYlGn')
+
+        ax.invert_yaxis()
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cbar = fig.colorbar(img, cmap='coolwarm', cax=cax)
+        cbar.set_label(r'$R/\langle n\rangle$', fontsize=30)
+        cbar.ax.tick_params(labelsize=30)
+        ax.set_xlabel('Node index', fontsize=30)
+        ax.set_ylabel('Node index', fontsize=30)
+        # ax.set_title(f'Heatmap {N_row}x{N_col} : beta = {beta}, mu = {mu}, sim = {sim}')
+        ax.grid(True, linestyle='-', linewidth=0.01, alpha=0.1, color='white')
+        # Minor ticks
+        ax.set_xticks(np.arange(-0.5, 29.5, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, 29.5, 1), minor=True)
+        ax.grid(which='minor', color='whitesmoke', linestyle='-', linewidth=0.4)
+
+        ax.tick_params(axis='both', which='major', labelsize=30)
+
+        plt.tight_layout()
+        plt.show()
 
 def plot_nullcline(nodeNS, nodeNI, x, y, u, v, lineStyle, beta):
     plt.quiver(x, y, u, v, linewidth=0.5, color='k', capstyle='round',
@@ -826,9 +861,11 @@ def plot_phase_space(N_row, N_col, choice_bool, c1, beta, mu, sim):
 #######################################################################################################################
 
 def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I, det_R, beta, mu):
-    f, ax = plt.subplots(figsize=(12, 10))
-    ax.tick_params(axis='both', which='major', labelsize=18)
-    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1e'))
+    f, ax = plt.subplots(figsize=(15, 8))
+    ax.tick_params(axis='both', which='major', labelsize=30)
+    #ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1e'))
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    ax.yaxis.offsetText.set_fontsize(30)
     avg_vals_S = np.mean(vals_S, axis = 1)
     avg_vals_I = np.mean(vals_I, axis = 1)
     avg_vals_R = np.mean(vals_R, axis = 1)
@@ -845,13 +882,15 @@ def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I,
     plt.plot(T_sim, avg_vals_I, color='k',  linewidth = 0.9)
     plt.plot(T_sim, avg_vals_R, color='k', linewidth = 0.9)
 
-    #plt.plot(T_sim, det_S, linestyle = ':', color = 'k', label = 'Deterministic')
-    #plt.plot(T_sim, det_I, linestyle=':', color='k')
-    #plt.plot(T_sim, det_R, linestyle=':', color='k')
-    plt.text(110, 0.7, r'$R_0 =$' + str(np.round(beta / mu, 2)), fontsize=20)
-    plt.xlabel('Time', fontsize = 20)
-    plt.ylabel('Node density', fontsize = 20)
-    plt.legend(fontsize = 18)
+    plt.plot(T_sim, det_S, linestyle = ':', color = 'k', label = 'Deterministic')
+    plt.plot(T_sim, det_I, linestyle=':', color='k')
+    plt.plot(T_sim, det_R, linestyle=':', color='k')
+    plt.text(110, 0.7, r'$R_0 =$' + str(np.round(beta / mu, 2)), fontsize=30)
+    plt.xlabel('Time', fontsize = 30)
+    plt.ylabel('Node density', fontsize = 30)
+
+    plt.legend(fontsize = 30)
+    plt.tight_layout()
     plt.show()
 
 #######################################################################################################################
@@ -860,10 +899,12 @@ def plot_SIR_time_node(N, T_sim, vals_pop, vals_S, vals_I, vals_R, det_S, det_I,
 #                                                                                                                     #
 #######################################################################################################################
 
-def plot_barcodes(birth0, end0, birth1, end1, y0, y1):
+def plot_barcodes(birth0, end0, birth1, end1, y0, y1, t, R0, sim, clr):
+    folder_images = '/Users/teresa/Desktop/Thesis/Images/New/'
+
     # Create a figure and axis
     #sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
-    fig = plt.figure(figsize=(14, 8))
+    fig = plt.figure(figsize=(16, 8))
 
     # Draw horizontal lines between elements of list1 and list2
     ax1 = plt.subplot(1, 2, 1)
@@ -876,24 +917,31 @@ def plot_barcodes(birth0, end0, birth1, end1, y0, y1):
 
         i = i + 1
     # Set labels and title
-    ax1.set_xlabel('Persistence', fontsize=32)
-    ax1.set_ylabel('Feature', fontsize=32)
-    ax1.set_title(r'Persistence barcode $\mathcal{H}_0$', fontsize=32)
-    ax1.tick_params(axis='both', which='major', labelsize=30)
 
+    ax1.set_xlabel('Persistence', fontsize=40)
+    ax1.set_ylabel('Feature', fontsize=40)
+
+    ax1.set_title(r'Persistence barcode $\mathcal{H}_0$', fontsize=40)
+    ax1.tick_params(axis='both', which='major', labelsize=38)
+    #ax1.tick_params(labelleft=False)
     ax2 = plt.subplot(1, 2, 2)
     i = 0
     for x1, x2 in zip(birth1, end1):
         ax2.plot([x1, x2], [y1[i], y1[i]],  color='b', linestyle='-', linewidth=2, markerfacecolor='white', markersize=8,
-                 markeredgewidth=2)
+                 markeredgewidth=2) #clr
 
         i = i + 1
-    ax2.set_xlabel('Persistence', fontsize=32)
-    ax2.set_ylabel('Feature', fontsize=32)
-    ax2.set_title(r'Persistence barcode $\mathcal{H}_1$', fontsize=32)
-    ax2.tick_params(axis='both', which='major', labelsize=30)
+    ax2.set_xlabel('Persistence', fontsize=40)
+    #ax2.tick_params(labelleft=False)
+
+    ax2.set_ylabel('Feature', fontsize=40)
+    ax2.set_title(r'Persistence barcode $\mathcal{H}_1$', fontsize=40)
+    ax2.tick_params(axis='both', which='major', labelsize=38)
     plt.tight_layout()
+    plt.savefig(folder_images + f'barcodes-t{t}-R0{R0}-sim{sim}.png')
     plt.show()
+
+
 
 def plot_persistence_diagram(birth0, end0, birth1, end1):
     def diagonal(x):
@@ -935,4 +983,52 @@ def plot_cc1_vs_time(time, pers0, pers1, N_cc0, N_cc1):
     ax2.legend()
 
     plt.tight_layout()
+    plt.show()
+
+
+def plot_cc1_vs_time_H1(time, pers1, N_cc1):
+    # Plot how does the death time of the most important cc (after infty) variesas a function of time
+
+    f, ax = plt.subplots(figsize = (13, 7))
+
+
+    for cc in range(N_cc1):
+        ax.plot(time, pers1[cc], linewidth = 1.2, label=f'hole {cc + 1}')
+    ax.set_xlabel('Time', fontsize = 26)
+    ax.set_ylabel('Persistence', fontsize = 26)
+    ax.set_title(r'Persistence of longest features in $\mathcal{H}_1$', fontsize=26)
+    ax.tick_params(axis='both', which='major', labelsize=26)
+    # Shrink current axis's height by 10% on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.25,
+                     box.width, box.height * 0.75])
+
+    # Put a legend below current axis
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), frameon=False, ncol=5, fontsize = 26)
+
+    #plt.tight_layout()
+    plt.show()
+
+
+def plot_cc1_vs_time_H0(time, pers0, N_cc0):
+    # Plot how does the death time of the most important cc (after infty) variesas a function of time
+
+    f, ax = plt.subplots(figsize = (13, 7))
+
+
+    for cc in range(N_cc0):
+        ax.plot(time, pers0[cc], linewidth = 1.2, label=f'c.c. {cc + 1}')
+    ax.set_xlabel('Time', fontsize = 26)
+    ax.set_ylabel('Persistence', fontsize = 26)
+    ax.set_title(r'Persistence of longest features in $\mathcal{H}_0$', fontsize=26)
+    ax.tick_params(axis='both', which='major', labelsize=26)
+    # Shrink current axis's height by 10% on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.25,
+                     box.width, box.height * 0.75])
+
+    # Put a legend below current axis
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), frameon=False, ncol=5, fontsize = 26)
+
+    #plt.tight_layout()
     plt.show()

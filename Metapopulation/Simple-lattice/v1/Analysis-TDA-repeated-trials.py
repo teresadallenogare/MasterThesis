@@ -21,12 +21,15 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from itertools import chain
 
 datadir = os.getcwd()
 
 single_NPE = 1
 multiple_NPEs = 0
 derivative_entropy = 0
+
+single_sim_differentR0 = 0
 
 sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
@@ -53,7 +56,7 @@ if single_NPE == 1:
     normalize_entropy = True
 
     for beta, mu in zip(beta_vals, mu_vals):
-        f, ax = plt.subplots(figsize=(14, 7))
+        f, ax = plt.subplots(figsize=(16, 5))
         folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
         folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{id}/'
 
@@ -73,10 +76,15 @@ if single_NPE == 1:
         max_H1 = []
         idx_sims_started = []
 
+        folder_images = '/Users/teresa/Desktop/Thesis/Images/NPE-00/'
+        concatenate_range = chain(range(4), range(5, 10))
+        clr = ['#FF8080', '#FF7F2A', '#D38D5F', '#87DE87', '#5FD3BC', '#80B3FF', '#8787DE', '#AA00D4', '#FF80E5', '#D35F8D']
         for sim in range(4,5):
+
             if sim not in idx_sims_not_start:
                 idx_sims_started.append(int(sim))
                 T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
+                print('-------------------------------')
                 print('row: ', row, 'col: ', col, 'choice_bool: ', choice_bool, 'c1: ', c1)
                 print('beta: ', beta, 'mu: ', mu)
 
@@ -115,14 +123,18 @@ if single_NPE == 1:
                 if sim == 0:
                     plt.plot(x, entropy_H0_sim, color='silver', lw=0.6)# 0.6
                     plt.plot(x, entropy_H1_sim, color='silver', lw=0.6)
+                    #plt.plot(x, entropy_H0_sim, color=clr[i], lw=0.6)# 0.6
+                    #plt.plot(x, entropy_H1_sim, color=clr[i], lw=0.6)
                 else:
-                    plt.plot(x, entropy_H0_sim, color='silver', lw=0.6)
+                    plt.plot(x, entropy_H0_sim, color='silver', lw=0.6)  # 0.6
                     plt.plot(x, entropy_H1_sim, color='silver', lw=0.6)
+                    #plt.plot(x, entropy_H0_sim, color=clr[i], lw=0.6)
+                    #plt.plot(x, entropy_H1_sim, color=clr[i], lw=0.6)
 
-                plt.xlabel('Time', fontsize = 24)
-                plt.ylabel('NPE', fontsize = 24)
-                plt.title(fr'NPE for $R_0$ = {np.round(beta/mu, 2)}', fontsize = 26)
-                ax.tick_params(axis='both', which='major', labelsize=22)  # Adjust the size of major ticks
+                plt.xlabel('Time', fontsize = 22)
+                plt.ylabel('NPE', fontsize = 22)
+                plt.title(fr'NPE for $R_0$ = {np.round(beta/mu, 2)}', fontsize = 24)
+                ax.tick_params(axis='both', which='major', labelsize=24)  # Adjust the size of major ticks
                 ax.patch.set_alpha(0.8)
                 i = i + 1
 
@@ -131,13 +143,14 @@ if single_NPE == 1:
 
         max_H0_sims = [idx_sims_started, t_max_H0, max_H0]
         max_H1_sims = [idx_sims_started, t_max_H1, max_H1]
+
         print('t min H0:', t_min_H0)
         print('t min H1: ', t_min_H1)
 
         print('t max H0:', t_max_H0)
         print('t max H1:', t_max_H1)
 
-        print('avg t max H1:', np.array(t_max_H1).mean())
+        #print('avg t max H1:', np.array(t_max_H1).mean())
 
         min_H0_sims = np.array(min_H0_sims)
         min_H1_sims = np.array(min_H1_sims)
@@ -160,34 +173,35 @@ if single_NPE == 1:
         line1_H1 = t_max_avg_H1 - 4
         line2_H1 = t_max_avg_H1 + 4
 
-        print('x_min avg H0: ', t_min_avg_H0)
-        print('min_avg H0: ', min_avg_H0)
-        print('-------------------------------')
-        print('x_min avg H1: ', t_min_avg_H1)
-        print('min_avg H1: ', min_avg_H1)
+        #print('x_min avg H0: ', t_min_avg_H0)
+        #print('min_avg H0: ', min_avg_H0)
 
-        plt.plot(x, avg_H0, color='r', lw=2, label=r'H($\mathcal{H}_0$)')
-        plt.plot(x, avg_H1, color='b', lw=2, label=r'H($\mathcal{H}_1$)')
+        #print('x_min avg H1: ', t_min_avg_H1)
+        #print('min_avg H1: ', min_avg_H1)
+
+        plt.plot(x, avg_H0, color='r', lw=2, label=r'$ H( \mathcal{H}_0) $')
+        plt.plot(x, avg_H1, color='b', lw=2, label=r'$ H( \mathcal{H}_1) $')
         #plt.fill_betweenx(plt.ylim(), line1_H0, line2_H0, alpha=0.1, color='gray')
         #plt.fill_betweenx(plt.ylim(), line1_H1, line2_H1, alpha=0.2, color='silver')
        # plt.scatter(min_avg_H0[0], min_avg_H0[1])
        # plt.scatter(min_avg_H1[0], min_avg_H1[1])
 
-        plt.legend(fontsize = 22)
+        #plt.legend(fontsize = 32)
         plt.tight_layout()
+        #plt.savefig(folder_images + f'NPE-00-{np.round(beta/mu, 2)}.png')
         plt.show()
 
         # NEED TO SAVE FOR CH1 AND C11
 
         # Save average behaviour
-        np.save(folder_entropy + f'avg_H0-mu{mu}-beta{beta}', avg_H0)
-        np.save(folder_entropy + f'avg_H1-mu{mu}-beta{beta}', avg_H1)
+        #np.save(folder_entropy + f'avg_H0-mu{mu}-beta{beta}', avg_H0)
+        #np.save(folder_entropy + f'avg_H1-mu{mu}-beta{beta}', avg_H1)
 
         # Save min entropy simulations
-        np.save(folder_entropy + f'min_H0_sims-mu{mu}-beta{beta}', min_H0_sims)
-        np.save(folder_entropy + f'min_H1_sims-mu{mu}-beta{beta}', min_H1_sims)
-        np.save(folder_entropy + f'min_avg_H0-mu{mu}-beta{beta}', min_avg_H0)
-        np.save(folder_entropy + f'min_avg_H1-mu{mu}-beta{beta}', min_avg_H1)
+        #np.save(folder_entropy + f'min_H0_sims-mu{mu}-beta{beta}', min_H0_sims)
+        #np.save(folder_entropy + f'min_H1_sims-mu{mu}-beta{beta}', min_H1_sims)
+        #np.save(folder_entropy + f'min_avg_H0-mu{mu}-beta{beta}', min_avg_H0)
+        #np.save(folder_entropy + f'min_avg_H1-mu{mu}-beta{beta}', min_avg_H1)
 
 
 if multiple_NPEs == 1:
@@ -249,9 +263,9 @@ if multiple_NPEs == 1:
             ax1.plot(x, entropy_H0_sim_0, color='silver', lw=0.6)
             ax1.plot(x, entropy_H1_sim_0, color='silver', lw=0.6)
 
-            ax1.set_xlabel('Time', fontsize = 16)
-            ax1.set_ylabel('NPE', fontsize = 16)
-            ax1.tick_params(axis='both', which='major', labelsize=14)  # Adjust the size of major ticks
+            ax1.set_xlabel('Time', fontsize = 20)
+            ax1.set_ylabel('NPE', fontsize = 20)
+            ax1.tick_params(axis='both', which='major', labelsize=18)  # Adjust the size of major ticks
             ax1.patch.set_alpha(0.8)
             i = i + 1
     entropy_H0 = np.array(entropy_H0_repeat_0).reshape(i, len(entropy_H0_sim_0))
@@ -259,9 +273,9 @@ if multiple_NPEs == 1:
     avg_H0 = np.mean(entropy_H0, axis=0)
     avg_H1 = np.mean(entropy_H1, axis=0)
 
-    ax1.plot(x, avg_H0, color='r', lw=1, label=r'H($\mathcal{H}_0$)')
-    ax1.plot(x, avg_H1, color='b', lw=1, label=r'H($\mathcal{H}_1$)')
-    ax1.set_title(rf'NPE for $R_0$ = { np.round(beta_vals[0] / mu, 2)}', fontsize = 16)
+    ax1.plot(x, avg_H0, color='r', lw=1, label=r'$\langle H(\mathcal{H}_0) \rangle $')
+    ax1.plot(x, avg_H1, color='b', lw=1, label=r'$\langle H(\mathcal{H}_1) \rangle$')
+    ax1.set_title(rf'NPE for $R_0$ = { np.round(beta_vals[0] / mu, 2)}', fontsize = 20)
 
     i = 0
     ### Second plot
@@ -282,9 +296,9 @@ if multiple_NPEs == 1:
             ax2.plot(x, entropy_H0_sim_1, color='silver', lw=0.6)
             ax2.plot(x, entropy_H1_sim_1, color='silver', lw=0.6)
 
-            ax2.set_xlabel('Time', fontsize = 16)
-            ax2.set_ylabel('NPE', fontsize = 16)
-            ax2.tick_params(axis='both', which='major', labelsize=14)  # Adjust the size of major ticks
+            ax2.set_xlabel('Time', fontsize = 20)
+            #ax2.set_ylabel('NPE', fontsize = 20)
+            ax2.tick_params(axis='both', which='major', labelsize=18)  # Adjust the size of major ticks
 
             i = i + 1
 
@@ -293,9 +307,9 @@ if multiple_NPEs == 1:
     avg_H0 = np.mean(entropy_H0, axis=0)
     avg_H1 = np.mean(entropy_H1, axis=0)
 
-    ax2.plot(x, avg_H0, color='r', lw=1, label=r'H($\mathcal{H}_0$)')
-    ax2.plot(x, avg_H1, color='b', lw=1, label=r'H($\mathcal{H}_1$)')
-    ax2.set_title(rf'NPE for $R_0$ = {np.round(beta_vals[1] / mu, 2)}', fontsize = 16)
+    ax2.plot(x, avg_H0, color='r', lw=1, label=r'$\langle H(\mathcal{H}_0)\rangle$')
+    ax2.plot(x, avg_H1, color='b', lw=1, label=r'$\langle H(\mathcal{H}_1)\rangle$')
+    ax2.set_title(rf'NPE for $R_0$ = {np.round(beta_vals[1] / mu, 2)}', fontsize = 20)
     ax2.patch.set_alpha(0.8)
     i = 0
     ### Third plot
@@ -316,22 +330,22 @@ if multiple_NPEs == 1:
             ax3.plot(x, entropy_H0_sim_2, color='silver', lw=0.6)
             ax3.plot(x, entropy_H1_sim_2, color='silver', lw=0.6)
 
-            ax3.set_xlabel('Time', fontsize = 16)
-            ax3.set_ylabel('NPE', fontsize = 16)
+            ax3.set_xlabel('Time', fontsize = 20)
+            #ax3.set_ylabel('NPE', fontsize = 20)
             ax3.patch.set_alpha(0.8)
             i = i + 1
     entropy_H0 = np.array(entropy_H0_repeat_2).reshape(i, len(entropy_H0_sim_2))
     entropy_H1 = np.array(entropy_H1_repeat_2).reshape(i, len(entropy_H1_sim_2))
     avg_H0 = np.mean(entropy_H0, axis=0)
     avg_H1 = np.mean(entropy_H1, axis=0)
-    ax3.plot(x, avg_H0, color='r', lw=1, label=r'H($\mathcal{H}_0$)')
-    ax3.plot(x, avg_H1, color='b', lw=1, label=r'H($\mathcal{H}_1$)')
-    ax3.set_title(rf'NPE for $R_0$ = {np.round(beta_vals[2] / mu, 2)}', fontsize = 16)
-    ax3.tick_params(axis='both', which='major', labelsize=14)  # Adjust the size of major ticks
+    ax3.plot(x, avg_H0, color='r', lw=1, label=r'$\langle H(\mathcal{H}_0)\rangle$')
+    ax3.plot(x, avg_H1, color='b', lw=1, label=r'$\langle H(\mathcal{H}_1)\rangle$')
+    ax3.set_title(rf'NPE for $R_0$ = {np.round(beta_vals[2] / mu, 2)}', fontsize = 18)
+    ax3.tick_params(axis='both', which='major', labelsize=18)  # Adjust the size of major ticks
 
-    ax1.legend(fontsize = 14)
-    ax2.legend(fontsize = 14)
-    ax3.legend(fontsize = 14)
+    ax1.legend(fontsize = 16)
+    ax2.legend(fontsize = 16)
+    ax3.legend(fontsize = 16)
     plt.tight_layout()
     plt.show()
 
@@ -406,3 +420,49 @@ if derivative_entropy == 1:
                 plt.ylabel('dH/dt')
 
                 plt.show()
+
+
+
+if single_sim_differentR0 == 1:
+    row = 30
+    col = 30
+    N = row * col
+
+    choice_bool = 0
+    c1 = 0
+
+    sim = 0
+
+    normalize_entropy = True
+
+    id = 'XYSIR'
+
+    beta_vals = [0.12, 0.4, 1.2]
+    mu_vals = [0.1, 0.1, 0.1]
+    i = 0
+    f, ax = plt.subplots(figsize=(15, 4))
+    for beta, mu in zip(beta_vals, mu_vals):
+
+        clrs_H0 = ['#e9afaf', '#de8787','#d35f5f']
+        clrs_H1 = ['#afc6e9','#5f8dd3','#214778']
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/'
+        folder_entropy = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{id}/'
+
+        T = np.load(folder_simulation + f'mu-{mu}/beta-{beta}/T.npy')
+        T_sim = np.linspace(0, T - 2, T-1)
+        entropy_H0_sim = np.load(
+            folder_entropy + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        entropy_H1_sim = np.load(
+            folder_entropy + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+
+        plt.plot(T_sim[:100], entropy_H0_sim[:100], color = clrs_H0[i], label = rf'$R_0 = {np.round(beta/mu, 2)}$')
+        ax.tick_params(axis='both', which='major', labelsize=22)  # Adjust the size of major ticks
+        ax.patch.set_alpha(0.8)
+
+        i = i + 1
+    plt.xlabel('Time', fontsize=22)
+    plt.ylabel(r'$H(\mathcal{H}_0)$', fontsize=22)
+    plt.legend(fontsize = 20)
+    plt.tight_layout()
+    plt.show()

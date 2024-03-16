@@ -29,9 +29,11 @@ datadir = os.getcwd()
 generator_HomLoops = 0
 plot_histogram = 0
 find_ends_barcodes = 0
-PE_beta_mu = 1
+PE_beta_mu = 0
 PE_compare_c1 = 0
 PE_compare_c1_and_choice_bool = 0
+
+PE_single_variables = 1
 
 sim = 0
 
@@ -557,3 +559,94 @@ if PE_compare_c1_and_choice_bool == 1:
 
                 # Show the plots
                 plt.show()
+
+
+
+if PE_single_variables == 1:
+
+    row = 30
+    col = 30
+    N = row * col
+
+    choice_bool = 0
+    c1 = 0
+
+    sim = 0
+
+    beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
+    mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+    idSIR = 'XYSIR'
+    idS = 'XYS'
+    idI = 'XYI'
+    idR = 'XYR'
+
+    normalize_entropy = True
+
+    for beta, mu in zip(beta_vals, mu_vals):
+
+        folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
+        folder_entropySIR = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{idSIR}/'
+        folder_entropyS = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{idS}/'
+        folder_entropyI = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{idI}/'
+        folder_entropyR = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Entropy/Normalized-hand/{idR}/'
+
+        T = np.load(folder_simulation + 'T.npy')
+        if beta == 0.115 or beta == 0.12:
+            T = 1000
+        T_sim = np.linspace(0, T - 1, T)
+
+        PEH0_SIR = np.load(folder_entropySIR + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH1_SIR = np.load(folder_entropySIR + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+        PEH0_S = np.load(folder_entropyS + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH1_S = np.load(folder_entropyS + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH0_I = np.load(folder_entropyI + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH1_I = np.load(folder_entropyI + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH0_R = np.load(folder_entropyR + f'entropy_H0-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+        PEH1_R = np.load(folder_entropyR + f'entropy_H1-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.npy')
+
+        PEH0_prodSR = PEH0_I * PEH0_R#* PEH0_I
+        PEH1_prodSR = PEH1_I * PEH1_R#* PEH1_I
+
+        PEH0_prod = PEH0_S * PEH0_R * PEH0_I
+        PEH1_prod = PEH1_S * PEH1_R * PEH1_I
+
+        #PEH0_prod = (PEH0_S + PEH0_R + PEH0_I)/3
+        #PEH1_prod = (PEH1_S + PEH1_R + PEH1_I)/3
+
+
+        diffH0 = PEH0_SIR - PEH0_prodSR
+        diffH1 = PEH1_SIR - PEH1_prodSR
+
+        plt.figure(figsize = (12,8))
+        plt.plot(T_sim[:T-1], PEH0_SIR, linestyle = ':', color = 'red', label = 'SIR')
+        plt.plot(T_sim[:T - 1], PEH1_SIR, linestyle=':', color='blue')
+
+        #plt.plot(T_sim[:T - 1], PEH0_prodSR, color='red', linewidth = 0.7 )
+        #plt.plot(T_sim[:T - 1], PEH1_prodSR, color='blue', linewidth = 0.7 , label='prod IR')
+
+        plt.plot(T_sim[:T - 1], PEH0_prod, color='k', linewidth = 0.7, label = 'prod SIR' )
+        plt.plot(T_sim[:T - 1], PEH1_prod, color='k', linewidth = 0.7)
+        plt.title(f'R0 = {beta/mu}')
+        plt.legend()
+        plt.show()
+
+
+        #plt.plot(T_sim[:T-1], diffH0, color = 'red')
+        #plt.plot(T_sim[:T-1], diffH1, color = 'blue')
+        #plt.title('Difference between SIR and S*R')
+        #plt.show()
+
+
+        diffH0_SI = PEH0_S - PEH0_I
+        diffH1_SI = PEH1_S - PEH1_I
+
+        plt.plot(T_sim[:T-1], diffH0_SI, color = 'red')
+        plt.plot(T_sim[:T-1], diffH1_SI, color = 'blue')
+        plt.title('Difference between PE_S and PE_I')
+        plt.show()
+
+
+
+
+

@@ -75,6 +75,7 @@ def entropy_calculation(df_data, columns, normalize_entropy):
     entropy_H1 = []
 
     for t in time_interval:
+        print('t: ', t)
         mask = df_data['Time'] == t
         # Extract data to analyse from DataFrame
         extracted_df_data = df_data.loc[mask, columns].values

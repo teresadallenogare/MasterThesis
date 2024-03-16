@@ -50,10 +50,11 @@ weight_analysis = 0
 PF_convergence = 0
 Rstar_def = 0
 outbreak = 0
-plot_network = 1
+plot_network = 0
 log_dependence = 0
 write_file = 0
 
+network_threshold = 1
 
 #sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
@@ -795,4 +796,41 @@ if plot_network == 1:
         plt.tight_layout()
         plt.show()
 
+
+if network_threshold == 1:
+    row = 3
+    col = 3
+
+    N = row * col
+
+    choice_bool = 0
+    c1 = 0
+
+    datadir = os.getcwd()
+
+    folder_topology = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Topology/'
+
+    TransitionMatrix = np.load(folder_topology + 'TransitionMatrix.npy')
+
+
+    def average_excluding_diagonal(matrix):
+        # Get the diagonal elements
+        diagonal_elements = np.diag(matrix)
+
+        # Calculate the sum of all elements in the matrix
+        total_sum = np.sum(matrix)
+
+        # Calculate the sum of diagonal elements
+        diagonal_sum = np.sum(diagonal_elements)
+
+        # Count the total number of elements in the matrix
+        total_count = matrix.size
+
+        # Calculate the average excluding diagonal elements
+        average_excluding_diagonal = (total_sum - diagonal_sum) / (total_count - matrix.shape[0])
+
+        return average_excluding_diagonal
+
+    result = average_excluding_diagonal(TransitionMatrix)
+    print("Average excluding diagonal elements:", result)
 

@@ -35,7 +35,7 @@ N = row * col
 beta_vals = [0.115, 0.12, 0.15, 0.2, 0.3, 0.4, 0.9, 1.2]
 mu_vals = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
-beta_vals = [0.4]
+beta_vals = [0.3]
 mu_vals = [0.1]
 
 id = 'XYSIR'
@@ -46,8 +46,9 @@ sns.set_theme(style="darkgrid", rc={"axes.facecolor": "#ebebeb"})
 
 normalize_entropy = True
 
-sim = 4
+sim = 0 # exclude 4
 
+clr = ['#FF8080', '#FF7F2A', '#D38D5F', '#87DE87', '#5FD3BC', '#80B3FF', '#8787DE', '#AA00D4', '#FF80E5', '#D35F8D']
 
 for beta, mu in zip(beta_vals, mu_vals):
     folder_simulation = datadir + f'/Data_simpleLattice_v1/{row}x{col}/choice_bool-{choice_bool}/c1-{c1}/Simulations/mu-{mu}/beta-{beta}/'
@@ -58,8 +59,8 @@ for beta, mu in zip(beta_vals, mu_vals):
     min_H0_sims = np.load(folder_entropy + f'min_H0_sims-mu{mu}-beta{beta}.npy')
     min_H1_sims = np.load(folder_entropy + f'min_H1_sims-mu{mu}-beta{beta}.npy')
 
-    t_star = min_H0_sims[1, 0]
-    t_star = 0
+    t_star = min_H0_sims[1, sim]
+
     print('t_star:', t_star)
     T = np.load(folder_simulation + 'T.npy')
     if beta == 0.115 or beta == 0.12:
@@ -103,7 +104,11 @@ for beta, mu in zip(beta_vals, mu_vals):
     y0 = np.linspace(len(dgms0), 0, len(dgms0) + 1)
     y1 = np.linspace(len(dgms1), 0, len(dgms1) + 1)
 
-    plot_barcodes(birth0[:], end0[:], birth1[:], end1[:], y0[:], y1[:])#[:100]
+    nbr_bars = 100
+
+    plot_barcodes(birth0[:nbr_bars], end0[:nbr_bars], birth1[:nbr_bars], end1[:nbr_bars], y0[:nbr_bars], y1[:nbr_bars], t_star, beta/mu, sim, clr[sim])#[:100]
+    #plot_barcodes(birth0[:], end0[:], birth1[:], end1[:], y0[:], y1[:], t_star, beta/mu, sim)#[:100]
+
     #plot_persistence_diagram(birth0, end0, birth1, end1)
 
 

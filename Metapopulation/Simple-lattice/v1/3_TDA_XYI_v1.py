@@ -84,7 +84,7 @@ for row, col in zip(N_row, N_col):
                         #### PE calculation
                         for normalize_entropy in [ False, True]:
                             print('normalize_entropy: ', normalize_entropy)
-                            ph, dgms, entropy_H0, entropy_H1 = entropy_calculation(df_dict_data, columns, normalize_entropy)
+                            entropy_H0, entropy_H1 = entropy_calculation(df_dict_data, columns, normalize_entropy)
                             if normalization == 0:
                                 pickle.dump(ph, open(folder_entropy_noNorm + f'ph-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
                                 pickle.dump(dgms, open(folder_entropy_noNorm + f'dgms-nrm{normalize_entropy}-beta{beta}-mu{mu}-sim{sim}.pickle', 'wb'))
